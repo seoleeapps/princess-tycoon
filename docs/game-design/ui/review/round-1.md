@@ -66,3 +66,5 @@
 | L5 1.1배 렌더 획 깨짐 | 실기기 해상도가 아닌 렌더 | 기준 렌더를 1170×2532, 1290×2796, 720×1280 기기 해상도로 교체, 결과 창은 다 나타난 뒤 촬영 | `docs/qa` 갱신 |
 
 재확인 실행(작성자): `npm test` 종료 0(레이아웃 103, 모션 44, 픽셀 25 등 전부 PASS), `test:e2e` 3 viewport PASS(79/19), 렌더링 E2E 390×844 캡처를 직접 확인. 독립 재확인은 2회차에서 한다.
+
+증거: NAS1dual `agent-artifacts/princess-tycoon/2026-11-04/678eb5f/pixel-ui-review-round1/` (검수자 실행 증거와 `07a3a27` 수정 후 캡처, 목록 SHA-256은 폴더의 `MANIFEST.txt`)
