@@ -289,6 +289,19 @@ def arena(w: int, h: int, seed: int = 41) -> Art:
     return a
 
 
+def offline_night(w: int, h: int) -> Art:
+    """오프라인 정산 띠 그림: 밤의 기숙사 창과 달."""
+    a = study_room(w, 120, "night", seed=13)
+    crop = Art(w, h)
+    crop.blit(a.img.crop((0, 8, w, 8 + h)), 0, 0)
+    wx = int(w * 0.52)
+    crop.ellipse(wx + 30, 10, wx + 40, 20, rgb("fff3c0"))
+    crop.ellipse(wx + 33, 9, wx + 43, 19, rgb("283c7a"))
+    for sx, sy in ((wx + 8, 12), (wx + 18, 26), (wx + 46, 30), (wx + 12, 38)):
+        crop.px(sx, sy, rgb("fff3c0"))
+    return crop
+
+
 ENVIRONMENTS = {
     "academy": lambda w, h: study_room(w, h, "warm"),
     "library": lambda w, h: library(w, h, "warm"),

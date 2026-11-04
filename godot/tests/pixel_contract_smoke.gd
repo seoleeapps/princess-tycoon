@@ -64,11 +64,17 @@ func _check_fonts() -> void:
 		var import_text := FileAccess.get_file_as_string(path + ".import")
 		_check(import_text.contains("antialiasing=0") and import_text.contains("hinting=0") and import_text.contains("subpixel_positioning=0"),
 			"PX-01 %s 안티앨리어싱·힌팅·서브픽셀 끔" % path.get_file())
+	# UI·데이터 문자열은 본문 폰트 자체로 그려야 한다. 대체 폰트 글리프는 줄 높이를 바꿔 2px 격자를 깬다.
+	# Galmuri 대체는 플레이어가 입력한 이름 같은 예외 문자를 위한 안전망으로만 둔다.
 	var missing: Array[String] = []
+	var fallback_only: Array[String] = []
 	for character: String in _ui_characters():
 		if not _font_covers(body_font, character):
 			missing.append(character)
+		elif not body_file.has_char(character.unicode_at(0)):
+			fallback_only.append(character)
 	_check(missing.is_empty(), "PX-01 UI 문자열 글리프 전부 표시", "missing=%s" % "".join(missing.slice(0, 40)))
+	_check(fallback_only.is_empty(), "PX-01 UI 문자열이 대체 폰트 없이 본문 폰트로 그려짐", "fallback=%s" % "".join(fallback_only))
 
 
 func _check_render_settings() -> void:

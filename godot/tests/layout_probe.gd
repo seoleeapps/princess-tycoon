@@ -6,7 +6,7 @@ const VIEWPORTS: Array[Vector2i] = [
 	Vector2i(720, 1280),
 ]
 const MAIN_TABS: Array[String] = ["home", "plan", "activity", "growth", "record"]
-const PIXEL_GRID_TABS: Array[String] = ["home", "plan", "activity", "growth"]
+const PIXEL_GRID_TABS: Array[String] = ["home", "plan", "activity", "growth", "record"]
 const SHEETS: Array[String] = ["world", "shop", "settings", "offline", "event", "profile", "continue"]
 const EDGE_TOLERANCE: float = 1.5
 const SAVE_PATH := "user://qa_layout_probe_save.json"
@@ -49,7 +49,7 @@ func _probe_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 		await process_frame
 		await process_frame
 		total_checked += _check_current_ctas(main, main_rect, "%s/%s" % [_size_label(viewport_size), tab_id])
-		# 도트 격자는 실제 기기 논리 크기(390×844)에서 확인한다. 기록 탭은 PR-D에서 배치를 바꾼 뒤 포함한다.
+		# 도트 격자는 실제 기기 논리 크기(390×844)에서 확인한다.
 		if viewport_size == Vector2i(390, 844) and PIXEL_GRID_TABS.has(tab_id):
 			_check_pixel_grid(main, "%s/%s" % [_size_label(viewport_size), tab_id])
 
@@ -58,6 +58,8 @@ func _probe_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 		await process_frame
 		await process_frame
 		total_checked += _check_current_ctas(main, main_rect, "%s/%s" % [_size_label(viewport_size), sheet_id])
+		if viewport_size == Vector2i(390, 844):
+			_check_pixel_grid(main, "%s/%s" % [_size_label(viewport_size), sheet_id])
 		main.call("_close_sheet")
 		await process_frame
 		await process_frame

@@ -228,6 +228,16 @@ ICONS: dict[str, list[str]] = {
         ".kyyyyk.",
         "..kkkk..",
     ],
+    "potion": [
+        "...kk...",
+        "..kwwk..",
+        "...kk...",
+        "..krrk..",
+        ".krwrrk.",
+        "krrrrrRk",
+        "krrrrRRk",
+        ".kkkkkk.",
+    ],
     "up": [
         "...kk...",
         "..kgGk..",

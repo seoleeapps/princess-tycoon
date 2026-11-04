@@ -3,6 +3,7 @@ extends Control
 # 홈 장면: 활동별 배경, 도트 페이퍼돌 수련생, 머리 위 활동 말풍선과 진행 게이지, 장비 강화 반짝임.
 # 아트 1px = 논리 2px로만 그린다. 대기 모션은 0.5초 간격 2프레임(1 아트픽셀 오르내림)이고 모션 줄이기에서 멈춘다.
 
+const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
 const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
 const TraineeCompositor = preload("res://src/ui/pixel/trainee_compositor.gd")
 
@@ -15,7 +16,6 @@ const FRAME_SECONDS := 0.5
 const SLOTS := ["outfit", "weapon", "armor", "accessory"]
 
 static var _shared_compositor: RefCounted
-static var _doubled := {}
 
 var profile := "balanced"
 var environment := "academy"
@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if size.x < 10.0 or size.y < 10.0:
 		return
-	var background := _doubled_texture(SCENE_DIR + environment + ".png")
+	var background := PixelTheme.doubled_texture(SCENE_DIR + environment + ".png")
 	var bg_size := background.get_size()
 	var bg_origin := _even(Vector2((size.x - bg_size.x) * 0.5, size.y - bg_size.y))
 	draw_texture(background, bg_origin)
@@ -104,11 +104,11 @@ func _draw() -> void:
 
 
 func _draw_bubble(anchor: Vector2) -> void:
-	var bubble := _doubled_texture(ICON_DIR + "bubble.png")
+	var bubble := PixelTheme.doubled_texture(ICON_DIR + "bubble.png")
 	var bubble_size := bubble.get_size()
 	var origin := _even(Vector2(anchor.x - bubble_size.x * 0.5, anchor.y - bubble_size.y - 12.0))
 	draw_texture(bubble, origin)
-	var icon := _doubled_texture(ICON_DIR + activity_icon + ".png")
+	var icon := PixelTheme.doubled_texture(ICON_DIR + activity_icon + ".png")
 	draw_texture(icon, _even(origin + Vector2((bubble_size.x - icon.get_size().x) * 0.5, 4.0)))
 	var bar := Rect2(_even(Vector2(origin.x - 2.0, origin.y + bubble_size.y + 2.0)), Vector2(bubble_size.x + 4.0, 8.0))
 	draw_rect(bar, PixelTokens.STRIP_DARK)
@@ -152,18 +152,6 @@ func _refresh_trainee() -> void:
 		_trainee_texture = ImageTexture.create_from_image(doubled)
 		_trainee_source = image
 	queue_redraw()
-
-
-# 1배 도트를 nearest로 2배 키운 텍스처를 1:1로 그린다. 뷰포트 필터 설정과 무관하게 도트가 선명하다.
-static func _doubled_texture(path: String) -> Texture2D:
-	if _doubled.has(path):
-		return _doubled[path]
-	var image := (load(path) as Texture2D).get_image()
-	image.convert(Image.FORMAT_RGBA8)
-	image.resize(image.get_width() * int(SCALE), image.get_height() * int(SCALE), Image.INTERPOLATE_NEAREST)
-	var texture := ImageTexture.create_from_image(image)
-	_doubled[path] = texture
-	return texture
 
 
 func _even(point: Vector2) -> Vector2:

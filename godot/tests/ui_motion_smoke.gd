@@ -175,7 +175,7 @@ func _run() -> void:
 	}
 	var title_payload: Dictionary = main.call("_build_result_feedback_payload", {}, title_review)
 	_check(str(title_payload.get("kind", "")) == "title" and str(title_payload.get("headline", "")).contains("별 상승"), "진로 칭호 별 상승 연출 훅")
-	_check(_joined_details(title_payload).contains("왕립 연구자") and _joined_details(title_payload).contains("3 → 4"), "칭호·세계 티어 실제 심사 데이터 표시")
+	_check(_joined_details(title_payload).contains("왕립 연구자") and _joined_details(title_payload).contains("3 > 4"), "칭호·세계 티어 실제 심사 데이터 표시")
 	_check(
 		str(main.call("_career_display_name", "END_SCHOLAR", {"name": "왕립 연구자", "variantName": "시민의 왕립 연구자"})) == "시민의 왕립 연구자",
 		"관계 기반 진로 칭호 변형을 기록 화면에 지속 표시"
