@@ -182,6 +182,9 @@ func _first_session(main: Control) -> void:
 		e2e.expect_equal("high contrast off", bool(_read(main, ["settings", "highContrast"], true)), false)
 	await _close_sheet(main)
 
+	await _tap_id(main, "status_detail", "open status detail")
+	var toast := main.get("_toast_label") as Label
+	e2e.step("status detail shows full reason", toast != null and toast.is_visible_in_tree() and toast.text.contains("이유 ·"), "" if toast == null else toast.text)
 	await _tap_id(main, "pause", "pause auto run")
 	e2e.expect_equal("auto run paused", bool(_read(main, ["settings", "autoRun"], true)), false)
 	await e2e.shot("15-paused")
@@ -208,8 +211,11 @@ func _return_offline(main: Control) -> void:
 	e2e.step("offline sheet opens on return", await e2e.wait_for(func() -> bool: return _find_screen(again, "offline") != null, 30))
 	e2e.step("offline slots pending", int(_state(again).get("pendingOfflineSlots", 0)) > 0)
 	await e2e.shot("17-offline")
+	var home_before := _content_page(again)
 	await _tap_id(again, "offline_collect", "collect offline result")
 	e2e.expect_equal("offline slots settled", int(_state(again).get("pendingOfflineSlots", -1)), 0)
+	e2e.step("offline sheet lists what changed", _find_label_prefix(again, "능력치 합 +") != null)
+	e2e.step("home redrawn with settled values", _content_page(again) != home_before)
 	e2e.step("time advanced offline", int(_read(again, ["time", "slot"], 0)) > slot_saved)
 	await e2e.shot("18-offline-collected")
 	await _close_sheet(again)
@@ -329,6 +335,17 @@ func _find_screen(main: Node, screen_id: String) -> Node:
 		return null
 	for child in (layer as Node).get_children():
 		if not child.is_queued_for_deletion() and str(child.get_meta("screen_id", "")) == screen_id:
+			return child
+	return null
+
+
+func _find_label_prefix(main: Node, prefix: String) -> Node:
+	return _find_visible(main, func(node: Node) -> bool: return node is Label and (node as Label).text.begins_with(prefix))
+
+
+func _content_page(main: Node) -> Node:
+	for child in (main.get("_content_host") as Node).get_children():
+		if not child.is_queued_for_deletion():
 			return child
 	return null
 
