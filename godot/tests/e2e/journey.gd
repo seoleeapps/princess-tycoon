@@ -90,6 +90,9 @@ func _first_session(main: Control) -> void:
 	e2e.step("plan tab visible", _screen(main) == "plan")
 	await _tap_id(main, "preset_scholar", "pick scholar direction")
 	e2e.expect_equal("direction changed", str(_read(main, ["growthPolicy", "preset"], "")), "scholar")
+	var stress_before := float(_read(main, ["growthPolicy", "maxStress"], 0.0))
+	await _tap_id(main, "step_maxStress_plus", "raise max stress one step")
+	e2e.expect_equal("max stress stepped", float(_read(main, ["growthPolicy", "maxStress"], 0.0)), minf(95.0, stress_before + 1.0))
 	await e2e.shot("07-plan")
 
 	await _tap_id(main, "tab_activity", "open activity tab")
@@ -122,6 +125,15 @@ func _first_session(main: Control) -> void:
 		e2e.step("activity mastery increased", int(_read(main, ["mastery", mastery_key], 0)) > mastery_before,
 			"activity=%s mastery=%s toast=%s" % [mastery_key, JSON.stringify(_read(main, ["mastery"], {})), "" if toast_label == null else (toast_label as Label).text])
 		await e2e.shot("10-activity-result")
+	var detail_id := _first_enabled_id(main, "activity_run_").trim_prefix("activity_run_")
+	if e2e.step("unlocked activity for detail", not detail_id.is_empty()):
+		await _tap_id(main, "activity_detail_" + detail_id, "open activity detail")
+		e2e.step("activity detail sheet visible", _find_screen(main, "activity_detail") != null)
+		await e2e.shot("10b-activity-detail")
+		var queue_before := (_read(main, ["activityQueue"], []) as Array).size()
+		await _tap_id(main, "detail_queue", "queue from detail")
+		e2e.expect_equal("activity queued", (_read(main, ["activityQueue"], []) as Array).size(), queue_before + 1)
+		await _close_sheet(main)
 
 	await _tap_id(main, "tab_growth", "open growth tab")
 	e2e.step("growth tab visible", _screen(main) == "growth")

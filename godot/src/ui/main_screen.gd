@@ -89,6 +89,7 @@ var _toast_serial := 0
 var _result_feedback_layer: Control
 var _trainee_name_edit: LineEdit
 var _home_avatar: Control
+var _detail_activity_id := ""
 var _status_panel: PanelContainer
 var _status_slot: MarginContainer
 var _header_name_label: Label
@@ -398,13 +399,13 @@ func _build_navigation() -> Control:
 	var strip := PanelContainer.new()
 	strip.name = "Navigation"
 	strip.theme_type_variation = PixelTheme.panel_variation("strip")
-	strip.custom_minimum_size.y = 84.0
+	strip.custom_minimum_size.y = 86.0
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 2)
+	row.add_theme_constant_override("separation", 4)
 	strip.add_child(row)
 	for definition in TABS:
 		var tab_id := str(definition["id"])
-		var tab_button := _button(str(definition["label"]), _show_tab.bind(tab_id), "secondary", 72.0, "tab_%s" % tab_id)
+		var tab_button := _button(str(definition["label"]), _show_tab.bind(tab_id), "secondary", 74.0, "tab_%s" % tab_id)
 		tab_button.theme_type_variation = "PixelTab"
 		tab_button.icon = _icon_texture(tab_id)
 		tab_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -513,7 +514,7 @@ func _build_home_page() -> Control:
 	# 미터 3종
 	var meters := _card("window")
 	var meter_row := HBoxContainer.new()
-	meter_row.add_theme_constant_override("separation", PixelTokens.GAP + 4)
+	meter_row.add_theme_constant_override("separation", PixelTokens.GAP)
 	meter_row.add_child(_meter_cell("energy", "에너지", float(_read(["meters", "energy"], 0)), 100.0))
 	meter_row.add_child(_meter_cell("stress", "스트레스", float(_read(["meters", "stress"], 0)), maxf(1.0, float(_read(["growthPolicy", "maxStress"], 100.0)))))
 	meter_row.add_child(_meter_cell("reputation", "평판", float(_read(["meters", "reputation"], 0)), 100.0))
@@ -523,7 +524,7 @@ func _build_home_page() -> Control:
 	# 행동
 	var quick_grid := GridContainer.new()
 	quick_grid.columns = 2
-	quick_grid.add_theme_constant_override("h_separation", PixelTokens.GAP)
+	quick_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	quick_grid.add_theme_constant_override("v_separation", PixelTokens.GAP)
 	var run_once := _button("자동 1회 실행", _complete_current_activity, "primary", 52.0, "run_auto_once")
 	run_once.icon = _icon_texture("play")
@@ -557,49 +558,49 @@ func _build_home_page() -> Control:
 func _build_plan_page() -> Control:
 	var page := _page_scroll()
 	var body: VBoxContainer = page["body"]
-	body.add_child(_section_heading("성장 방향", "다음 자동 선택부터 정책이 반영됩니다."))
+	body.add_child(_section_heading("성장 방향", "다음 자동 선택부터 반영돼요."))
 
 	var preset_grid := GridContainer.new()
 	preset_grid.columns = 2
-	preset_grid.add_theme_constant_override("h_separation", 8)
-	preset_grid.add_theme_constant_override("v_separation", 8)
+	preset_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
+	preset_grid.add_theme_constant_override("v_separation", PixelTokens.GAP)
 	for preset in PRESETS:
-		var selected := str(preset["id"]) == _policy_preset()
-		var text := "%s%s · %s" % ["선택됨  " if selected else "", preset["name"], preset["hint"]]
-		var preset_button := _button(text, _apply_preset.bind(str(preset["id"])), "primary" if selected else "secondary", 54.0, "preset_%s" % preset["id"])
+		var preset_id := str(preset["id"])
+		var selected := preset_id == _policy_preset()
+		var preset_button := _button("%s\n%s" % [preset["name"], "선택됨" if selected else preset["hint"]], _apply_preset.bind(preset_id), "gold" if selected else "secondary", 60.0, "preset_%s" % preset_id)
+		preset_button.icon = _icon_texture(_preset_icon(preset_id))
+		preset_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		preset_grid.add_child(preset_button)
 	body.add_child(preset_grid)
 
 	if _policy_preset() == "custom":
-		body.add_child(_section_heading("직접 설계 가중치", "각 항목을 조절하면 음수를 제거하고 전체 합을 100%로 자동 정규화합니다."))
+		body.add_child(_section_heading("직접 설계 가중치", "합계는 늘 100%로 맞춰져요."))
 		var custom_weights: Dictionary = _read(["growthPolicy", "weights"], {})
+		var weight_card := _card("window")
+		var weight_box := VBoxContainer.new()
+		weight_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
 		for stat_id in STAT_LABELS:
-			body.add_child(_policy_slider(
-				str(STAT_LABELS[stat_id]),
-				"자동 플래너가 이 성장 결과를 얼마나 중요하게 볼지 정합니다.",
-				"weight:%s" % stat_id,
-				float(custom_weights.get(stat_id, 0.0)) * 100.0,
-				0.0, 100.0, 1.0,
-				func(value): return "%d%%" % int(value)
-			))
+			weight_box.add_child(_policy_slider(str(STAT_LABELS[stat_id]), "", "weight:%s" % stat_id,
+				float(custom_weights.get(stat_id, 0.0)) * 100.0, 0.0, 100.0, 5.0, func(value): return "%d%%" % int(round(value))))
 		for extra in [{"id": "reputation", "name": "평판"}, {"id": "gold", "name": "골드"}]:
 			var extra_id := str(extra["id"])
-			body.add_child(_policy_slider(
-				str(extra["name"]),
-				"도전 평판 또는 경제 활동의 우선순위를 정합니다.",
-				"weight:%s" % extra_id,
-				float(custom_weights.get(extra_id, 0.0)) * 100.0,
-				0.0, 100.0, 1.0,
-				func(value): return "%d%%" % int(value)
-			))
+			weight_box.add_child(_policy_slider(str(extra["name"]), "", "weight:%s" % extra_id,
+				float(custom_weights.get(extra_id, 0.0)) * 100.0, 0.0, 100.0, 5.0, func(value): return "%d%%" % int(round(value))))
+		weight_card.add_child(weight_box)
+		body.add_child(weight_card)
 
-	body.add_child(_section_heading("안전 규칙", "예산·스트레스·위험 상한은 활동 점수보다 먼저 적용돼요."))
+	body.add_child(_section_heading("안전 규칙", "활동 점수보다 먼저 지켜요."))
 	var policy: Dictionary = _read(["growthPolicy"], {})
-	body.add_child(_policy_slider("위험 허용도", "낮을수록 안전한 활동을 우선해요.", "riskTolerance", float(policy.get("riskTolerance", 0.35)), 0.0, 1.0, 0.05, func(value): return "%d%%" % int(value * 100.0)))
-	body.add_child(_policy_slider("최대 스트레스", "한계에 도달하면 회복 활동으로 전환해요.", "maxStress", float(policy.get("maxStress", 72.0)), 35.0, 95.0, 1.0, func(value): return "%d" % int(value)))
-	body.add_child(_policy_slider("최소 보유금", "이 금액 아래로 내려가는 소비 활동은 피합니다.", "reserveGoldValue", _reserve_gold_number(), 0.0, 3000.0, 100.0, func(value): return "%s G" % _format_number(value)))
+	var rules := _card("window")
+	var rules_box := VBoxContainer.new()
+	rules_box.add_theme_constant_override("separation", PixelTokens.GAP)
+	rules_box.add_child(_policy_slider("위험 허용도", "낮을수록 안전한 활동을 우선", "riskTolerance", float(policy.get("riskTolerance", 0.35)), 0.0, 1.0, 0.05, func(value): return "%d%%" % int(round(value * 100.0))))
+	rules_box.add_child(_policy_slider("최대 스트레스", "넘으면 회복 활동으로 전환", "maxStress", float(policy.get("maxStress", 72.0)), 35.0, 95.0, 1.0, func(value): return "%d" % int(value)))
+	rules_box.add_child(_policy_slider("최소 보유금", "이 아래로 쓰는 활동은 피함", "reserveGoldValue", _reserve_gold_number(), 0.0, 3000.0, 100.0, func(value): return "%s G" % _format_number(value)))
+	rules.add_child(rules_box)
+	body.add_child(rules)
 
-	body.add_child(_section_heading("금지 태그", "원하지 않는 활동 유형을 자동 후보에서 제외합니다."))
+	body.add_child(_section_heading("금지 태그", "자동 후보에서 빼요."))
 	var tags := [
 		{"id": "risk", "name": "고위험"}, {"id": "combat", "name": "전투"},
 		{"id": "social", "name": "사교"}, {"id": "costly", "name": "고비용"},
@@ -608,16 +609,18 @@ func _build_plan_page() -> Control:
 	var banned: Array = policy.get("bannedTags", [])
 	var tag_grid := GridContainer.new()
 	tag_grid.columns = 2
-	tag_grid.add_theme_constant_override("h_separation", 8)
-	tag_grid.add_theme_constant_override("v_separation", 8)
+	tag_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
+	tag_grid.add_theme_constant_override("v_separation", PixelTokens.GAP)
 	for tag in tags:
 		var active := banned.has(tag["id"])
-		var tag_button := _button("제외됨  %s" % tag["name"] if active else str(tag["name"]), _toggle_banned_tag.bind(str(tag["id"])), "danger" if active else "ghost")
+		var tag_button := _button("제외 · %s" % tag["name"] if active else str(tag["name"]), _toggle_banned_tag.bind(str(tag["id"])), "danger" if active else "secondary", 48.0, "ban_%s" % tag["id"])
+		if active:
+			tag_button.icon = _icon_texture("lock")
 		tag_grid.add_child(tag_button)
 	body.add_child(tag_grid)
 
 	var note := _card("transparent")
-	note.add_child(_label("현재 선택 이유 상위 3개는 활동 상태 카드에 표시되며, 정책 변경으로 진행 중 활동이 취소되지는 않습니다.", 16, PixelTokens.INK_MUTED))
+	note.add_child(_label("바꾼 방향은 진행 중인 활동을 멈추지 않고 다음 선택부터 적용돼요.", 16, PixelTokens.INK_MUTED))
 	body.add_child(note)
 	return page["scroll"]
 
@@ -625,185 +628,301 @@ func _build_plan_page() -> Control:
 func _build_activity_page() -> Control:
 	var page := _page_scroll()
 	var body: VBoxContainer = page["body"]
-	body.add_child(_section_heading("활동 선택", "자동 플래너와 같은 해결 경로로 원하는 활동을 1회 실행할 수 있어요."))
 
 	var categories := [
-		{"id": "education", "name": "학습 15"},
-		{"id": "job", "name": "알바 11"},
-		{"id": "rest", "name": "휴식 4"},
-		{"id": "adventure", "name": "모험 5"},
-		{"id": "challenge", "name": "시험·대회 8"},
+		{"id": "education", "name": "학습"}, {"id": "job", "name": "알바"}, {"id": "rest", "name": "휴식"},
+		{"id": "adventure", "name": "모험"}, {"id": "challenge", "name": "시험"},
 	]
-	var category_grid := GridContainer.new()
-	category_grid.columns = 2
-	category_grid.add_theme_constant_override("h_separation", 8)
-	category_grid.add_theme_constant_override("v_separation", 8)
+	var category_row := HBoxContainer.new()
+	category_row.add_theme_constant_override("separation", PixelTokens.GAP)
 	for category in categories:
 		var category_id := str(category["id"])
-		category_grid.add_child(_button(str(category["name"]), _select_activity_filter.bind(category_id), "primary" if category_id == _activity_filter else "ghost", 48.0, "filter_%s" % category_id))
-	body.add_child(category_grid)
+		var count := 0
+		for activity in _activities:
+			if typeof(activity) == TYPE_DICTIONARY and _activity_kind(activity) == category_id:
+				count += 1
+		var tab := _button("%s %d" % [category["name"], count], _select_activity_filter.bind(category_id), "gold" if category_id == _activity_filter else "secondary", 48.0, "filter_%s" % category_id)
+		tab.theme_type_variation = "PixelButtonCompactGold" if category_id == _activity_filter else "PixelButtonCompactSecondary"
+		category_row.add_child(tab)
+	body.add_child(category_row)
 
-	var automatic := _card("coral")
+	var automatic := _card("gold")
 	var automatic_box := VBoxContainer.new()
-	automatic_box.add_theme_constant_override("separation", 8)
-	automatic_box.add_child(_label("추천 · %s" % _current_activity_name(), 19, PixelTokens.INK))
-	automatic_box.add_child(_label(_planner_reason(), 16, PixelTokens.INK_MUTED))
-	automatic_box.add_child(_button("추천 활동 즉시 실행", _complete_current_activity, "primary", 48.0, "run_recommended"))
+	automatic_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	var recommend_row := HBoxContainer.new()
+	recommend_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	recommend_row.add_child(_icon(_activity_icon_name()))
+	var recommend_label := _label("추천 · %s" % _current_activity_name(), 16, PixelTokens.INK)
+	recommend_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	recommend_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	recommend_row.add_child(recommend_label)
+	automatic_box.add_child(recommend_row)
+	var reason := _label(_planner_reason(), 16, PixelTokens.INK_MUTED)
+	reason.autowrap_mode = TextServer.AUTOWRAP_OFF
+	reason.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	automatic_box.add_child(reason)
+	var run_recommended := _button("추천 활동 즉시 실행", _complete_current_activity, "primary", 48.0, "run_recommended")
+	run_recommended.icon = _icon_texture("play")
+	automatic_box.add_child(run_recommended)
 	automatic.add_child(automatic_box)
 	body.add_child(automatic)
 
 	var queued: Array = _read(["activityQueue"], [])
-	var queue_card := _card("transparent")
-	var queue_box := VBoxContainer.new()
-	queue_box.add_theme_constant_override("separation", 5)
-	queue_box.add_child(_label("자동 큐 · %d건" % queued.size(), 17, PixelTokens.INK))
-	if queued.is_empty():
-		queue_box.add_child(_label("비어 있으면 성장 정책이 다음 활동을 자동 선택합니다.", 16, PixelTokens.INK_MUTED))
-	else:
+	if not queued.is_empty():
+		var queue_card := _card("transparent")
+		var queue_box := VBoxContainer.new()
+		queue_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+		queue_box.add_child(_label("자동 큐 · %d건" % queued.size(), 16, PixelTokens.INK))
 		for queue_index in range(mini(5, queued.size())):
 			var queue_row := HBoxContainer.new()
-			queue_row.add_theme_constant_override("separation", 5)
-			queue_row.add_child(_label("%d. %s" % [queue_index + 1, _activity_name_by_id(str(queued[queue_index]))], 16, PixelTokens.INK))
-			var up := _button("↑", _move_queued_activity.bind(queue_index, -1), "ghost", 44.0)
-			up.custom_minimum_size.x = 44.0
-			up.size_flags_horizontal = Control.SIZE_SHRINK_END
-			up.disabled = queue_index == 0
-			queue_row.add_child(up)
-			var down := _button("↓", _move_queued_activity.bind(queue_index, 1), "ghost", 44.0)
-			down.custom_minimum_size.x = 44.0
-			down.size_flags_horizontal = Control.SIZE_SHRINK_END
-			down.disabled = queue_index == queued.size() - 1
-			queue_row.add_child(down)
+			queue_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+			var queue_name := _label("%d. %s" % [queue_index + 1, _activity_name_by_id(str(queued[queue_index]))], 16, PixelTokens.INK)
+			queue_name.autowrap_mode = TextServer.AUTOWRAP_OFF
+			queue_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			queue_row.add_child(queue_name)
+			for move in [{"text": "↑", "delta": -1, "disabled": queue_index == 0}, {"text": "↓", "delta": 1, "disabled": queue_index == queued.size() - 1}]:
+				var move_button := _button(str(move["text"]), _move_queued_activity.bind(queue_index, int(move["delta"])), "secondary", 44.0)
+				move_button.theme_type_variation = "PixelButtonCompactSecondary"
+				move_button.custom_minimum_size.x = 44.0
+				move_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+				move_button.disabled = bool(move["disabled"])
+				queue_row.add_child(move_button)
 			var remove := _button("삭제", _remove_queued_activity.bind(queue_index), "danger", 44.0)
-			remove.custom_minimum_size.x = 58.0
+			remove.theme_type_variation = "PixelButtonDanger"
+			remove.custom_minimum_size.x = 60.0
 			remove.size_flags_horizontal = Control.SIZE_SHRINK_END
 			queue_row.add_child(remove)
 			queue_box.add_child(queue_row)
 		if queued.size() > 5:
 			queue_box.add_child(_label("외 %d건" % (queued.size() - 5), 16, PixelTokens.INK_MUTED))
-		queue_box.add_child(_button("자동 큐 모두 비우기", _clear_activity_queue, "ghost"))
-	queue_card.add_child(queue_box)
-	body.add_child(queue_card)
+		queue_box.add_child(_button("자동 큐 모두 비우기", _clear_activity_queue, "secondary"))
+		queue_card.add_child(queue_box)
+		body.add_child(queue_card)
 
+	var list := _card("window")
+	var list_box := VBoxContainer.new()
+	list_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
 	var visible_count := 0
 	for activity in _activities:
 		if _activity_kind(activity) != _activity_filter:
 			continue
-		body.add_child(_activity_card(activity))
+		list_box.add_child(_activity_card(activity))
 		visible_count += 1
 		if visible_count >= 15:
 			break
 	if visible_count == 0:
-		var empty := _card("transparent")
-		empty.add_child(_label("이 분류의 활동은 세계 티어 또는 시즌 조건을 달성하면 열립니다.", 16, PixelTokens.INK_MUTED))
-		body.add_child(empty)
+		list_box.add_child(_label("세계 티어나 시즌 조건을 달성하면 열려요.", 16, PixelTokens.INK_MUTED))
+	list.add_child(list_box)
+	body.add_child(list)
 	return page["scroll"]
 
 
+# 활동 한 줄: 아이콘, 이름, 숙련, 비용·에너지·스트레스(또는 잠금 이유), 1회 버튼. 행을 누르면 상세 시트.
 func _activity_card(activity: Dictionary) -> Control:
-	var card := _card("raised")
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	var title_row := HBoxContainer.new()
-	var title := _label(str(activity.get("name", activity.get("id", "활동"))), 18, PixelTokens.INK)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_row.add_child(title)
-	var mastery_level := int(_read(["mastery", str(activity.get("id", ""))], 0))
-	title_row.add_child(_chip("숙련 %d" % mastery_level, PixelTokens.GOLD))
-	box.add_child(title_row)
-	box.add_child(_label(str(activity.get("description", "새로운 경험으로 성장합니다.")), 16, PixelTokens.INK_MUTED))
-	var facts := HBoxContainer.new()
-	facts.add_theme_constant_override("separation", 8)
-	var cost := float(activity.get("baseCost", 0.0))
-	var reward := float(activity.get("baseReward", 0.0))
-	var economy := "비용 %s G" % _format_number(cost) if cost > 0.0 else ("보수 %s G" % _format_number(reward) if reward > 0.0 else "무료")
-	facts.add_child(_chip(economy, PixelTokens.GOLD))
-	facts.add_child(_chip("에너지 %+d" % int(activity.get("energyDelta", 0)), PixelTokens.POSITIVE))
-	facts.add_child(_chip("스트레스 %+d" % int(activity.get("stressDelta", 0)), PixelTokens.NEGATIVE))
-	box.add_child(facts)
 	var activity_id := str(activity.get("id", ""))
 	var lock_reason := _activity_lock_reason(activity_id)
+	var current := activity_id == str(_read(["activeTask", "activityId"], ""))
+	var row_panel := _card("selected" if current else "transparent")
+	row_panel.set_meta("activity_id", activity_id)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", PixelTokens.GAP)
+	row_panel.add_child(row)
+
+	var info := _button("", _open_activity_detail.bind(activity_id), "secondary", 52.0, "activity_detail_%s" % activity_id)
+	info.theme_type_variation = "PixelRowButton"
+	info.tooltip_text = "%s 상세" % str(activity.get("name", activity_id))
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(info)
+	var info_box := HBoxContainer.new()
+	info_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	info_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	info.add_child(info_box)
+	var kind_icon := _icon("lock" if not lock_reason.is_empty() else _kind_icon_name(_activity_kind(activity)))
+	info_box.add_child(kind_icon)
+	var text_box := VBoxContainer.new()
+	text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	text_box.add_theme_constant_override("separation", 4)
+	info_box.add_child(text_box)
+	var title_row := HBoxContainer.new()
+	title_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var title := _label(str(activity.get("name", activity_id)), 16, PixelTokens.INK_MUTED if not lock_reason.is_empty() else PixelTokens.INK)
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF
+	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_row.add_child(title)
+	var mastery_level := int(_read(["mastery", activity_id], 0))
+	if mastery_level > 0:
+		var mastery_label := _label("숙련 %d" % mastery_level, 16, PixelTokens.INK_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+		mastery_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		mastery_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+		mastery_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		title_row.add_child(mastery_label)
+	text_box.add_child(title_row)
 	if not lock_reason.is_empty():
-		box.add_child(_label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE))
-	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 8)
-	var action := _button("이 활동 1회", _run_activity.bind(activity_id), "secondary", 48.0, "activity_run_%s" % activity_id)
+		var lock_label := _label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE)
+		lock_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		lock_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		lock_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		text_box.add_child(lock_label)
+	else:
+		text_box.add_child(_activity_facts(activity))
+	info.custom_minimum_size.y = 52.0
+
+	var action := _button("1회", _run_activity.bind(activity_id), "primary", 48.0, "activity_run_%s" % activity_id)
+	action.custom_minimum_size.x = 60.0
+	action.size_flags_horizontal = Control.SIZE_SHRINK_END
+	action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	action.tooltip_text = "%s 1회 실행" % str(activity.get("name", activity_id))
 	action.add_to_group("critical_cta")
 	action.disabled = not lock_reason.is_empty()
-	actions.add_child(action)
-	var queue_action := _button("자동 큐 +", _queue_activity.bind(activity_id), "ghost", 48.0, "activity_queue_%s" % activity_id)
-	queue_action.disabled = not lock_reason.is_empty()
-	actions.add_child(queue_action)
-	box.add_child(actions)
+	row.add_child(action)
+	return row_panel
+
+
+# 비용(또는 보수)·에너지·스트레스 변화를 아이콘과 숫자로 한 줄에 보여 준다.
+func _activity_facts(activity: Dictionary) -> Control:
+	var facts := HBoxContainer.new()
+	facts.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	facts.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	var cost := float(activity.get("baseCost", 0.0))
+	var reward := float(activity.get("baseReward", 0.0))
+	var entries := [
+		["coin", ("-%s" % _format_number(cost)) if cost > 0.0 else (("+%s" % _format_number(reward)) if reward > 0.0 else "0"), PixelTokens.NEGATIVE if cost > 0.0 else PixelTokens.POSITIVE],
+		["energy", "%+d" % int(activity.get("energyDelta", 0)), PixelTokens.INK],
+		["stress", "%+d" % int(activity.get("stressDelta", 0)), PixelTokens.INK],
+	]
+	for entry in entries:
+		facts.add_child(_icon(str(entry[0])))
+		var value := _label(str(entry[1]), 16, entry[2])
+		value.autowrap_mode = TextServer.AUTOWRAP_OFF
+		value.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		value.custom_minimum_size.x = 52.0
+		value.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		facts.add_child(value)
+	return facts
+
+
+func _open_activity_detail(activity_id: String) -> void:
+	_detail_activity_id = activity_id
+	_open_sheet("activity_detail")
+
+
+func _build_activity_detail_sheet(body: VBoxContainer) -> void:
+	var activity := _activity_by_id(_detail_activity_id)
+	if activity.is_empty():
+		body.add_child(_label("활동 정보를 찾을 수 없어요.", 16, PixelTokens.INK_MUTED))
+		return
+	var lock_reason := _activity_lock_reason(_detail_activity_id)
+	var card := _card("window")
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", PixelTokens.GAP)
+	box.add_child(_label(str(activity.get("description", "")), 16, PixelTokens.INK))
+	box.add_child(_activity_facts(activity))
+	var primary_stat := str(activity.get("primaryStat", ""))
+	if STAT_LABELS.has(primary_stat):
+		box.add_child(_label("주 성장 · %s" % STAT_LABELS[primary_stat], 16, PixelTokens.POSITIVE))
+	box.add_child(_label("숙련 %d" % int(_read(["mastery", _detail_activity_id], 0)), 16, PixelTokens.INK_MUTED))
+	if not lock_reason.is_empty():
+		box.add_child(_label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE))
 	card.add_child(box)
-	return card
+	body.add_child(card)
+	var run := _button("이 활동 1회", _run_activity_from_detail.bind(_detail_activity_id), "primary", 52.0, "detail_run")
+	run.icon = _icon_texture("play")
+	run.disabled = not lock_reason.is_empty()
+	body.add_child(run)
+	var queue := _button("자동 큐 +", _queue_activity.bind(_detail_activity_id), "secondary", 48.0, "detail_queue")
+	queue.disabled = not lock_reason.is_empty()
+	body.add_child(queue)
+
+
+func _run_activity_from_detail(activity_id: String) -> void:
+	_close_sheet()
+	_run_activity(activity_id)
 
 
 func _build_growth_page() -> Control:
 	var page := _page_scroll()
 	var body: VBoxContainer = page["body"]
-	body.add_child(_section_heading("성장 현황", "능력치는 무한히 성장하고, 높은 수치일수록 새로운 콘텐츠가 열려요."))
 
 	var summary := _card("gold")
 	var summary_box := HBoxContainer.new()
-	summary_box.add_theme_constant_override("separation", 8)
+	summary_box.add_theme_constant_override("separation", PixelTokens.GAP)
 	summary_box.add_child(_resource_card("세계 티어", "%d" % int(_state.get("worldTier", 1)), PixelTokens.GOLD))
-	summary_box.add_child(_resource_card("명성", _format_big(_read(["bigValues", "renown"], {"mantissa": 0, "exponent": 0})), PixelTokens.NEGATIVE))
-	summary_box.add_child(_resource_card("칭호", "%d" % _career_title_count(), PixelTokens.POSITIVE))
+	summary_box.add_child(_resource_card("명성", _format_big(_read(["bigValues", "renown"], {"mantissa": 0, "exponent": 0})), PixelTokens.GOLD))
+	summary_box.add_child(_resource_card("칭호", "%d" % _career_title_count(), PixelTokens.GOLD))
 	summary.add_child(summary_box)
 	body.add_child(summary)
 
-	body.add_child(_section_heading("핵심 능력", "막대는 다음 100 단위 마일스톤까지의 진행도입니다."))
+	body.add_child(_section_heading("능력치", "막대는 다음 100까지의 진행도예요."))
 	var stats_grid := GridContainer.new()
 	stats_grid.columns = 2
-	stats_grid.add_theme_constant_override("h_separation", 8)
-	stats_grid.add_theme_constant_override("v_separation", 8)
+	stats_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
+	stats_grid.add_theme_constant_override("v_separation", PixelTokens.GAP)
 	for stat_id in STAT_LABELS:
-		var value := float(_read(["stats", stat_id], 0.0))
-		stats_grid.add_child(_stat_card(str(STAT_LABELS[stat_id]), value))
+		stats_grid.add_child(_stat_card(str(STAT_LABELS[stat_id]), float(_read(["stats", stat_id], 0.0))))
 	body.add_child(stats_grid)
 
-	body.add_child(_section_heading("장비", "의상·무기·방어구·장신구가 성장 분야와 절차 외형에 반영됩니다."))
+	body.add_child(_section_heading("장비", "누르면 상점에서 바꿀 수 있어요."))
 	var equipment_grid := GridContainer.new()
 	equipment_grid.columns = 2
-	equipment_grid.add_theme_constant_override("h_separation", 8)
-	equipment_grid.add_theme_constant_override("v_separation", 8)
+	equipment_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
+	equipment_grid.add_theme_constant_override("v_separation", PixelTokens.GAP)
 	var slots := {"outfit": "의상", "weapon": "무기", "armor": "방어구", "accessory": "장신구"}
 	for slot_id in slots:
 		var equipped = _read(["equipment", slot_id], null)
 		var display := "비어 있음" if equipped == null else _item_display_name(str(equipped))
-		equipment_grid.add_child(_button("%s\n%s" % [slots[slot_id], display], _open_sheet.bind("shop"), "secondary", 64.0))
+		var level := _inventory_enhancement_level(str(equipped)) if equipped != null else 0
+		var slot_button := _button("%s%s\n%s" % [slots[slot_id], " Lv.%d" % level if level > 0 else "", display], _open_sheet.bind("shop"), "secondary", 64.0, "slot_%s" % slot_id)
+		slot_button.icon = _icon_texture("slot_" + slot_id)
+		slot_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		slot_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		equipment_grid.add_child(slot_button)
 	body.add_child(equipment_grid)
 
-	body.add_child(_section_heading("관계", "대화·선물·계약·도전 결과가 보너스, 계약 태그와 진로 조건을 엽니다."))
-	var relation_grid := GridContainer.new()
-	relation_grid.columns = 2
-	relation_grid.add_theme_constant_override("h_separation", 8)
-	relation_grid.add_theme_constant_override("v_separation", 8)
+	body.add_child(_section_heading("관계", "선물로 관계를 높일 수 있어요."))
+	var relations := _card("window")
+	var relation_box := VBoxContainer.new()
+	relation_box.add_theme_constant_override("separation", PixelTokens.GAP)
 	for relation_id in RELATION_LABELS:
 		var relation_value := float(_read(["relations", relation_id], 0.0))
-		relation_grid.add_child(_button(
-			"%s · %d / 1000\n선물 고르기" % [str(RELATION_LABELS[relation_id]), int(relation_value)],
-			_open_shop_for_gift.bind(str(relation_id)), "secondary", 64.0
-		))
-	body.add_child(relation_grid)
+		var relation_row := HBoxContainer.new()
+		relation_row.add_theme_constant_override("separation", PixelTokens.GAP)
+		var relation_text := VBoxContainer.new()
+		relation_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		relation_text.add_theme_constant_override("separation", 4)
+		var relation_label := _label("%s · %d" % [RELATION_LABELS[relation_id], int(relation_value)], 16, PixelTokens.INK)
+		relation_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		relation_text.add_child(relation_label)
+		relation_text.add_child(_gauge("reputation", relation_value / 1000.0))
+		relation_row.add_child(relation_text)
+		var gift := _button("선물", _open_shop_for_gift.bind(str(relation_id)), "secondary", 44.0, "gift_%s" % relation_id)
+		gift.theme_type_variation = "PixelButtonCompactSecondary"
+		gift.custom_minimum_size.x = 64.0
+		gift.size_flags_horizontal = Control.SIZE_SHRINK_END
+		relation_row.add_child(gift)
+		relation_box.add_child(relation_row)
+	relations.add_child(relation_box)
+	body.add_child(relations)
 
-	body.add_child(_section_heading("활동 숙련", "10·25·50·100 이후 매 100레벨마다 효율 마일스톤을 획득해요."))
+	body.add_child(_section_heading("활동 숙련", "10·25·50·100 뒤로는 100마다 효율이 올라요."))
 	var mastery: Dictionary = _read(["mastery"], {})
+	var mastery_card := _card("transparent")
+	var mastery_box := VBoxContainer.new()
+	mastery_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
 	if mastery.is_empty():
-		var mastery_empty := _card("transparent")
-		mastery_empty.add_child(_label("활동을 완료하면 숙련 기록이 쌓입니다.", 16, PixelTokens.INK_MUTED))
-		body.add_child(mastery_empty)
-	else:
-		for activity_id in mastery:
-			var mastery_row := _card("raised")
-			var mastery_content := HBoxContainer.new()
-			var mastery_name := _label(_activity_name_by_id(str(activity_id)), 16, PixelTokens.INK)
-			mastery_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			mastery_content.add_child(mastery_name)
-			mastery_content.add_child(_chip("Lv. %d" % int(mastery[activity_id]), PixelTokens.GOLD))
-			mastery_row.add_child(mastery_content)
-			body.add_child(mastery_row)
+		mastery_box.add_child(_label("활동을 마치면 숙련이 쌓여요.", 16, PixelTokens.INK_MUTED))
+	for activity_id in mastery:
+		var mastery_row := HBoxContainer.new()
+		var mastery_name := _label(_activity_name_by_id(str(activity_id)), 16, PixelTokens.INK)
+		mastery_name.autowrap_mode = TextServer.AUTOWRAP_OFF
+		mastery_row.add_child(mastery_name)
+		mastery_row.add_child(_chip("Lv. %d" % int(mastery[activity_id]), PixelTokens.GOLD))
+		mastery_box.add_child(mastery_row)
+	mastery_card.add_child(mastery_box)
+	body.add_child(mastery_card)
 	return page["scroll"]
 
 
@@ -843,7 +962,7 @@ func _build_record_page() -> Control:
 	var event_count := _event_inbox().size()
 	var record_actions := GridContainer.new()
 	record_actions.columns = 2
-	record_actions.add_theme_constant_override("h_separation", 8)
+	record_actions.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	record_actions.add_theme_constant_override("v_separation", 8)
 	record_actions.add_child(_button("월드·라이벌", _open_sheet.bind("world"), "primary", 48.0, "record_world"))
 	record_actions.add_child(_button("이벤트 %d건" % event_count, _open_sheet.bind("event"), "gold" if event_count > 0 else "secondary", 48.0, "record_event"))
@@ -961,7 +1080,9 @@ func _open_sheet(kind: String) -> void:
 	sheet.name = "Sheet"
 	sheet.anchor_left = 0.0
 	sheet.anchor_right = 1.0
-	sheet.anchor_top = 0.17
+	# 화면 높이의 17% 아래에서 시작하되 2px 격자에 맞춘다.
+	sheet.anchor_top = 0.0
+	sheet.offset_top = floorf(_modal_layer.size.y * 0.17 / 2.0) * 2.0
 	sheet.anchor_bottom = 1.0
 	sheet.offset_left = 6.0
 	sheet.offset_right = -6.0
@@ -1007,6 +1128,7 @@ func _open_sheet(kind: String) -> void:
 		"profile": _build_profile_sheet(body)
 		"continue": _build_continue_sheet(body)
 		"reset": _build_reset_sheet(body)
+		"activity_detail": _build_activity_detail_sheet(body)
 		_: _build_menu_sheet(body)
 
 
@@ -1031,6 +1153,7 @@ func _sheet_title(kind: String) -> Array:
 		"profile": return ["새 수련생", "이름과 첫 성장 방향을 정합니다."]
 		"continue": return ["이어하기", "기기에 저장된 최신 수련 기록을 불러옵니다."]
 		"reset": return ["데이터 초기화", "현재 수련 기록을 지우고 처음부터 시작합니다."]
+		"activity_detail": return [_activity_name_by_id(_detail_activity_id), "활동 상세"]
 		_: return ["아카데미 메뉴", "모든 기능 경로로 이동할 수 있습니다."]
 
 
@@ -1045,7 +1168,7 @@ func _build_menu_sheet(body: VBoxContainer) -> void:
 
 	var grid := GridContainer.new()
 	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	grid.add_theme_constant_override("v_separation", 8)
 	grid.add_child(_button("이어하기", _replace_sheet.bind("continue"), "primary", 48.0, "menu_continue"))
 	grid.add_child(_button("새 수련생", _replace_sheet.bind("profile"), "secondary", 48.0, "menu_profile"))
@@ -1145,7 +1268,7 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 	body.add_child(_section_heading("선물 대상", "보유 소비품을 건네 관계를 높일 대상을 선택합니다."))
 	var gift_targets := GridContainer.new()
 	gift_targets.columns = 2
-	gift_targets.add_theme_constant_override("h_separation", 8)
+	gift_targets.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	gift_targets.add_theme_constant_override("v_separation", 8)
 	for relation_id in RELATION_LABELS:
 		gift_targets.add_child(_button(
@@ -1324,7 +1447,7 @@ func _build_profile_sheet(body: VBoxContainer) -> void:
 
 	var preset_grid := GridContainer.new()
 	preset_grid.columns = 2
-	preset_grid.add_theme_constant_override("h_separation", 8)
+	preset_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	preset_grid.add_theme_constant_override("v_separation", 8)
 	for preset in PRESETS:
 		preset_grid.add_child(_button(str(preset["name"]), _create_trainee.bind(str(preset["id"])), "primary" if str(preset["id"]) == _policy_preset() else "secondary", 48.0, "create_%s" % preset["id"]))
@@ -1649,21 +1772,21 @@ func _custom_weight_keys() -> Array[String]:
 
 
 func _sync_custom_weight_sliders() -> void:
-	if _content_host == null:
+	if _content_host == null or not is_inside_tree():
 		return
 	var weights: Dictionary = _read(["growthPolicy", "weights"], {})
-	for raw_node: Node in _content_host.find_children("*", "HSlider", true, false):
-		var slider := raw_node as HSlider
-		var policy_key := str(slider.get_meta("policy_key", ""))
+	for raw_node: Node in get_tree().get_nodes_in_group("policy_stepper"):
+		if not is_ancestor_of(raw_node):
+			continue
+		var policy_key := str(raw_node.get_meta("policy_key", ""))
 		if not policy_key.begins_with("weight:"):
 			continue
 		var displayed_value := float(weights.get(policy_key.trim_prefix("weight:"), 0.0)) * 100.0
-		slider.set_block_signals(true)
-		slider.value = displayed_value
-		slider.set_block_signals(false)
-		var label_value: Variant = slider.get_meta("policy_value_label", null)
+		raw_node.set_meta("policy_value", displayed_value)
+		var label_value: Variant = raw_node.get_meta("policy_value_label", null)
 		if label_value is Label and is_instance_valid(label_value):
 			(label_value as Label).text = "%d%%" % int(round(displayed_value))
+		_update_stepper_buttons(raw_node as Control, displayed_value, 0.0, 100.0)
 
 
 func _apply_policy(policy: Dictionary) -> void:
@@ -2370,30 +2493,61 @@ func _setting_toggle(title: String, description: String, key: String, value: boo
 	return card
 
 
+# 정책 값 스테퍼: 이름, 설명, −/값/+ 버튼. 목록을 세로로 밀다가 값이 바뀌지 않도록 슬라이더 대신 쓴다(설계 D4).
 func _policy_slider(title: String, description: String, key: String, value: float, minimum: float, maximum: float, step: float, formatter: Callable) -> Control:
-	var card := _card("raised")
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 5)
-	var top := HBoxContainer.new()
-	var title_label := _label(title, 17, PixelTokens.INK)
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(title_label)
-	var value_label := _label(str(formatter.call(value)), 17, PixelTokens.ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
-	top.add_child(value_label)
-	box.add_child(top)
-	box.add_child(_label(description, 16, PixelTokens.INK_MUTED))
-	var slider := HSlider.new()
-	slider.set_meta("policy_key", key)
-	slider.set_meta("policy_value_label", value_label)
-	slider.custom_minimum_size.y = 44.0
-	slider.min_value = minimum
-	slider.max_value = maximum
-	slider.step = step
-	slider.value = value
-	slider.value_changed.connect(_on_policy_slider_changed.bind(key, value_label, formatter))
-	box.add_child(slider)
-	card.add_child(box)
-	return card
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	row.set_meta("policy_key", key)
+	row.set_meta("policy_value", value)
+	row.add_to_group("policy_stepper")
+	var text_box := VBoxContainer.new()
+	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	text_box.add_theme_constant_override("separation", 2)
+	var title_label := _label(title, 16, PixelTokens.INK)
+	title_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	text_box.add_child(title_label)
+	if not description.is_empty():
+		var description_label := _label(description, 16, PixelTokens.INK_MUTED)
+		description_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		description_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		text_box.add_child(description_label)
+	row.add_child(text_box)
+	var minus := _button("-", Callable(), "secondary", 44.0, "step_%s_minus" % key)
+	var value_label := _label(str(formatter.call(value)), 16, PixelTokens.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
+	var plus := _button("+", Callable(), "secondary", 44.0, "step_%s_plus" % key)
+	row.set_meta("policy_value_label", value_label)
+	for step_button in [minus, plus]:
+		step_button.theme_type_variation = "PixelButtonCompactSecondary"
+		step_button.custom_minimum_size.x = 44.0
+		step_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	minus.pressed.connect(_step_policy.bind(row, -step, minimum, maximum, formatter))
+	plus.pressed.connect(_step_policy.bind(row, step, minimum, maximum, formatter))
+	value_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	value_label.custom_minimum_size.x = 72.0
+	value_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+	row.add_child(minus)
+	row.add_child(value_label)
+	row.add_child(plus)
+	row.set_meta("policy_buttons", [minus, plus])
+	_update_stepper_buttons(row, value, minimum, maximum)
+	return row
+
+
+func _step_policy(row: Control, delta: float, minimum: float, maximum: float, formatter: Callable) -> void:
+	var key := str(row.get_meta("policy_key", ""))
+	var next_value := clampf(float(row.get_meta("policy_value", 0.0)) + delta, minimum, maximum)
+	next_value = snappedf(next_value, absf(delta))
+	row.set_meta("policy_value", next_value)
+	_on_policy_slider_changed(next_value, key, row.get_meta("policy_value_label") as Label, formatter)
+	_update_stepper_buttons(row, next_value, minimum, maximum)
+
+
+func _update_stepper_buttons(row: Control, value: float, minimum: float, maximum: float) -> void:
+	var buttons: Array = row.get_meta("policy_buttons", [])
+	if buttons.size() == 2:
+		(buttons[0] as Button).disabled = value <= minimum + 0.0001
+		(buttons[1] as Button).disabled = value >= maximum - 0.0001
 
 
 func _stat_card(title: String, value: float) -> Control:
@@ -2515,7 +2669,6 @@ func _label(text_value: String, font_size: int = 16, color: Color = PixelTokens.
 	label.horizontal_alignment = alignment
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.mouse_filter = Control.MOUSE_FILTER_PASS
 	return label
 
 
@@ -2552,6 +2705,19 @@ func _gauge(kind: String, ratio: float) -> ProgressBar:
 	bar.value = clampf(ratio, 0.0, 1.0) * 100.0
 	bar.mouse_filter = Control.MOUSE_FILTER_PASS
 	return bar
+
+
+func _preset_icon(preset_id: String) -> String:
+	return "magic" if preset_id == "scholar" else "preset_" + preset_id
+
+
+func _kind_icon_name(kind: String) -> String:
+	match kind:
+		"job": return "coin"
+		"rest": return "moon"
+		"adventure": return "world"
+		"challenge": return "record"
+		_: return "activity"
 
 
 func _activity_icon_name() -> String:

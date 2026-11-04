@@ -272,9 +272,9 @@ def write_all(out: pathlib.Path) -> list[pathlib.Path]:
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     written.append(manifest_path)
 
-    for name in icon_maps.ICONS:
+    for name in icon_maps.all_icon_names():
         path = out / "icons" / f"{name}.png"
-        icon_maps.icon(name).img.save(path)
+        icon_maps.any_icon(name).img.save(path)
         written.append(path)
     for name, maker in scenes.ENVIRONMENTS.items():
         path = out / "scenes" / f"{name}.png"

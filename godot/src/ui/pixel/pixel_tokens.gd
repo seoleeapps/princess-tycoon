@@ -47,6 +47,8 @@ const HC_ON_PRIMARY := Color("#ffffff")
 
 # 간격(논리 px, 모두 짝수)
 const GAP := 8
+# 2열 격자 간격. 내용 폭 382px을 (382 - 6) / 2 = 188px 두 칸으로 나눠 칸 위치가 짝수가 되게 한다.
+const GRID_GAP := 6
 const GAP_SMALL := 4
 const EDGE := 4
 const TOUCH := 44

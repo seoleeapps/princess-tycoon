@@ -47,9 +47,19 @@ func _check_fonts() -> void:
 		return
 	var theme: Theme = pixel_theme_script.call("build", false)
 	var body_font: Font = theme.default_font
-	_check(body_font != null and body_font.resource_path == FONT_BODY and theme.default_font_size == 16, "PX-01 본문 기본 폰트 Neo둥근모 16px")
-	var title_font: Font = pixel_theme_script.call("title_font")
-	_check(title_font != null and title_font.resource_path == FONT_TITLE, "PX-01 제목 폰트 Galmuri11 Bold")
+	var body_file: Font = pixel_theme_script.call("font_file", body_font)
+	_check(body_file != null and body_file.resource_path == FONT_BODY and theme.default_font_size == 16, "PX-01 본문 기본 폰트 Neo둥근모 16px")
+	var title_file: Font = pixel_theme_script.call("font_file", pixel_theme_script.call("title_font"))
+	_check(title_file != null and title_file.resource_path == FONT_TITLE, "PX-01 제목 폰트 Galmuri11 Bold")
+	var probe := Label.new()
+	probe.theme = theme
+	probe.text = "줄\n높이"
+	root.add_child(probe)
+	var two_lines := probe.get_combined_minimum_size().y
+	probe.text = "줄"
+	var one_line := probe.get_combined_minimum_size().y
+	probe.free()
+	_check(int(one_line) % 2 == 0 and int(two_lines) % 2 == 0, "PX-05 본문 줄 높이가 2px 격자에 맞음", "one=%s two=%s" % [one_line, two_lines])
 	for path in [FONT_BODY, FONT_TITLE]:
 		var import_text := FileAccess.get_file_as_string(path + ".import")
 		_check(import_text.contains("antialiasing=0") and import_text.contains("hinting=0") and import_text.contains("subpixel_positioning=0"),

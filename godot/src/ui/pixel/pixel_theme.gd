@@ -30,6 +30,8 @@ const GAUGES := ["energy", "stress", "reputation", "stat", "magic", "neutral"]
 
 static var _themes := {}
 static var _manifest := {}
+static var _body_variation: FontVariation
+static var _title_variation: FontVariation
 
 
 static func build(high_contrast: bool = false) -> Theme:
@@ -49,6 +51,19 @@ static func build(high_contrast: bool = false) -> Theme:
 		var entry: Array = BUTTON_VARIATIONS[variant]
 		theme.set_type_variation(entry[0], "Button")
 		_button_type(theme, entry[0], entry[1], high_contrast)
+	# 좁은 칸(분류 탭, 스테퍼)에 쓰는 내용 여백이 작은 버튼
+	for kind: String in ["secondary", "gold", "primary"]:
+		var compact_name := "PixelButtonCompact" + kind.capitalize()
+		theme.set_type_variation(compact_name, "Button")
+		_button_type(theme, compact_name, kind, high_contrast, true)
+	# 목록 행 전체를 누르는 투명 버튼(눌림·포커스만 표시)
+	theme.set_type_variation("PixelRowButton", "Button")
+	var row_empty := StyleBoxEmpty.new()
+	for state in ["normal", "hover", "disabled"]:
+		theme.set_stylebox(state, "PixelRowButton", row_empty)
+	theme.set_stylebox("pressed", "PixelRowButton", skin("inset", high_contrast))
+	theme.set_stylebox("hover_pressed", "PixelRowButton", skin("inset", high_contrast))
+	theme.set_stylebox("focus", "PixelRowButton", skin("focus", high_contrast))
 	theme.set_type_variation("PixelTab", "Button")
 	_tab_type(theme, "PixelTab", "tab_normal", PixelTokens.HC_ON_STRIP if high_contrast else PixelTokens.ON_STRIP, high_contrast)
 	theme.set_type_variation("PixelTabSelected", "Button")
@@ -98,16 +113,29 @@ static func build(high_contrast: bool = false) -> Theme:
 	return theme
 
 
+# 본문 폰트. 글자 높이 16px에 폰트 자체 줄 간격 3px이 더해져 한 줄이 19px이 되므로,
+# 아래 여백 1px을 더해 줄 높이를 20px(짝수)로 맞춘다. 창과 게이지가 2px 도트 격자에 놓이게 하기 위함이다.
 static func body_font() -> Font:
-	var font := load(BODY_FONT) as FontFile
-	# Neo둥근모에 없는 기호(↑, →, ★ 등)는 Galmuri로 대신 그린다.
-	if font != null and font.fallbacks.is_empty():
-		font.fallbacks = [title_font()]
-	return font
+	if _body_variation == null:
+		var file := load(BODY_FONT) as FontFile
+		# Neo둥근모에 없는 기호(↑, →, ★ 등)는 Galmuri로 대신 그린다.
+		file.fallbacks = [load(TITLE_FONT) as Font]
+		_body_variation = FontVariation.new()
+		_body_variation.base_font = file
+		_body_variation.spacing_bottom = 1
+		_body_variation.fallbacks = file.fallbacks
+	return _body_variation
 
 
 static func title_font() -> Font:
-	return load(TITLE_FONT) as Font
+	if _title_variation == null:
+		_title_variation = FontVariation.new()
+		_title_variation.base_font = load(TITLE_FONT) as Font
+	return _title_variation
+
+
+static func font_file(variation: Font) -> Font:
+	return (variation as FontVariation).base_font if variation is FontVariation else variation
 
 
 static func skin(name: String, high_contrast: bool = false) -> StyleBoxTexture:
@@ -153,19 +181,27 @@ static func _skins() -> Dictionary:
 	return _manifest
 
 
-static func _button_type(theme: Theme, type_name: String, kind: String, high_contrast: bool) -> void:
-	var normal := skin("button_%s_normal" % kind, high_contrast)
+static func _button_type(theme: Theme, type_name: String, kind: String, high_contrast: bool, compact: bool = false) -> void:
+	var normal := _compact(skin("button_%s_normal" % kind, high_contrast), compact)
+	var pressed := _compact(skin("button_%s_pressed" % kind, high_contrast), compact)
 	theme.set_stylebox("normal", type_name, normal)
 	theme.set_stylebox("hover", type_name, normal)
-	theme.set_stylebox("pressed", type_name, skin("button_%s_pressed" % kind, high_contrast))
-	theme.set_stylebox("hover_pressed", type_name, skin("button_%s_pressed" % kind, high_contrast))
-	theme.set_stylebox("disabled", type_name, skin("button_%s_disabled" % kind, high_contrast))
+	theme.set_stylebox("pressed", type_name, pressed)
+	theme.set_stylebox("hover_pressed", type_name, pressed)
+	theme.set_stylebox("disabled", type_name, _compact(skin("button_%s_disabled" % kind, high_contrast), compact))
 	theme.set_stylebox("focus", type_name, skin("focus", high_contrast))
 	var text := _button_text(kind, high_contrast)
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
 		theme.set_color(state, type_name, text)
 	theme.set_color("font_disabled_color", type_name, PixelTokens.HC_INK if high_contrast else PixelTokens.ON_DISABLED)
 	theme.set_constant("h_separation", type_name, 8)
+
+
+static func _compact(style: StyleBoxTexture, compact: bool) -> StyleBoxTexture:
+	if compact and style != null:
+		style.content_margin_left = 6.0
+		style.content_margin_right = 6.0
+	return style
 
 
 static func _tab_type(theme: Theme, type_name: String, skin_name: String, text: Color, high_contrast: bool) -> void:

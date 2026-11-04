@@ -459,7 +459,7 @@ func _test_ui_accessibility_and_first_surface(content_db: ContentDB) -> void:
 	var chip_contrast: float = _contrast_ratio(PixelTokens.INK, PixelTokens.CHIP)
 	var primary_button_contrast: float = _contrast_ratio(PixelTokens.ON_PRIMARY, PixelTokens.PRIMARY)
 	_check(
-		royal_theme.default_font == bundled_font
+		PixelTheme.font_file(royal_theme.default_font) == bundled_font
 		and royal_theme.default_font_size >= 16
 		and body_label.get_theme_font_size("font_size") >= 16,
 		"AC-UI-04 번들 폰트 적용 및 본문 16px 최소"
