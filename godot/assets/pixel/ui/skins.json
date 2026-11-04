@@ -1,0 +1,798 @@
+{
+  "scale": 2,
+  "skins": {
+    "window": {
+      "file": "window.png",
+      "size": [
+        24,
+        24
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        10
+      ],
+      "minSize": [
+        24,
+        24
+      ],
+      "tile": false
+    },
+    "window_gold": {
+      "file": "window_gold.png",
+      "size": [
+        24,
+        24
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        10
+      ],
+      "minSize": [
+        24,
+        24
+      ],
+      "tile": false
+    },
+    "window_accent": {
+      "file": "window_accent.png",
+      "size": [
+        24,
+        24
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        10
+      ],
+      "minSize": [
+        24,
+        24
+      ],
+      "tile": false
+    },
+    "window_selected": {
+      "file": "window_selected.png",
+      "size": [
+        24,
+        24
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        10
+      ],
+      "minSize": [
+        24,
+        24
+      ],
+      "tile": false
+    },
+    "inset": {
+      "file": "inset.png",
+      "size": [
+        16,
+        16
+      ],
+      "margin": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "content": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "minSize": [
+        16,
+        16
+      ],
+      "tile": false
+    },
+    "strip": {
+      "file": "strip.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        12,
+        6,
+        12,
+        6
+      ],
+      "minSize": [
+        24,
+        28
+      ],
+      "tile": false
+    },
+    "sheet": {
+      "file": "sheet.png",
+      "size": [
+        32,
+        32
+      ],
+      "margin": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "content": [
+        16,
+        14,
+        16,
+        14
+      ],
+      "minSize": [
+        32,
+        32
+      ],
+      "tile": false
+    },
+    "toast": {
+      "file": "toast.png",
+      "size": [
+        24,
+        24
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        14,
+        10,
+        14,
+        10
+      ],
+      "minSize": [
+        24,
+        24
+      ],
+      "tile": false
+    },
+    "chip": {
+      "file": "chip.png",
+      "size": [
+        16,
+        16
+      ],
+      "margin": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "content": [
+        8,
+        2,
+        8,
+        2
+      ],
+      "minSize": [
+        16,
+        16
+      ],
+      "tile": false
+    },
+    "gauge_bg": {
+      "file": "gauge_bg.png",
+      "size": [
+        12,
+        12
+      ],
+      "margin": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        12,
+        12
+      ],
+      "tile": false
+    },
+    "focus": {
+      "file": "focus.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        24,
+        28
+      ],
+      "tile": false
+    },
+    "tab_normal": {
+      "file": "tab_normal.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        4,
+        6,
+        4,
+        6
+      ],
+      "minSize": [
+        24,
+        28
+      ],
+      "tile": false
+    },
+    "tab_selected": {
+      "file": "tab_selected.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        4,
+        6,
+        4,
+        6
+      ],
+      "minSize": [
+        24,
+        28
+      ],
+      "tile": false
+    },
+    "scroll_grabber": {
+      "file": "scroll_grabber.png",
+      "size": [
+        8,
+        16
+      ],
+      "margin": [
+        2,
+        4,
+        2,
+        4
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        8,
+        16
+      ],
+      "tile": false
+    },
+    "scroll_bg": {
+      "file": "scroll_bg.png",
+      "size": [
+        8,
+        16
+      ],
+      "margin": [
+        2,
+        4,
+        2,
+        4
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        8,
+        16
+      ],
+      "tile": false
+    },
+    "button_primary_normal": {
+      "file": "button_primary_normal.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_primary_pressed": {
+      "file": "button_primary_pressed.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        8
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_primary_disabled": {
+      "file": "button_primary_disabled.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_gold_normal": {
+      "file": "button_gold_normal.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_gold_pressed": {
+      "file": "button_gold_pressed.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        8
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_gold_disabled": {
+      "file": "button_gold_disabled.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_secondary_normal": {
+      "file": "button_secondary_normal.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_secondary_pressed": {
+      "file": "button_secondary_pressed.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        8
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_secondary_disabled": {
+      "file": "button_secondary_disabled.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_danger_normal": {
+      "file": "button_danger_normal.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_danger_pressed": {
+      "file": "button_danger_pressed.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        8
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "button_danger_disabled": {
+      "file": "button_danger_disabled.png",
+      "size": [
+        24,
+        28
+      ],
+      "margin": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "minSize": [
+        44,
+        44
+      ],
+      "tile": false
+    },
+    "gauge_fill_energy": {
+      "file": "gauge_fill_energy.png",
+      "size": [
+        8,
+        12
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        8,
+        12
+      ],
+      "tile": true
+    },
+    "gauge_fill_stress": {
+      "file": "gauge_fill_stress.png",
+      "size": [
+        8,
+        12
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        8,
+        12
+      ],
+      "tile": true
+    },
+    "gauge_fill_reputation": {
+      "file": "gauge_fill_reputation.png",
+      "size": [
+        8,
+        12
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        8,
+        12
+      ],
+      "tile": true
+    },
+    "gauge_fill_stat": {
+      "file": "gauge_fill_stat.png",
+      "size": [
+        8,
+        12
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        8,
+        12
+      ],
+      "tile": true
+    },
+    "gauge_fill_magic": {
+      "file": "gauge_fill_magic.png",
+      "size": [
+        8,
+        12
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        8,
+        12
+      ],
+      "tile": true
+    },
+    "gauge_fill_neutral": {
+      "file": "gauge_fill_neutral.png",
+      "size": [
+        8,
+        12
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "content": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "minSize": [
+        8,
+        12
+      ],
+      "tile": true
+    }
+  },
+  "highContrastSuffix": "_hc"
+}
