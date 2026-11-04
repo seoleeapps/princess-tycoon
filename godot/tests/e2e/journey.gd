@@ -107,6 +107,13 @@ func _first_session(main: Control) -> void:
 		await e2e.frames(4)
 		e2e.step("list scrolls when the drag starts on a card button", scroll.scroll_vertical > 0, "scroll=%d" % scroll.scroll_vertical)
 		e2e.step("drag does not run an activity", int(_read(main, ["time", "slot"], 0)) == slot_before and str(_read(main, ["bigValues", "gold"], {})) == gold_before)
+		# 자동 진행이 다음 슬롯을 처리하며 목록을 다시 그려도 스크롤 위치가 유지돼야 한다.
+		var kept_scroll := scroll.scroll_vertical
+		var slot_auto := int(_read(main, ["time", "slot"], 0))
+		e2e.step("auto run advances a slot", await e2e.wait_for(func() -> bool: return int(_read(main, ["time", "slot"], 0)) > slot_auto, 420))
+		await e2e.frames(3)
+		var scroll_after := _page_scroll(main)
+		e2e.step("list keeps scroll after auto refresh", scroll_after != null and absi(scroll_after.scroll_vertical - kept_scroll) <= 2, "before=%d after=%d" % [kept_scroll, scroll_after.scroll_vertical if scroll_after != null else -1])
 	await e2e.shot("09-activity-scrolled")
 	var run_id := _first_enabled_id(main, "activity_run_")
 	for attempt in 3:
@@ -241,10 +248,26 @@ func _close_sheet(main: Control) -> void:
 
 func _tap_id(main: Control, ui_id: String, label: String) -> bool:
 	var control := _find_id(main, ui_id)
+	if control != null:
+		await _dismiss_covering_feedback(main, control)
 	var ok := control != null and await e2e.tap(control)
 	e2e.step(label, ok, "" if ok else "ui_id=%s not tappable" % ui_id)
 	await e2e.frames(3)
 	return ok
+
+
+# 결과 창이 누를 버튼을 가리면 사람처럼 창을 눌러 닫는다(결과 창은 탭을 받아 아래로 전달하지 않는다).
+func _dismiss_covering_feedback(main: Control, control: Control) -> void:
+	var layer := _result_layer(main)
+	if layer == null or not layer.call("has_active_feedback"):
+		return
+	var panel := layer.get("_active_panel") as Control
+	if panel == null or panel.mouse_filter != Control.MOUSE_FILTER_STOP:
+		return
+	await e2e.scroll_into_view(control)
+	if panel.get_global_rect().intersects(control.get_global_rect()):
+		e2e.step("dismiss result card covering target", await e2e.tap(panel))
+		await e2e.frames(2)
 
 
 func _find_id(root: Node, ui_id: String) -> Control:

@@ -52,7 +52,8 @@ func _run() -> void:
 		await process_frame
 	if _capture_result_feedback:
 		main.call("_complete_current_activity")
-	for _frame: int in range(4):
+	# 결과 창은 2px 단위로 올라오고 능력치 칩이 하나씩 켜지므로 다 나타난 뒤(약 0.6초) 찍는다.
+	for _frame: int in range(40 if _capture_result_feedback else 4):
 		await process_frame
 	await RenderingServer.frame_post_draw
 	var texture := device_viewport.get_texture()

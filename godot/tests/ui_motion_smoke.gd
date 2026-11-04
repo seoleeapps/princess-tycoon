@@ -32,6 +32,10 @@ func _run() -> void:
 			if (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
 				toast_blocks += 1
 	_check(toast_panel != null and toast_blocks == 0, "토스트와 글자가 입력을 가로채지 않음")
+	# 이유·잠금 문구는 내부 점수나 슬롯 용어 없이 보여 준다.
+	_check(str(main.call("_reason_label_text", "성장 방향 +1.450")) == "성장 방향" and str(main.call("_reason_label_text", "위험 부담 -0.039")) == "위험 부담", "다음 선택 이유에서 내부 점수 제거")
+	_check(str(main.call("_friendly_rejection", "예정 도전 우선: 4번 슬롯", "")) == "시즌 4일째 시험과 겹쳐요" and str(main.call("_friendly_rejection", "잠금 조건 미충족", "지력 40 필요")) == "지력 40 필요" and str(main.call("_friendly_rejection", "잠금 조건 미충족", "")) == "조건을 채우면 열려요", "잠금 이유를 플레이어 문구로 변환")
+	_check(str(main.call("_josa", "응용 마력학", "을", "를")) == "응용 마력학을" and str(main.call("_josa", "달빛 잎차", "을", "를")) == "달빛 잎차를", "받침에 맞는 조사 선택")
 	var layer: Variant = main.get("_result_feedback_layer")
 	_check(layer != null and layer.has_method("present"), "결과 피드백 단일 레이어 연결")
 	var activity_progress: Variant = main.get("_activity_progress")
@@ -191,6 +195,12 @@ func _run() -> void:
 	layer.call("present", challenge_payload, true)
 	await process_frame
 	_check(layer.call("active_motion_mode") == "static", "reducedMotion 신규 결과는 정적 카드 대체")
+	var full_panel: Control = layer.get("_active_panel") as Control
+	_check(full_panel != null and full_panel.mouse_filter == Control.MOUSE_FILTER_STOP, "결과 창은 탭을 받아 아래 버튼으로 새지 않음")
+	layer.call("present", challenge_payload, false, true)
+	await process_frame
+	var banner: Control = layer.get("_active_panel") as Control
+	_check(layer.call("active_motion_mode") == "compact" and banner != null and banner.mouse_filter == Control.MOUSE_FILTER_IGNORE and banner.anchor_top == 1.0 and banner.get_rect().size.y <= 60.0, "자동 진행 결과는 하단 한 줄 띠로 장면을 가리지 않음")
 
 	var trainee_script := load("res://src/ui/pixel/pixel_trainee_view.gd")
 	var trainee: Control = trainee_script.new()
