@@ -36,6 +36,15 @@ func _run() -> void:
 	_check(str(main.call("_reason_label_text", "성장 방향 +1.450")) == "성장 방향" and str(main.call("_reason_label_text", "위험 부담 -0.039")) == "위험 부담", "다음 선택 이유에서 내부 점수 제거")
 	_check(str(main.call("_friendly_rejection", "예정 도전 우선: 4번 슬롯", "")) == "시즌 4일째 시험과 겹쳐요" and str(main.call("_friendly_rejection", "잠금 조건 미충족", "지력 40 필요")) == "지력 40 필요" and str(main.call("_friendly_rejection", "잠금 조건 미충족", "")) == "조건을 채우면 열려요", "잠금 이유를 플레이어 문구로 변환")
 	_check(str(main.call("_josa", "응용 마력학", "을", "를")) == "응용 마력학을" and str(main.call("_josa", "달빛 잎차", "을", "를")) == "달빛 잎차를", "받침에 맞는 조사 선택")
+	var lock_state: Dictionary = main.get("_state") as Dictionary
+	var saved_task: Variant = lock_state.get("activeTask")
+	lock_state["activeTask"] = {"activityId": "CH_EXAM_ACADEMY", "remainingSlots": 1}
+	_check(str(main.call("_activity_lock_reason", "CH_EXAM_ACADEMY")) == "지금 진행 중이에요", "진행 중인 시험은 다시 참가할 수 없음")
+	lock_state["activeTask"] = saved_task
+	var avatar_now: Variant = main.get("_home_avatar")
+	for frame_index in 30:
+		await process_frame
+	_check(avatar_now != null and float(avatar_now.get("progress")) > 0.0, "홈 말풍선 진행 게이지가 자동 진행을 따라감")
 	var layer: Variant = main.get("_result_feedback_layer")
 	_check(layer != null and layer.has_method("present"), "결과 피드백 단일 레이어 연결")
 	var activity_progress: Variant = main.get("_activity_progress")

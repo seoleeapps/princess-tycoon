@@ -84,6 +84,12 @@ func _first_session(main: Control) -> void:
 		await _tap_id(main, world_id, "start world action")
 		e2e.step("world action advanced time", int(_read(main, ["time", "slot"], 0)) > slot_world)
 		await e2e.shot("06-world-result")
+		# 시트 위에 뜬 결과 창을 누르면 창만 닫히고 시트는 그대로여야 한다(아래 시트 버튼이 눌리지 않음).
+		var card := _result_layer(main).get("_active_panel") as Control
+		if e2e.step("result card shown over world sheet", card != null and bool(_result_layer(main).call("has_active_feedback")) and card.mouse_filter == Control.MOUSE_FILTER_STOP):
+			e2e.step("tap result card over sheet", await e2e.tap(card))
+			await e2e.frames(3)
+			e2e.step("card closes and world sheet stays", not bool(_result_layer(main).call("has_active_feedback")) and _find_screen(main, "world") != null)
 	await _close_sheet(main)
 
 	await _tap_id(main, "tab_plan", "open plan tab")
@@ -154,6 +160,10 @@ func _first_session(main: Control) -> void:
 	var tea_before := _inventory_count(main, "ITEM_TEA")
 	await _tap_id(main, "buy_ITEM_TEA", "buy a consumable")
 	e2e.expect_equal("consumable added", _inventory_count(main, "ITEM_TEA"), tea_before + 1)
+	# 구매 뒤 시트를 다시 그려도 목록 위치가 유지돼야 한다.
+	await e2e.frames(3)
+	var shop_scroll := _sheet_scroll(main, "shop")
+	e2e.step("shop keeps scroll after purchase", shop_scroll != null and shop_scroll.scroll_vertical > 0, "scroll=%d" % (shop_scroll.scroll_vertical if shop_scroll != null else -1))
 	await _close_sheet(main)
 
 	await _open_from_menu(main, "menu_settings", "settings")
@@ -242,6 +252,7 @@ func _close_sheet(main: Control) -> void:
 	var close := _find_id(main, "sheet_close")
 	if close == null:
 		return
+	await _dismiss_covering_feedback(main, close)
 	e2e.step("close sheet", await e2e.tap(close))
 	await e2e.frames(3)
 
@@ -329,6 +340,15 @@ func _find_label(main: Node, text_value: String) -> Node:
 func _page_scroll(main: Node) -> ScrollContainer:
 	var host = main.get("_content_host")
 	return _search(host, func(node: Node) -> bool: return node is ScrollContainer) as ScrollContainer
+
+
+func _sheet_scroll(main: Node, screen_id: String) -> ScrollContainer:
+	var sheet := _find_screen(main, screen_id)
+	if sheet == null:
+		return null
+	for found in sheet.find_children("*", "ScrollContainer", true, false):
+		return found as ScrollContainer
+	return null
 
 
 func _first_button_point(scroll: ScrollContainer) -> Vector2:

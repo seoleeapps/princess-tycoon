@@ -91,6 +91,7 @@ var _trainee_name_edit: LineEdit
 var _home_avatar: Control
 var _detail_activity_id := ""
 var _rendered_tab := ""
+var _page_dirty := false
 var _status_panel: PanelContainer
 var _status_slot: MarginContainer
 var _header_name_label: Label
@@ -140,6 +141,9 @@ func _notification(what: int) -> void:
 
 
 func _process(delta: float) -> void:
+	if _page_dirty and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_page_dirty = false
+		_render_current_page()
 	if not _auto_running or int(_state.get("pendingOfflineSlots", 0)) > 0:
 		return
 	var seconds_per_slot := _config_float("onlineSecondsPerSlot", 5.0)
@@ -147,6 +151,8 @@ func _process(delta: float) -> void:
 	_activity_elapsed += delta
 	if _activity_progress != null:
 		_activity_progress.value = clampf(_activity_elapsed / seconds_per_slot * 100.0, 0.0, 100.0)
+	if _home_avatar != null and is_instance_valid(_home_avatar):
+		_home_avatar.call("set_progress", _activity_elapsed / seconds_per_slot)
 	if _activity_elapsed >= seconds_per_slot:
 		_activity_elapsed = fmod(_activity_elapsed, seconds_per_slot)
 		_advance_slots(1, false)
@@ -443,8 +449,7 @@ func _render_current_page() -> void:
 		_status_panel.reparent(_status_slot, false)
 	if _status_slot != null:
 		_status_slot.visible = _current_tab != "home"
-	for child in _content_host.get_children():
-		child.queue_free()
+	var old_pages: Array = _content_host.get_children()
 	var page: Control
 	match _current_tab:
 		"plan": page = _build_plan_page()
@@ -459,14 +464,11 @@ func _render_current_page() -> void:
 	_content_host.add_child(page)
 	_rendered_tab = _current_tab
 	if previous_scroll > 0 and page is ScrollContainer:
-		_restore_scroll(page as ScrollContainer, previous_scroll)
-
-
-func _restore_scroll(scroll: ScrollContainer, value: int) -> void:
-	# 새 페이지의 스크롤 범위는 다음 프레임 배치 뒤에 정해진다.
-	await get_tree().process_frame
-	if is_instance_valid(scroll):
-		scroll.scroll_vertical = value
+		page.modulate.a = 0.0
+		_swap_in_after_layout(page, page as ScrollContainer, previous_scroll, old_pages)
+	else:
+		for old in old_pages:
+			(old as Node).queue_free()
 
 
 func _page_scroll() -> Dictionary:
@@ -1036,20 +1038,37 @@ func _build_record_page() -> Control:
 		title_empty.add_child(_label("첫 시즌 심사에서 가까운 진로 세 개가 제안됩니다.", 16, PixelTokens.INK_MUTED))
 		body.add_child(title_empty)
 	else:
+		# 칭호 격자: 이름과 별(5개까지), 5성을 넘으면 명인 단계 글자
+		var title_grid := GridContainer.new()
+		title_grid.columns = 2
+		title_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
+		title_grid.add_theme_constant_override("v_separation", PixelTokens.GAP)
 		for title_id in titles:
 			var title_data = titles[title_id]
-			var title_name := _career_display_name(str(title_id), title_data)
 			var stars := int(title_data.get("stars", 1)) if typeof(title_data) == TYPE_DICTIONARY else int(title_data)
 			var title_card := _card("gold")
-			var title_row := HBoxContainer.new()
-			title_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
-			title_row.add_child(_icon("record"))
-			var title_label := _label(title_name, 16, PixelTokens.INK)
-			title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			title_row.add_child(title_label)
-			title_row.add_child(_chip(_career_rank(stars), PixelTokens.GOLD))
-			title_card.add_child(title_row)
-			body.add_child(title_card)
+			var title_box := VBoxContainer.new()
+			title_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+			var name_row := HBoxContainer.new()
+			name_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+			name_row.add_child(_icon("record"))
+			var title_label := _label(_career_display_name(str(title_id), title_data), 16, PixelTokens.INK)
+			title_label.max_lines_visible = 2
+			name_row.add_child(title_label)
+			title_box.add_child(name_row)
+			var star_row := HBoxContainer.new()
+			star_row.add_theme_constant_override("separation", 2)
+			for star_index in mini(5, maxi(1, stars)):
+				star_row.add_child(_icon("reputation"))
+			if stars > 5:
+				var master := _label("명인 +%d" % (stars - 5), 16, PixelTokens.ACCENT)
+				master.autowrap_mode = TextServer.AUTOWRAP_OFF
+				star_row.add_child(master)
+			star_row.tooltip_text = _career_rank(stars)
+			title_box.add_child(star_row)
+			title_card.add_child(title_box)
+			title_grid.add_child(title_card)
+		body.add_child(title_grid)
 
 	if not season_history.is_empty() and typeof(season_history.back()) == TYPE_DICTIONARY:
 		var near_titles: Array = (season_history.back() as Dictionary).get("nearTitles", []) as Array
@@ -1085,7 +1104,19 @@ func _build_record_page() -> Control:
 
 
 func _open_sheet(kind: String) -> void:
-	_close_sheet()
+	# 같은 시트를 다시 그리면(구매·장착·도전 뒤) 스크롤 위치를 지킨다.
+	var keep: Node = null
+	var keep_scroll := 0
+	if _modal_layer != null:
+		for child in _modal_layer.get_children():
+			if not child.is_queued_for_deletion() and str(child.get_meta("screen_id", "")) == kind:
+				for found in child.find_children("*", "ScrollContainer", true, false):
+					keep_scroll = (found as ScrollContainer).scroll_vertical
+					break
+				if keep_scroll > 0:
+					keep = child
+	_close_sheet(keep)
+	_refresh_chrome()
 	_track_event(&"screen_view", {"screen": kind})
 	var overlay := ColorRect.new()
 	overlay.name = "Screen_%s" % kind.capitalize()
@@ -1094,6 +1125,7 @@ func _open_sheet(kind: String) -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_modal_layer.add_child(overlay)
+	_raise_feedback_layer()
 
 	var sheet := PanelContainer.new()
 	sheet.name = "Sheet"
@@ -1150,14 +1182,35 @@ func _open_sheet(kind: String) -> void:
 		"activity_detail": _build_activity_detail_sheet(body)
 		_: _build_menu_sheet(body)
 	_ink_headings(body)
+	if keep != null:
+		overlay.modulate.a = 0.0
+		_swap_in_after_layout(overlay, scroll, keep_scroll, [keep])
 
 
-func _close_sheet() -> void:
+func _close_sheet(keep: Node = null) -> void:
 	if _modal_layer == null:
 		return
 	for child in _modal_layer.get_children():
-		if child != _toast_panel and child != _result_feedback_layer:
+		if child != _toast_panel and child != _result_feedback_layer and child != keep:
 			child.queue_free()
+
+
+# 결과 창은 시트보다 위에 그려지므로 입력도 시트보다 먼저 받도록 모달 층의 마지막 자식으로 둔다.
+func _raise_feedback_layer() -> void:
+	if _modal_layer != null and _result_feedback_layer != null and _result_feedback_layer.get_parent() == _modal_layer:
+		_modal_layer.move_child(_result_feedback_layer, _modal_layer.get_child_count() - 1)
+
+
+# 새 페이지·시트를 배치가 끝날 때까지 숨겼다가 같은 스크롤 위치로 보여 주고 옛 것을 지운다(한 프레임 맨 위 깜빡임 방지).
+func _swap_in_after_layout(shown: CanvasItem, scroll: ScrollContainer, value: int, old_nodes: Array) -> void:
+	await get_tree().process_frame
+	if is_instance_valid(scroll):
+		scroll.scroll_vertical = value
+	if is_instance_valid(shown):
+		shown.modulate.a = 1.0
+	for old in old_nodes:
+		if is_instance_valid(old):
+			(old as Node).queue_free()
 
 
 func _sheet_title(kind: String) -> Array:
@@ -1583,7 +1636,11 @@ func _advance_slots(count: int, show_feedback: bool = true) -> void:
 			_simulate_fallback_slot()
 	_activity_elapsed = 0.0
 	_refresh_chrome()
-	_render_current_page()
+	# 손가락으로 목록을 끄는 중이면 자동 진행의 화면 갱신을 손을 뗄 때까지 미룬다.
+	if not show_feedback and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_page_dirty = true
+	else:
+		_render_current_page()
 	_present_result_feedback(result, feedback_checkpoint, not show_feedback)
 	_track_event(&"slots_advanced", {"count": maxi(0, count), "manual": show_feedback})
 	if show_feedback:
@@ -1666,7 +1723,7 @@ func _run_activity(activity_id: String) -> void:
 		_present_result_feedback(result, feedback_checkpoint)
 		_show_toast("%s 1회를 해결했습니다." % _activity_name_by_id(activity_id))
 	else:
-		_show_toast(str((result as Dictionary).get("error", "활동을 실행하지 못했습니다.")) if result is Dictionary else "활동을 실행하지 못했습니다.")
+		_show_toast(_friendly_rejection(str((result as Dictionary).get("error", "활동을 실행하지 못했어요.")), _activity_requirement_reason(activity_id)) if result is Dictionary else "활동을 실행하지 못했어요.")
 
 
 func _queue_activity(activity_id: String) -> void:
@@ -2187,6 +2244,7 @@ func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary, au
 	if payload.is_empty():
 		return
 	var routine := automatic and str(payload.get("kind", "")) == "activity" and _result_specialized_summary_lines(activity_result).is_empty()
+	_raise_feedback_layer()
 	_result_feedback_layer.call("present", payload, bool(_read(["settings", "reducedMotion"], false)), routine)
 
 
@@ -2257,7 +2315,8 @@ func _build_challenge_feedback_payload(activity_result: Dictionary) -> Dictionar
 		details.append("판정 · %s" % " · ".join(rank_parts))
 	var hint := str(outcome.get("hint", "")).strip_edges()
 	if not hint.is_empty():
-		details.append("다음 준비 · %s" % hint)
+		# 실패했을 때 가장 쓸모 있는 조언이 결과 창의 첫 줄(2줄 허용)에 오게 한다.
+		details.insert(0, "다음 준비 · %s" % hint)
 	var growth_line := _feedback_growth_line(activity_result.get("gains", {}) as Dictionary)
 	if not growth_line.is_empty():
 		details.append(growth_line)
@@ -2598,12 +2657,17 @@ func _policy_slider(title: String, description: String, key: String, value: floa
 	if not description.is_empty():
 		text_box.add_child(_label(description, 16, PixelTokens.INK_MUTED))
 	row.add_child(text_box)
-	var minus := _button("-", Callable(), "secondary", 44.0, "step_%s_minus" % key)
+	var minus := _button("", Callable(), "secondary", 44.0, "step_%s_minus" % key)
+	minus.icon = _icon_texture("minus")
+	minus.tooltip_text = "%s 줄이기" % title
 	var value_label := _label(str(formatter.call(value)), 16, PixelTokens.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
-	var plus := _button("+", Callable(), "secondary", 44.0, "step_%s_plus" % key)
+	var plus := _button("", Callable(), "secondary", 44.0, "step_%s_plus" % key)
+	plus.icon = _icon_texture("plus")
+	plus.tooltip_text = "%s 늘리기" % title
 	row.set_meta("policy_value_label", value_label)
 	for step_button in [minus, plus]:
 		step_button.theme_type_variation = "PixelButtonCompactSecondary"
+		step_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		step_button.custom_minimum_size.x = 44.0
 		step_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	minus.pressed.connect(_step_policy.bind(row, -step, minimum, maximum, formatter))
@@ -2870,6 +2934,9 @@ func _activity_by_id(activity_id: String) -> Dictionary:
 
 
 func _activity_lock_reason(activity_id: String) -> String:
+	var active_id := str(_read(["activeTask", "activityId"], ""))
+	if active_id == activity_id and _activity_kind(_activity_by_id(activity_id)) == "challenge":
+		return "지금 진행 중이에요"
 	var requirement := _activity_requirement_reason(activity_id)
 	var decision = _read(["lastPlannerDecision"], {})
 	if typeof(decision) == TYPE_DICTIONARY:

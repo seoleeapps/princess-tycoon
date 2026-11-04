@@ -96,8 +96,10 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	panel.anchor_right = 0.95
 	panel.anchor_top = 0.14
 	panel.anchor_bottom = 0.14
-	panel.offset_bottom = 218.0
+	# 높이는 내용만큼(최대 약 220px). 짧은 결과는 수련생을 덜 가린다.
+	panel.offset_bottom = 0.0
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_END
 	# 결과 창 위를 누르면 창만 닫힌다. 아래의 보이지 않는 버튼이 눌리지 않게 입력을 받는다.
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.gui_input.connect(_on_panel_input)
@@ -127,11 +129,10 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	badge_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	badge.add_child(badge_label)
 	heading.add_child(badge)
+	# 제목은 아이콘·배지 아래 한 줄을 통째로 써서 잘리지 않게 한다.
 	var headline := _label(str(payload.get("headline", "활동 완료")), 24, PixelTokens.INK)
-	headline.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	headline.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	headline.autowrap_mode = TextServer.AUTOWRAP_OFF
-	heading.add_child(headline)
+	headline.max_lines_visible = 2
+	content.add_child(headline)
 
 	var floating_stat_count := 0
 	var stat_row := HBoxContainer.new()
