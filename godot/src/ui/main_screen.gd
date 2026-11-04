@@ -117,7 +117,7 @@ func _notification(what: int) -> void:
 		_persist_silently()
 	elif what == NOTIFICATION_APPLICATION_RESUMED:
 		_sync_engine_state()
-		var resume_now := int(Time.get_unix_time_from_system())
+		var resume_now := _now_unix()
 		var last_boundary := int(_state.get("lastSimulatedAt", 0))
 		# Paused growth still needs a zero-slot settlement for event expiry, and
 		# clock rollback must preserve a future boundary before online ticks resume.
@@ -172,9 +172,9 @@ func _initialize_engine() -> void:
 	if _engine.has_method("get_state"):
 		_sync_engine_state()
 	elif typeof(initialized) == TYPE_DICTIONARY:
-		_state = _deep_merge(_fallback_state(), initialized)
+		_state = _deep_merge(_engine_state_shape(), initialized)
 	var last_seen := int(_state.get("lastSimulatedAt", 0))
-	var now := int(Time.get_unix_time_from_system())
+	var now := _now_unix()
 	if last_seen <= 0 and _engine.has_method("advance_slots"):
 		_stamp_engine_time_boundary(now)
 		_persist_silently()
@@ -189,11 +189,22 @@ func _sync_engine_state() -> void:
 		return
 	var snapshot = _engine.call("get_state")
 	if typeof(snapshot) == TYPE_DICTIONARY:
-		_state = _deep_merge(_fallback_state(), snapshot)
+		_state = _deep_merge(_engine_state_shape(), snapshot)
 	elif typeof(snapshot) == TYPE_OBJECT and snapshot != null and snapshot.has_method("to_dict"):
 		var converted = snapshot.call("to_dict")
 		if typeof(converted) == TYPE_DICTIONARY:
-			_state = _deep_merge(_fallback_state(), converted)
+			_state = _deep_merge(_engine_state_shape(), converted)
+
+
+# 엔진 상태를 받을 때의 기본 틀. 엔진이 없을 때 쓰는 데모 값(숙련·칭호·최근 결과 등)이
+# 실제 수련생 상태에 섞이지 않도록 진행 기록 항목은 비워 둔다.
+func _engine_state_shape() -> Dictionary:
+	var shape := _fallback_state()
+	for key in ["mastery", "careerTitles", "lastResult", "activeTask", "generatedContent"]:
+		shape[key] = {}
+	for key in ["recentActivities", "eventInbox", "inventory"]:
+		shape[key] = []
+	return shape
 
 
 func _fallback_state() -> Dictionary:
@@ -297,7 +308,7 @@ func _build_header() -> Control:
 	row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	row.add_theme_constant_override("separation", 8)
 
-	var menu := _button("메뉴", _open_sheet.bind("menu"), "ghost", 48.0)
+	var menu := _button("메뉴", _open_sheet.bind("menu"), "ghost", 48.0, "menu")
 	menu.custom_minimum_size.x = 64.0
 	menu.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	menu.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -346,11 +357,11 @@ func _build_activity_status() -> Control:
 	_activity_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_activity_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	top.add_child(_activity_label)
-	var offline := _button("방치 %s" % _duration_label(_config_int("offlineCapSeconds", 28800)), _open_sheet.bind("offline"), "ghost", 44.0)
+	var offline := _button("방치 %s" % _duration_label(_config_int("offlineCapSeconds", 28800)), _open_sheet.bind("offline"), "ghost", 44.0, "offline_open")
 	offline.custom_minimum_size.x = 104.0
 	offline.size_flags_horizontal = Control.SIZE_SHRINK_END
 	top.add_child(offline)
-	_pause_button = _button("일시정지", _toggle_auto, "gold", 44.0)
+	_pause_button = _button("일시정지", _toggle_auto, "gold", 44.0, "pause")
 	_pause_button.custom_minimum_size.x = 84.0
 	_pause_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	top.add_child(_pause_button)
@@ -378,7 +389,7 @@ func _build_navigation() -> Control:
 	panel.add_child(row)
 	for definition in TABS:
 		var tab_id := str(definition["id"])
-		var tab_button := _button(str(definition["label"]), _show_tab.bind(tab_id), "ghost", 54.0)
+		var tab_button := _button(str(definition["label"]), _show_tab.bind(tab_id), "ghost", 54.0, "tab_%s" % tab_id)
 		tab_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tab_button.toggle_mode = true
 		row.add_child(tab_button)
@@ -440,9 +451,11 @@ func _build_home_page() -> Control:
 	var body: VBoxContainer = page["body"]
 
 	var hero := PanelContainer.new()
+	hero.mouse_filter = Control.MOUSE_FILTER_PASS
 	hero.custom_minimum_size.y = 302.0
 	hero.add_theme_stylebox_override("panel", RoyalTheme.card_style("gold"))
 	var stage := Control.new()
+	stage.mouse_filter = Control.MOUSE_FILTER_PASS
 	hero.add_child(stage)
 	var avatar := ProceduralTrainee.new()
 	_home_avatar = avatar
@@ -454,6 +467,7 @@ func _build_home_page() -> Control:
 	stage.add_child(avatar)
 
 	var profile_chip := PanelContainer.new()
+	profile_chip.mouse_filter = Control.MOUSE_FILTER_PASS
 	profile_chip.position = Vector2(12, 12)
 	profile_chip.size = Vector2(126, 38)
 	profile_chip.add_theme_stylebox_override("panel", RoyalTheme.chip_style(RoyalTheme.GOLD))
@@ -461,6 +475,7 @@ func _build_home_page() -> Control:
 	stage.add_child(profile_chip)
 
 	var activity_card := PanelContainer.new()
+	activity_card.mouse_filter = Control.MOUSE_FILTER_PASS
 	activity_card.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	activity_card.offset_left = 12
 	activity_card.offset_right = -12
@@ -488,10 +503,10 @@ func _build_home_page() -> Control:
 	quick_grid.columns = 2
 	quick_grid.add_theme_constant_override("h_separation", 8)
 	quick_grid.add_theme_constant_override("v_separation", 8)
-	quick_grid.add_child(_button("자동 1회 실행", _complete_current_activity, "primary"))
-	quick_grid.add_child(_button("월드 출정", _open_sheet.bind("world"), "gold"))
-	quick_grid.add_child(_button("성장 방향", _show_tab.bind("plan"), "secondary"))
-	quick_grid.add_child(_button("이벤트 확인", _open_sheet.bind("event"), "secondary"))
+	quick_grid.add_child(_button("자동 1회 실행", _complete_current_activity, "primary", 48.0, "run_auto_once"))
+	quick_grid.add_child(_button("월드 출정", _open_sheet.bind("world"), "gold", 48.0, "open_world"))
+	quick_grid.add_child(_button("성장 방향", _show_tab.bind("plan"), "secondary", 48.0, "open_plan"))
+	quick_grid.add_child(_button("이벤트 확인", _open_sheet.bind("event"), "secondary", 48.0, "open_event"))
 	body.add_child(quick_grid)
 
 	var result = _read(["lastResult"], {})
@@ -520,7 +535,7 @@ func _build_plan_page() -> Control:
 	for preset in PRESETS:
 		var selected := str(preset["id"]) == _policy_preset()
 		var text := "%s%s · %s" % ["선택됨  " if selected else "", preset["name"], preset["hint"]]
-		var preset_button := _button(text, _apply_preset.bind(str(preset["id"])), "primary" if selected else "secondary", 54.0)
+		var preset_button := _button(text, _apply_preset.bind(str(preset["id"])), "primary" if selected else "secondary", 54.0, "preset_%s" % preset["id"])
 		preset_grid.add_child(preset_button)
 	body.add_child(preset_grid)
 
@@ -594,7 +609,7 @@ func _build_activity_page() -> Control:
 	category_grid.add_theme_constant_override("v_separation", 8)
 	for category in categories:
 		var category_id := str(category["id"])
-		category_grid.add_child(_button(str(category["name"]), _select_activity_filter.bind(category_id), "primary" if category_id == _activity_filter else "ghost"))
+		category_grid.add_child(_button(str(category["name"]), _select_activity_filter.bind(category_id), "primary" if category_id == _activity_filter else "ghost", 48.0, "filter_%s" % category_id))
 	body.add_child(category_grid)
 
 	var automatic := _card("coral")
@@ -602,7 +617,7 @@ func _build_activity_page() -> Control:
 	automatic_box.add_theme_constant_override("separation", 8)
 	automatic_box.add_child(_label("추천 · %s" % _current_activity_name(), 19, RoyalTheme.PARCHMENT))
 	automatic_box.add_child(_label(_planner_reason(), 16, RoyalTheme.PARCHMENT_MUTED))
-	automatic_box.add_child(_button("추천 활동 즉시 실행", _complete_current_activity, "primary"))
+	automatic_box.add_child(_button("추천 활동 즉시 실행", _complete_current_activity, "primary", 48.0, "run_recommended"))
 	automatic.add_child(automatic_box)
 	body.add_child(automatic)
 
@@ -681,11 +696,11 @@ func _activity_card(activity: Dictionary) -> Control:
 		box.add_child(_label("잠금 · %s" % lock_reason, 16, RoyalTheme.DANGER))
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
-	var action := _button("이 활동 1회", _run_activity.bind(activity_id), "secondary")
+	var action := _button("이 활동 1회", _run_activity.bind(activity_id), "secondary", 48.0, "activity_run_%s" % activity_id)
 	action.add_to_group("critical_cta")
 	action.disabled = not lock_reason.is_empty()
 	actions.add_child(action)
-	var queue_action := _button("자동 큐 +", _queue_activity.bind(activity_id), "ghost")
+	var queue_action := _button("자동 큐 +", _queue_activity.bind(activity_id), "ghost", 48.0, "activity_queue_%s" % activity_id)
 	queue_action.disabled = not lock_reason.is_empty()
 	actions.add_child(queue_action)
 	box.add_child(actions)
@@ -799,10 +814,10 @@ func _build_record_page() -> Control:
 	record_actions.columns = 2
 	record_actions.add_theme_constant_override("h_separation", 8)
 	record_actions.add_theme_constant_override("v_separation", 8)
-	record_actions.add_child(_button("월드·라이벌", _open_sheet.bind("world"), "primary"))
-	record_actions.add_child(_button("이벤트 %d건" % event_count, _open_sheet.bind("event"), "gold" if event_count > 0 else "secondary"))
-	record_actions.add_child(_button("상점·인벤토리", _open_sheet.bind("shop"), "secondary"))
-	record_actions.add_child(_button("설정·접근성", _open_sheet.bind("settings"), "secondary"))
+	record_actions.add_child(_button("월드·라이벌", _open_sheet.bind("world"), "primary", 48.0, "record_world"))
+	record_actions.add_child(_button("이벤트 %d건" % event_count, _open_sheet.bind("event"), "gold" if event_count > 0 else "secondary", 48.0, "record_event"))
+	record_actions.add_child(_button("상점·인벤토리", _open_sheet.bind("shop"), "secondary", 48.0, "record_shop"))
+	record_actions.add_child(_button("설정·접근성", _open_sheet.bind("settings"), "secondary", 48.0, "record_settings"))
 	body.add_child(record_actions)
 
 	body.add_child(_section_heading("주간 계약", "현재 해금 상태로 달성 가능한 목표만 생성됩니다."))
@@ -845,7 +860,7 @@ func _build_record_page() -> Control:
 			"보상 자동 수령 완료" if contract_status == "completed" else ("고정 중" if pinned_contract_id == contract_id else "진행 중")
 		], 16, RoyalTheme.PARCHMENT_MUTED))
 		if contract_status == "active":
-			contract_box.add_child(_button("고정 해제" if pinned_contract_id == contract_id else "이 계약 고정", _pin_contract.bind("" if pinned_contract_id == contract_id else contract_id), "gold" if pinned_contract_id == contract_id else "secondary"))
+			contract_box.add_child(_button("고정 해제" if pinned_contract_id == contract_id else "이 계약 고정", _pin_contract.bind("" if pinned_contract_id == contract_id else contract_id), "gold" if pinned_contract_id == contract_id else "secondary", 48.0, "contract_pin_%s" % contract_id))
 		contract_card.add_child(contract_box)
 		body.add_child(contract_card)
 
@@ -935,7 +950,7 @@ func _open_sheet(kind: String) -> void:
 	heading_text.add_child(_label(str(sheet_info[0]), 24, RoyalTheme.PARCHMENT))
 	heading_text.add_child(_label(str(sheet_info[1]), 16, RoyalTheme.PARCHMENT_MUTED))
 	heading.add_child(heading_text)
-	var close_button := _button("닫기", _close_sheet, "ghost", 48.0)
+	var close_button := _button("닫기", _close_sheet, "ghost", 48.0, "sheet_close")
 	close_button.custom_minimum_size.x = 64.0
 	heading.add_child(close_button)
 	column.add_child(heading)
@@ -999,14 +1014,14 @@ func _build_menu_sheet(body: VBoxContainer) -> void:
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
-	grid.add_child(_button("이어하기", _replace_sheet.bind("continue"), "primary"))
-	grid.add_child(_button("새 수련생", _replace_sheet.bind("profile"), "secondary"))
-	grid.add_child(_button("월드", _replace_sheet.bind("world"), "gold"))
-	grid.add_child(_button("상점", _replace_sheet.bind("shop"), "secondary"))
-	grid.add_child(_button("오프라인", _replace_sheet.bind("offline"), "secondary"))
-	grid.add_child(_button("이벤트", _replace_sheet.bind("event"), "secondary"))
-	grid.add_child(_button("설정", _replace_sheet.bind("settings"), "secondary"))
-	grid.add_child(_button("지금 저장", _save_game, "ghost"))
+	grid.add_child(_button("이어하기", _replace_sheet.bind("continue"), "primary", 48.0, "menu_continue"))
+	grid.add_child(_button("새 수련생", _replace_sheet.bind("profile"), "secondary", 48.0, "menu_profile"))
+	grid.add_child(_button("월드", _replace_sheet.bind("world"), "gold", 48.0, "menu_world"))
+	grid.add_child(_button("상점", _replace_sheet.bind("shop"), "secondary", 48.0, "menu_shop"))
+	grid.add_child(_button("오프라인", _replace_sheet.bind("offline"), "secondary", 48.0, "menu_offline"))
+	grid.add_child(_button("이벤트", _replace_sheet.bind("event"), "secondary", 48.0, "menu_event"))
+	grid.add_child(_button("설정", _replace_sheet.bind("settings"), "secondary", 48.0, "menu_settings"))
+	grid.add_child(_button("지금 저장", _save_game, "ghost", 48.0, "menu_save"))
 	body.add_child(grid)
 
 	var guide := _card("transparent")
@@ -1137,14 +1152,14 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 		var actions := HBoxContainer.new()
 		actions.add_theme_constant_override("separation", 7)
 		if owned <= 0 or bool(item.get("stackable", false)):
-			actions.add_child(_button("구매", _shop_action.bind(item_id), "primary" if owned <= 0 else "secondary"))
+			actions.add_child(_button("구매", _shop_action.bind(item_id), "primary" if owned <= 0 else "secondary", 48.0, "buy_%s" % item_id))
 		if owned > 0 and bool(item.get("stackable", false)):
-			actions.add_child(_button("사용", _inventory_action.bind("use", item_id), "gold"))
+			actions.add_child(_button("사용", _inventory_action.bind("use", item_id), "gold", 48.0, "use_%s" % item_id))
 			actions.add_child(_button("선물", _gift_item.bind(item_id, _gift_target), "secondary"))
 		elif owned > 0:
-			actions.add_child(_button("해제" if not equipped_slot.is_empty() else "장착", _inventory_action.bind("unequip" if not equipped_slot.is_empty() else "equip", item_id), "gold"))
+			actions.add_child(_button("해제" if not equipped_slot.is_empty() else "장착", _inventory_action.bind("unequip" if not equipped_slot.is_empty() else "equip", item_id), "gold", 48.0, "equip_%s" % item_id))
 		if owned > 0:
-			actions.add_child(_button("판매", _inventory_action.bind("sell", item_id), "ghost"))
+			actions.add_child(_button("판매", _inventory_action.bind("sell", item_id), "ghost", 48.0, "sell_%s" % item_id))
 		item_box.add_child(actions)
 		item_card.add_child(item_box)
 		body.add_child(item_card)
@@ -1178,8 +1193,8 @@ func _build_settings_sheet(body: VBoxContainer) -> void:
 	body.add_child(_setting_toggle("고대비", "중요 CTA와 진행 정보를 더 선명하게 표시합니다.", "highContrast", bool(_read(["settings", "highContrast"], false))))
 
 	body.add_child(_section_heading("저장과 데이터", "활동 해결·정책 변경·백그라운드 진입 시 자동 저장됩니다."))
-	body.add_child(_button("지금 저장", _save_game, "primary"))
-	body.add_child(_button("저장 기록 이어하기", _replace_sheet.bind("continue"), "secondary"))
+	body.add_child(_button("지금 저장", _save_game, "primary", 48.0, "settings_save"))
+	body.add_child(_button("저장 기록 이어하기", _replace_sheet.bind("continue"), "secondary", 48.0, "settings_continue"))
 	body.add_child(_button("데이터 초기화", _replace_sheet.bind("reset"), "danger"))
 
 	var policy_note := _card("transparent")
@@ -1217,7 +1232,7 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 	rules.add_child(rules_box)
 	body.add_child(rules)
 
-	var collect := _button("오프라인 결과 받기", _collect_offline, "primary")
+	var collect := _button("오프라인 결과 받기", _collect_offline, "primary", 48.0, "offline_collect")
 	collect.disabled = pending_slots <= 0
 	collect.add_to_group("critical_cta")
 	body.add_child(collect)
@@ -1248,7 +1263,7 @@ func _build_event_sheet(body: VBoxContainer) -> void:
 		for choice in choices:
 			if typeof(choice) != TYPE_DICTIONARY:
 				continue
-			var choice_button := _button(str(choice.get("text", "선택")), _resolve_event.bind(str(event.get("id", "")), str(choice.get("id", "default"))), "primary" if choice == choices[0] else "secondary")
+			var choice_button := _button(str(choice.get("text", "선택")), _resolve_event.bind(str(event.get("id", "")), str(choice.get("id", "default"))), "primary" if choice == choices[0] else "secondary", 48.0, "event_choice_%d" % choices.find(choice))
 			choice_button.add_to_group("critical_cta")
 			event_box.add_child(choice_button)
 		event_box.add_child(_label("%s 미응답 시 안전한 기본 선택이 적용됩니다." % _duration_label(_config_int("eventChoiceTimeoutSeconds", 86400)), 16, RoyalTheme.PARCHMENT_MUTED))
@@ -1279,7 +1294,7 @@ func _build_profile_sheet(body: VBoxContainer) -> void:
 	preset_grid.add_theme_constant_override("h_separation", 8)
 	preset_grid.add_theme_constant_override("v_separation", 8)
 	for preset in PRESETS:
-		preset_grid.add_child(_button(str(preset["name"]), _create_trainee.bind(str(preset["id"])), "primary" if str(preset["id"]) == _policy_preset() else "secondary"))
+		preset_grid.add_child(_button(str(preset["name"]), _create_trainee.bind(str(preset["id"])), "primary" if str(preset["id"]) == _policy_preset() else "secondary", 48.0, "create_%s" % preset["id"]))
 	body.add_child(preset_grid)
 
 
@@ -1292,7 +1307,7 @@ func _build_continue_sheet(body: VBoxContainer) -> void:
 	save_box.add_child(_label("현재 활동 · %s" % _current_activity_name(), 16, RoyalTheme.PARCHMENT_MUTED))
 	save_card.add_child(save_box)
 	body.add_child(save_card)
-	var continue_button := _button("이 기록으로 이어하기", _continue_game, "primary")
+	var continue_button := _button("이 기록으로 이어하기", _continue_game, "primary", 48.0, "continue_game")
 	continue_button.add_to_group("critical_cta")
 	body.add_child(continue_button)
 	body.add_child(_button("새 수련생 만들기", _replace_sheet.bind("profile"), "secondary"))
@@ -1342,7 +1357,7 @@ func _advance_slots(count: int, show_feedback: bool = true) -> void:
 	var feedback_checkpoint := _result_feedback_checkpoint()
 	var result = null
 	if _engine != null and _engine.has_method("advance_slots"):
-		result = _engine.call("advance_slots", count, int(Time.get_unix_time_from_system()))
+		result = _engine.call("advance_slots", count, _now_unix())
 		_adopt_engine_result(result)
 		_persist_silently()
 	else:
@@ -1409,9 +1424,9 @@ func _run_activity(activity_id: String) -> void:
 	var feedback_checkpoint := _result_feedback_checkpoint()
 	var result = null
 	if _engine != null and _engine.has_method("run_activity"):
-		result = _engine.call("run_activity", activity_id, int(Time.get_unix_time_from_system()))
+		result = _engine.call("run_activity", activity_id, _now_unix())
 	elif _engine != null and _engine.has_method("execute_activity"):
-		result = _engine.call("execute_activity", activity_id, int(Time.get_unix_time_from_system()))
+		result = _engine.call("execute_activity", activity_id, _now_unix())
 	else:
 		var definition := _activity_by_id(activity_id)
 		if not definition.is_empty():
@@ -1663,7 +1678,7 @@ func _collect_offline() -> void:
 	var pending := clampi(int(_state.get("pendingOfflineSlots", 0)), 0, _offline_cap_slots())
 	var offline_summary: Dictionary = {}
 	if _engine != null and _engine.has_method("settle_offline"):
-		var result = _engine.call("settle_offline", int(Time.get_unix_time_from_system()))
+		var result = _engine.call("settle_offline", _now_unix())
 		if result is Dictionary:
 			offline_summary = (result as Dictionary).duplicate(true)
 		_adopt_engine_result(result)
@@ -2268,7 +2283,7 @@ func _world_action_card(title: String, detail: String, activity_id: String, acti
 	box.add_child(_label(detail, 16, RoyalTheme.PARCHMENT_MUTED))
 	if not lock_reason.is_empty():
 		box.add_child(_label("잠금 · %s" % lock_reason, 16, RoyalTheme.DANGER))
-	var action := _button(action_label, _run_world_activity.bind(activity_id), "secondary")
+	var action := _button(action_label, _run_world_activity.bind(activity_id), "secondary", 48.0, "world_%s" % activity_id)
 	action.disabled = not lock_reason.is_empty()
 	action.add_to_group("critical_cta")
 	box.add_child(action)
@@ -2313,6 +2328,8 @@ func _setting_toggle(title: String, description: String, key: String, value: boo
 	var toggle := CheckButton.new()
 	toggle.custom_minimum_size = Vector2(64, 48)
 	toggle.button_pressed = value
+	toggle.set_meta("ui_id", "toggle_%s" % key)
+	toggle.mouse_filter = Control.MOUSE_FILTER_PASS
 	toggle.toggled.connect(_toggle_setting.bind(key))
 	row.add_child(toggle)
 	card.add_child(row)
@@ -2367,6 +2384,7 @@ func _stat_card(title: String, value: float) -> Control:
 
 func _resource_card(title: String, value: String, accent: Color) -> Control:
 	var card := PanelContainer.new()
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.custom_minimum_size.y = 72.0
 	card.add_theme_stylebox_override("panel", RoyalTheme.card_style("transparent"))
@@ -2390,6 +2408,7 @@ func _section_heading(title: String, subtitle: String = "") -> Control:
 
 func _chip(text_value: String, accent: Color) -> Control:
 	var chip := PanelContainer.new()
+	chip.mouse_filter = Control.MOUSE_FILTER_PASS
 	chip.add_theme_stylebox_override("panel", RoyalTheme.chip_style(accent))
 	chip.add_child(_label(text_value, 16, RoyalTheme.PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
 	return chip
@@ -2397,14 +2416,20 @@ func _chip(text_value: String, accent: Color) -> Control:
 
 func _card(tone: String = "navy") -> PanelContainer:
 	var card := PanelContainer.new()
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.add_theme_stylebox_override("panel", RoyalTheme.card_style(tone))
 	return card
 
 
-func _button(label_text: String, callback: Callable = Callable(), variant: String = "secondary", min_height: float = 48.0) -> Button:
+# ui_id는 문구가 바뀌어도 유지되는 식별자다. E2E 여정이 이 값으로 누를 버튼을 찾는다.
+func _button(label_text: String, callback: Callable = Callable(), variant: String = "secondary", min_height: float = 48.0, ui_id: String = "") -> Button:
 	var button := Button.new()
 	button.text = label_text
+	if not ui_id.is_empty():
+		button.set_meta("ui_id", ui_id)
+	# 목록 안 버튼 위에서 시작한 드래그도 부모 ScrollContainer가 받아 스크롤하게 한다.
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.custom_minimum_size.y = maxf(44.0, min_height)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -2776,10 +2801,10 @@ func _adopt_engine_result(result: Variant) -> void:
 	if result is Dictionary:
 		var result_dict: Dictionary = result as Dictionary
 		if result_dict.get("state") is Dictionary:
-			_state = _deep_merge(_fallback_state(), result_dict["state"] as Dictionary)
+			_state = _deep_merge(_engine_state_shape(), result_dict["state"] as Dictionary)
 			return
 		if result_dict.has("schemaVersion") and result_dict.get("stats") is Dictionary:
-			_state = _deep_merge(_fallback_state(), result_dict)
+			_state = _deep_merge(_engine_state_shape(), result_dict)
 			return
 	_sync_engine_state()
 
@@ -2787,7 +2812,7 @@ func _adopt_engine_result(result: Variant) -> void:
 func _persist_silently() -> bool:
 	if _engine == null:
 		return false
-	var wall_now := int(Time.get_unix_time_from_system())
+	var wall_now := _now_unix()
 	var save_boundary := wall_now
 	var preserve_last_simulated_at := false
 	if int(_state.get("pendingOfflineSlots", 0)) > 0:
@@ -2805,10 +2830,16 @@ func _persist_silently() -> bool:
 	return false
 
 
+# 화면의 모든 시각 판단은 이 경계를 지난다. 테스트는 princess_tycoon/testing/fixed_unix로 시계를 고정한다.
+func _now_unix() -> int:
+	var fixed_unix := int(ProjectSettings.get_setting("princess_tycoon/testing/fixed_unix", 0))
+	return fixed_unix if fixed_unix > 0 else int(Time.get_unix_time_from_system())
+
+
 func _stamp_engine_time_boundary(now_unix: int = -1) -> void:
 	if _engine == null or not _engine.has_method("advance_slots"):
 		return
-	var boundary := now_unix if now_unix >= 0 else int(Time.get_unix_time_from_system())
+	var boundary := now_unix if now_unix >= 0 else _now_unix()
 	_adopt_engine_result(_engine.call("advance_slots", 0, boundary))
 
 
@@ -2818,7 +2849,7 @@ func _pending_offline_slots() -> int:
 	var last_seen := int(_state.get("lastSimulatedAt", 0))
 	if last_seen <= 0:
 		return 0
-	var now := int(Time.get_unix_time_from_system())
+	var now := _now_unix()
 	if now <= last_seen:
 		return 0
 	var seconds_per_slot := maxi(1, _config_int("offlineSecondsPerSlot", 60))
