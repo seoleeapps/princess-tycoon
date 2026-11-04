@@ -6,6 +6,7 @@ const VIEWPORTS: Array[Vector2i] = [
 	Vector2i(720, 1280),
 ]
 const MAIN_TABS: Array[String] = ["home", "plan", "activity", "growth", "record"]
+const PIXEL_GRID_TABS: Array[String] = ["home", "plan", "activity", "growth"]
 const SHEETS: Array[String] = ["world", "shop", "settings", "offline", "event", "profile", "continue"]
 const EDGE_TOLERANCE: float = 1.5
 const SAVE_PATH := "user://qa_layout_probe_save.json"
@@ -48,6 +49,9 @@ func _probe_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 		await process_frame
 		await process_frame
 		total_checked += _check_current_ctas(main, main_rect, "%s/%s" % [_size_label(viewport_size), tab_id])
+		# 도트 격자는 실제 기기 논리 크기(390×844)에서 확인한다. 기록 탭은 PR-D에서 배치를 바꾼 뒤 포함한다.
+		if viewport_size == Vector2i(390, 844) and PIXEL_GRID_TABS.has(tab_id):
+			_check_pixel_grid(main, "%s/%s" % [_size_label(viewport_size), tab_id])
 
 	for sheet_id: String in SHEETS:
 		main.call("_open_sheet", sheet_id)
@@ -105,6 +109,28 @@ func _check_current_ctas(main: Control, viewport_rect: Rect2, context: String) -
 	_check(checked >= 5, "%s visible critical_cta >= 5" % context)
 	_check(all_valid, "AC-UI-03 %s critical_cta bounds" % context)
 	return checked
+
+
+# PX-05: 도트 스킨을 쓰는 컨트롤은 위치와 크기가 짝수여야 2px 도트 격자가 이웃 창과 맞는다.
+func _check_pixel_grid(main: Control, context: String) -> void:
+	var offenders: Array[String] = []
+	_collect_off_grid(main, offenders)
+	_check(offenders.is_empty(), "PX-05 %s 도트 스킨 컨트롤 짝수 격자" % context)
+	for line: String in offenders.slice(0, 6):
+		print("[LAYOUT] off-grid %s %s" % [context, line])
+
+
+func _collect_off_grid(node: Node, offenders: Array[String]) -> void:
+	if node is Control and (node as Control).is_visible_in_tree():
+		var control := node as Control
+		if str(control.theme_type_variation).begins_with("Pixel") or control is ProgressBar:
+			var rect := control.get_global_rect()
+			for value in [rect.position.x, rect.position.y, rect.size.x, rect.size.y]:
+				if value != floorf(value) or int(value) % 2 != 0:
+					offenders.append("%s %s %s" % [control.theme_type_variation, control.name, str(rect)])
+					break
+	for child in node.get_children():
+		_collect_off_grid(child, offenders)
 
 
 func _finite(value: float) -> bool:

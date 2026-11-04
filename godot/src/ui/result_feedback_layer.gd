@@ -160,7 +160,16 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 		var line := str(raw_line).strip_edges()
 		if line.is_empty():
 			continue
-		content.add_child(_label(line, 16, PixelTokens.INK_MUTED))
+		# 결과 창이 화면 위쪽을 오래 가리지 않게 첫 줄은 2줄, 나머지는 1줄로 줄인다.
+		# 전체 문장은 홈의 최근 결과와 기록 탭에 남는다.
+		var detail := _label(line, 16, PixelTokens.INK_MUTED)
+		if detail_count == 0:
+			detail.max_lines_visible = 2
+		else:
+			detail.autowrap_mode = TextServer.AUTOWRAP_OFF
+			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		detail.tooltip_text = line
+		content.add_child(detail)
 		detail_count += 1
 	panel.set_meta("detail_count", detail_count)
 	return panel

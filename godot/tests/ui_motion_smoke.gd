@@ -24,6 +24,14 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 
+	# 토스트는 아래 버튼을 가리지만 입력을 막으면 안 된다(토스트 글자가 탭을 가로채던 회귀 방지).
+	var toast_panel: Control = main.get("_toast_panel") as Control
+	var toast_blocks := 0
+	if toast_panel != null:
+		for node: Node in [toast_panel] + toast_panel.find_children("*", "Control", true, false):
+			if (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
+				toast_blocks += 1
+	_check(toast_panel != null and toast_blocks == 0, "토스트와 글자가 입력을 가로채지 않음")
 	var layer: Variant = main.get("_result_feedback_layer")
 	_check(layer != null and layer.has_method("present"), "결과 피드백 단일 레이어 연결")
 	var activity_progress: Variant = main.get("_activity_progress")
