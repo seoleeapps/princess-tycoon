@@ -155,6 +155,14 @@ func _first_session(main: Control) -> void:
 	if e2e.step("reduced motion toggle visible", motion_toggle != null):
 		e2e.step("tap reduced motion", await e2e.tap(motion_toggle))
 		e2e.expect_equal("reduced motion on", bool(_read(main, ["settings", "reducedMotion"], false)), true)
+	var contrast_toggle := _find_id(main, "toggle_highContrast")
+	if e2e.step("high contrast toggle visible", contrast_toggle != null):
+		e2e.step("tap high contrast", await e2e.tap(contrast_toggle))
+		e2e.expect_equal("high contrast on", bool(_read(main, ["settings", "highContrast"], false)), true)
+		await e2e.frames(3)
+		await e2e.shot("14b-settings-high-contrast")
+		e2e.step("tap high contrast off", await e2e.tap(_find_id(main, "toggle_highContrast")))
+		e2e.expect_equal("high contrast off", bool(_read(main, ["settings", "highContrast"], true)), false)
 	await _close_sheet(main)
 
 	await _tap_id(main, "pause", "pause auto run")

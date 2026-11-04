@@ -280,6 +280,9 @@ def write_all(out: pathlib.Path) -> list[pathlib.Path]:
         path = out / "scenes" / f"{name}.png"
         maker(*SCENE_SIZE).img.convert("RGB").save(path)
         written.append(path)
+    path = out / "scenes" / "offline_night.png"
+    scenes.offline_night(168, 48).img.convert("RGB").save(path)
+    written.append(path)
 
     bubble = Art(18, 20)
     ui_bubble(bubble, 0, 0, 18, 16)

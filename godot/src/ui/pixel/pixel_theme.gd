@@ -30,6 +30,7 @@ const GAUGES := ["energy", "stress", "reputation", "stat", "magic", "neutral"]
 
 static var _themes := {}
 static var _manifest := {}
+static var _doubled := {}
 static var _body_variation: FontVariation
 static var _title_variation: FontVariation
 
@@ -115,6 +116,21 @@ static func build(high_contrast: bool = false) -> Theme:
 
 # 본문 폰트. 글자 높이 16px에 폰트 자체 줄 간격 3px이 더해져 한 줄이 19px이 되므로,
 # 아래 여백 1px을 더해 줄 높이를 20px(짝수)로 맞춘다. 창과 게이지가 2px 도트 격자에 놓이게 하기 위함이다.
+# 1배 도트를 nearest로 2배 키운 텍스처. 1:1로 그리면 뷰포트 필터 설정과 무관하게 도트가 선명하다.
+static func doubled_texture(path: String) -> Texture2D:
+	if _doubled.has(path):
+		return _doubled[path]
+	if not ResourceLoader.exists(path):
+		push_error("Pixel texture missing: %s" % path)
+		return null
+	var image := (load(path) as Texture2D).get_image()
+	image.convert(Image.FORMAT_RGBA8)
+	image.resize(image.get_width() * 2, image.get_height() * 2, Image.INTERPOLATE_NEAREST)
+	var texture := ImageTexture.create_from_image(image)
+	_doubled[path] = texture
+	return texture
+
+
 static func body_font() -> Font:
 	if _body_variation == null:
 		var file := load(BODY_FONT) as FontFile

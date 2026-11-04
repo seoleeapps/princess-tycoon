@@ -94,7 +94,6 @@ var _status_panel: PanelContainer
 var _status_slot: MarginContainer
 var _header_name_label: Label
 var _header_tier_label: Label
-static var _icon_cache := {}
 
 
 func _ready() -> void:
@@ -680,10 +679,10 @@ func _build_activity_page() -> Control:
 			queue_name.autowrap_mode = TextServer.AUTOWRAP_OFF
 			queue_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 			queue_row.add_child(queue_name)
-			for move in [{"text": "↑", "delta": -1, "disabled": queue_index == 0}, {"text": "↓", "delta": 1, "disabled": queue_index == queued.size() - 1}]:
+			for move in [{"text": "위", "delta": -1, "disabled": queue_index == 0}, {"text": "아래", "delta": 1, "disabled": queue_index == queued.size() - 1}]:
 				var move_button := _button(str(move["text"]), _move_queued_activity.bind(queue_index, int(move["delta"])), "secondary", 44.0)
 				move_button.theme_type_variation = "PixelButtonCompactSecondary"
-				move_button.custom_minimum_size.x = 44.0
+				move_button.custom_minimum_size.x = 52.0
 				move_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 				move_button.disabled = bool(move["disabled"])
 				queue_row.add_child(move_button)
@@ -929,20 +928,15 @@ func _build_growth_page() -> Control:
 func _build_record_page() -> Control:
 	var page := _page_scroll()
 	var body: VBoxContainer = page["body"]
-	body.add_child(_section_heading("시즌 기록", "게임은 끝나지 않습니다. 매 시즌 성과가 칭호와 새 세계를 엽니다."))
+	body.add_child(_section_heading("시즌 기록", "끝나지 않는 성장. 시즌마다 칭호와 새 세계가 열려요."))
 
 	var season_card := _card("gold")
 	var season_box := VBoxContainer.new()
-	season_box.add_theme_constant_override("separation", 7)
-	season_box.add_child(_label("%d연차 · %d시즌" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1))], 22, PixelTokens.ACCENT))
-	var season_progress := ProgressBar.new()
-	season_progress.custom_minimum_size.y = 22.0
+	season_box.add_theme_constant_override("separation", PixelTokens.GAP)
+	season_box.add_child(_label("%d연차 · %d시즌" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1))], 24, PixelTokens.INK))
 	var slots_per_season := maxi(1, _config_int("slotsPerSeason", 28))
-	season_progress.max_value = float(slots_per_season)
-	season_progress.value = float(_season_slot())
-	season_progress.show_percentage = false
-	season_box.add_child(season_progress)
-	season_box.add_child(_label("다음 심사까지 %d회 · 강제 종료나 초기화 없음" % (slots_per_season - _season_slot()), 16, PixelTokens.INK_MUTED))
+	season_box.add_child(_gauge("reputation", float(_season_slot()) / float(slots_per_season)))
+	season_box.add_child(_label("다음 심사까지 %d회 · 종료나 초기화 없음" % (slots_per_season - _season_slot()), 16, PixelTokens.INK_MUTED))
 	season_card.add_child(season_box)
 	body.add_child(season_card)
 	var season_history: Array = _read(["seasonHistory"], [])
@@ -951,7 +945,7 @@ func _build_record_page() -> Control:
 		var review_card := _card("raised")
 		var review_box := VBoxContainer.new()
 		review_box.add_theme_constant_override("separation", 4)
-		review_box.add_child(_label("최근 심사 · %d연차 %d시즌" % [int(latest_review.get("year", 1)), int(latest_review.get("season", 1))], 18, PixelTokens.INK))
+		review_box.add_child(_label("최근 심사 · %d연차 %d시즌" % [int(latest_review.get("year", 1)), int(latest_review.get("season", 1))], 16, PixelTokens.INK))
 		review_box.add_child(_label("명성 +%d · 정책 일치 %d%% · 도전 승리 %d · 계약 %d" % [
 			int(latest_review.get("renownGained", 0)), int(float(latest_review.get("policyFit", 0.0)) * 100.0),
 			int(latest_review.get("challengeWins", 0)), int(latest_review.get("completedContracts", 0))
@@ -963,14 +957,19 @@ func _build_record_page() -> Control:
 	var record_actions := GridContainer.new()
 	record_actions.columns = 2
 	record_actions.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
-	record_actions.add_theme_constant_override("v_separation", 8)
-	record_actions.add_child(_button("월드·라이벌", _open_sheet.bind("world"), "primary", 48.0, "record_world"))
-	record_actions.add_child(_button("이벤트 %d건" % event_count, _open_sheet.bind("event"), "gold" if event_count > 0 else "secondary", 48.0, "record_event"))
-	record_actions.add_child(_button("상점·인벤토리", _open_sheet.bind("shop"), "secondary", 48.0, "record_shop"))
-	record_actions.add_child(_button("설정·접근성", _open_sheet.bind("settings"), "secondary", 48.0, "record_settings"))
+	record_actions.add_theme_constant_override("v_separation", PixelTokens.GAP)
+	for action in [
+		["월드·라이벌", "world", "primary", "record_world", "world"],
+		["이벤트 %d건" % event_count, "event", "gold" if event_count > 0 else "secondary", "record_event", "event"],
+		["상점", "shop", "secondary", "record_shop", "coin"],
+		["설정", "settings", "secondary", "record_settings", "preset_custom"],
+	]:
+		var record_button := _button(str(action[0]), _open_sheet.bind(str(action[1])), str(action[2]), 48.0, str(action[3]))
+		record_button.icon = _icon_texture(str(action[4]))
+		record_actions.add_child(record_button)
 	body.add_child(record_actions)
 
-	body.add_child(_section_heading("주간 계약", "현재 해금 상태로 달성 가능한 목표만 생성됩니다."))
+	body.add_child(_section_heading("주간 계약", "지금 열린 활동으로 달성할 수 있는 목표예요."))
 	var contracts: Array = _read(["generatedContent", "contracts"], [])
 	var pinned_contract_id := str(_read(["generatedContent", "pinnedContractId"], ""))
 	for contract in contracts:
@@ -978,9 +977,10 @@ func _build_record_page() -> Control:
 			continue
 		var contract_card := _card("raised")
 		var contract_box := VBoxContainer.new()
-		contract_box.add_theme_constant_override("separation", 5)
+		contract_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
 		var contract_top := HBoxContainer.new()
-		var contract_name := _label(str(contract.get("name", "주간 계약")), 17, PixelTokens.INK)
+		contract_top.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+		var contract_name := _label(str(contract.get("name", "주간 계약")), 16, PixelTokens.INK)
 		contract_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		contract_top.add_child(contract_name)
 		contract_top.add_child(_chip("%s G" % _format_big(contract.get("reward", {"mantissa": 0, "exponent": 0})), PixelTokens.GOLD))
@@ -997,12 +997,7 @@ func _build_record_page() -> Control:
 			contract_meta.append("보너스: %s" % str(bonus.get("name", "")))
 		if not contract_meta.is_empty():
 			contract_box.add_child(_label(" · ".join(contract_meta), 16, PixelTokens.POSITIVE))
-		var contract_progress := ProgressBar.new()
-		contract_progress.custom_minimum_size.y = 18.0
-		contract_progress.max_value = maxf(1.0, float(contract.get("target", 1)))
-		contract_progress.value = float(contract.get("progress", 0))
-		contract_progress.show_percentage = false
-		contract_box.add_child(contract_progress)
+		contract_box.add_child(_gauge("stat", float(contract.get("progress", 0)) / maxf(1.0, float(contract.get("target", 1)))))
 		var contract_id := str(contract.get("id", ""))
 		var contract_status := str(contract.get("status", "active"))
 		contract_box.add_child(_label("%d / %d · %s" % [
@@ -1014,7 +1009,7 @@ func _build_record_page() -> Control:
 		contract_card.add_child(contract_box)
 		body.add_child(contract_card)
 
-	body.add_child(_section_heading("진로 칭호", "38개 진로는 엔딩이 아니라 반복 성장하는 전문 분야입니다."))
+	body.add_child(_section_heading("진로 칭호", "38개 진로는 엔딩이 아니라 반복해 키우는 전문 분야예요."))
 	var titles: Dictionary = _read(["careerTitles"], {})
 	if titles.is_empty():
 		var title_empty := _card("transparent")
@@ -1025,9 +1020,11 @@ func _build_record_page() -> Control:
 			var title_data = titles[title_id]
 			var title_name := _career_display_name(str(title_id), title_data)
 			var stars := int(title_data.get("stars", 1)) if typeof(title_data) == TYPE_DICTIONARY else int(title_data)
-			var title_card := _card("coral")
+			var title_card := _card("gold")
 			var title_row := HBoxContainer.new()
-			var title_label := _label(title_name, 18, PixelTokens.INK)
+			title_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+			title_row.add_child(_icon("record"))
+			var title_label := _label(title_name, 16, PixelTokens.INK)
 			title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			title_row.add_child(title_label)
 			title_row.add_child(_chip(_career_rank(stars), PixelTokens.GOLD))
@@ -1037,19 +1034,21 @@ func _build_record_page() -> Control:
 	if not season_history.is_empty() and typeof(season_history.back()) == TYPE_DICTIONARY:
 		var near_titles: Array = (season_history.back() as Dictionary).get("nearTitles", []) as Array
 		if not near_titles.is_empty():
-			body.add_child(_section_heading("가까운 진로", "다음 심사에서 노릴 수 있는 상위 세 분야입니다."))
+			body.add_child(_section_heading("가까운 진로", "다음 심사에서 노릴 만한 세 분야예요."))
 			for near in near_titles:
 				if typeof(near) != TYPE_DICTIONARY:
 					continue
 				var near_card := _card("transparent")
-				near_card.add_child(_label("%s · %d%%\n%s" % [
-					str(near.get("name", near.get("id", "진로"))), int(float(near.get("progress", 0.0)) * 100.0),
-					", ".join(near.get("missing", []))
-				], 16, PixelTokens.INK_MUTED))
+				var near_box := VBoxContainer.new()
+				near_box.add_theme_constant_override("separation", 4)
+				near_box.add_child(_label("%s · %d%%" % [str(near.get("name", near.get("id", "진로"))), int(float(near.get("progress", 0.0)) * 100.0)], 16, PixelTokens.INK))
+				near_box.add_child(_gauge("stat", float(near.get("progress", 0.0))))
+				near_box.add_child(_label("부족 · %s" % ", ".join(near.get("missing", [])), 16, PixelTokens.INK_MUTED))
+				near_card.add_child(near_box)
 				body.add_child(near_card)
 
 	var event_history: Dictionary = _read(["eventHistory"], {})
-	body.add_child(_section_heading("이벤트 도감 · %d / 26" % event_history.size(), "해결한 사건과 마지막 선택이 로컬 기록에 남습니다."))
+	body.add_child(_section_heading("이벤트 도감 · %d / 26" % event_history.size(), "해결한 사건과 마지막 선택이 남아요."))
 	if event_history.is_empty():
 		var event_empty := _card("transparent")
 		event_empty.add_child(_label("아직 해결한 이벤트가 없습니다.", 16, PixelTokens.INK_MUTED))
@@ -1160,7 +1159,7 @@ func _sheet_title(kind: String) -> Array:
 func _build_menu_sheet(body: VBoxContainer) -> void:
 	var summary := _card("gold")
 	var summary_box := VBoxContainer.new()
-	summary_box.add_theme_constant_override("separation", 5)
+	summary_box.add_theme_constant_override("separation", 6)
 	summary_box.add_child(_label("%s · %s 성장" % [str(_state.get("traineeName", "수련생")), _preset_name(_policy_preset())], 20, PixelTokens.ACCENT))
 	summary_box.add_child(_label("%d연차 %d시즌 · 세계 티어 %d" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1)), int(_state.get("worldTier", 1))], 16, PixelTokens.INK_MUTED))
 	summary.add_child(summary_box)
@@ -1170,18 +1169,23 @@ func _build_menu_sheet(body: VBoxContainer) -> void:
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	grid.add_theme_constant_override("v_separation", 8)
-	grid.add_child(_button("이어하기", _replace_sheet.bind("continue"), "primary", 48.0, "menu_continue"))
-	grid.add_child(_button("새 수련생", _replace_sheet.bind("profile"), "secondary", 48.0, "menu_profile"))
-	grid.add_child(_button("월드", _replace_sheet.bind("world"), "gold", 48.0, "menu_world"))
-	grid.add_child(_button("상점", _replace_sheet.bind("shop"), "secondary", 48.0, "menu_shop"))
-	grid.add_child(_button("오프라인", _replace_sheet.bind("offline"), "secondary", 48.0, "menu_offline"))
-	grid.add_child(_button("이벤트", _replace_sheet.bind("event"), "secondary", 48.0, "menu_event"))
-	grid.add_child(_button("설정", _replace_sheet.bind("settings"), "secondary", 48.0, "menu_settings"))
-	grid.add_child(_button("지금 저장", _save_game, "ghost", 48.0, "menu_save"))
+	for entry in [
+		["이어하기", _replace_sheet.bind("continue"), "primary", "menu_continue", "play"],
+		["새 수련생", _replace_sheet.bind("profile"), "secondary", "menu_profile", "preset_balanced"],
+		["월드", _replace_sheet.bind("world"), "gold", "menu_world", "world"],
+		["상점", _replace_sheet.bind("shop"), "secondary", "menu_shop", "coin"],
+		["오프라인", _replace_sheet.bind("offline"), "secondary", "menu_offline", "moon"],
+		["이벤트", _replace_sheet.bind("event"), "secondary", "menu_event", "event"],
+		["설정", _replace_sheet.bind("settings"), "secondary", "menu_settings", "preset_custom"],
+		["지금 저장", _save_game, "secondary", "menu_save", "record"],
+	]:
+		var menu_button := _button(str(entry[0]), entry[1], str(entry[2]), 48.0, str(entry[3]))
+		menu_button.icon = _icon_texture(str(entry[4]))
+		grid.add_child(menu_button)
 	body.add_child(grid)
 
 	var guide := _card("transparent")
-	guide.add_child(_label("하단 5탭에서는 일상 성장 흐름을, 월드와 상점 같은 확장 기능은 이 보조 시트에서 관리합니다.", 16, PixelTokens.INK_MUTED))
+	guide.add_child(_label("일상 성장은 아래 5탭에서, 월드와 상점은 여기서 열어요.", 16, PixelTokens.INK_MUTED))
 	body.add_child(guide)
 
 
@@ -1189,19 +1193,23 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 	var world_card := _card("gold")
 	var world_box := VBoxContainer.new()
 	world_box.add_theme_constant_override("separation", 6)
-	world_box.add_child(_label("세계 티어 %d · 새벽빛 왕국" % int(_state.get("worldTier", 1)), 21, PixelTokens.ACCENT))
+	var world_title := HBoxContainer.new()
+	world_title.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	world_title.add_child(_icon("world"))
+	world_title.add_child(_label("세계 티어 %d · 새벽빛 왕국" % int(_state.get("worldTier", 1)), 16, PixelTokens.INK))
+	world_box.add_child(world_title)
 	var league: Dictionary = _read(["challengeLeague"], {})
 	world_box.add_child(_label("리그 %d단계 · 이번 시즌 %d승 %d패 · 최고 %.1f" % [
 		int(league.get("leagueTier", 1)), int(league.get("seasonWins", 0)), int(league.get("seasonLosses", 0)), float(league.get("bestScore", 0.0))
 	], 16, PixelTokens.INK_MUTED))
-	world_box.add_child(_label("실패해도 참가 경험과 다음 시도 힌트를 얻습니다.", 16, PixelTokens.INK_MUTED))
+	world_box.add_child(_label("실패해도 경험과 다음 시도 힌트를 얻어요.", 16, PixelTokens.INK_MUTED))
 	world_card.add_child(world_box)
 	body.add_child(world_card)
 	var region: Dictionary = _read(["generatedContent", "region"], {})
 	if not region.is_empty():
 		var region_card := _card("coral")
 		var region_box := VBoxContainer.new()
-		region_box.add_theme_constant_override("separation", 5)
+		region_box.add_theme_constant_override("separation", 6)
 		region_box.add_child(_label(str(region.get("name", "이번 시즌 변형 지역")), 19, PixelTokens.ACCENT))
 		var region_key := str(region.get("baseRegionId", region.get("templateId", "REG_DEFAULT")))
 		var region_progress: Dictionary = _read(["regionProgress", region_key], {})
@@ -1213,7 +1221,7 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 		region_card.add_child(region_box)
 		body.add_child(region_card)
 
-	body.add_child(_section_heading("자동 모험", "탐색 → 조우/사건 → 보스의 세 노드를 해결합니다."))
+	body.add_child(_section_heading("자동 모험", "탐색, 조우, 보스 세 단계를 자동으로 풀어요."))
 	for activity in _activities:
 		if typeof(activity) != TYPE_DICTIONARY or _activity_kind(activity) != "adventure":
 			continue
@@ -1224,7 +1232,7 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 			adventure_id, "원정 시작", _activity_lock_reason(adventure_id)
 		))
 
-	body.add_child(_section_heading("시험·스포츠·대회", "여덟 종목은 서로 다른 능력 가중치로 평가됩니다."))
+	body.add_child(_section_heading("시험·스포츠·대회", "종목마다 보는 능력치가 달라요."))
 	for activity in _activities:
 		if typeof(activity) != TYPE_DICTIONARY or _activity_kind(activity) != "challenge":
 			continue
@@ -1235,7 +1243,7 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 			challenge_id, "참가하기", _activity_lock_reason(challenge_id)
 		))
 
-	body.add_child(_section_heading("라이벌 리그", "현재 유효 점수 주변의 다섯 라이벌이 같은 시드로 생성됩니다."))
+	body.add_child(_section_heading("라이벌 리그", "비슷한 점수의 라이벌 다섯 명과 겨뤄요."))
 	var rivals: Array = _read(["generatedContent", "rivals"], [])
 	for rival in rivals:
 		if typeof(rival) != TYPE_DICTIONARY:
@@ -1285,16 +1293,21 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 		var item_id := str(item.get("id", ""))
 		var owned := _inventory_count_ui(item_id)
 		var equipped_slot := _equipped_slot_for(item_id)
-		var item_card := _card("raised")
+		var item_card := _card("transparent")
 		var item_box := VBoxContainer.new()
-		item_box.add_theme_constant_override("separation", 6)
+		item_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
 		var item_top := HBoxContainer.new()
-		var item_name := _label("%s · %s" % [_item_category_name(str(item.get("category", ""))), str(item.get("name", item_id))], 17, PixelTokens.INK)
+		item_top.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+		var category := str(item.get("category", ""))
+		item_top.add_child(_icon("slot_" + category if category in ["outfit", "weapon", "armor", "accessory"] else "potion"))
+		var item_name := _label("%s · %s" % [_item_category_name(category), str(item.get("name", item_id))], 16, PixelTokens.INK)
 		item_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		item_top.add_child(item_name)
 		item_top.add_child(_chip("%s G" % _tier_item_price_text(item), PixelTokens.GOLD))
 		item_box.add_child(item_top)
-		item_box.add_child(_label(str(item.get("description", "성장에 도움이 되는 물품입니다.")), 16, PixelTokens.INK_MUTED))
+		var item_description := _label(str(item.get("description", "성장에 도움이 되는 물품입니다.")), 16, PixelTokens.INK_MUTED)
+		item_description.max_lines_visible = 2
+		item_box.add_child(item_description)
 		var status_parts: Array[String] = []
 		if owned > 0:
 			status_parts.append("보유 %d" % owned)
@@ -1306,7 +1319,7 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 		if not status_parts.is_empty():
 			item_box.add_child(_label(" · ".join(status_parts), 16, PixelTokens.POSITIVE))
 		var actions := HBoxContainer.new()
-		actions.add_theme_constant_override("separation", 7)
+		actions.add_theme_constant_override("separation", 8)
 		if owned <= 0 or bool(item.get("stackable", false)):
 			actions.add_child(_button("구매", _shop_action.bind(item_id), "primary" if owned <= 0 else "secondary", 48.0, "buy_%s" % item_id))
 		if owned > 0 and bool(item.get("stackable", false)):
@@ -1359,6 +1372,11 @@ func _build_settings_sheet(body: VBoxContainer) -> void:
 
 
 func _build_offline_sheet(body: VBoxContainer) -> void:
+	var banner := TextureRect.new()
+	banner.texture = PixelTheme.doubled_texture("res://assets/pixel/scenes/offline_night.png")
+	banner.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(banner)
 	var summary := _card("gold")
 	var summary_box := VBoxContainer.new()
 	summary_box.add_theme_constant_override("separation", 8)
@@ -1380,7 +1398,7 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 
 	var rules := _card("raised")
 	var rules_box := VBoxContainer.new()
-	rules_box.add_theme_constant_override("separation", 7)
+	rules_box.add_theme_constant_override("separation", 8)
 	rules_box.add_child(_label("정산 규칙", 18, PixelTokens.INK))
 	rules_box.add_child(_label("· 저장된 seed와 rngCounter를 그대로 사용", 16, PixelTokens.INK_MUTED))
 	rules_box.add_child(_label("· 온라인과 같은 활동 리듀서를 순서대로 실행", 16, PixelTokens.INK_MUTED))
@@ -1410,8 +1428,12 @@ func _build_event_sheet(body: VBoxContainer) -> void:
 			continue
 		var event_card := _card("coral")
 		var event_box := VBoxContainer.new()
-		event_box.add_theme_constant_override("separation", 9)
-		event_box.add_child(_label(str(event.get("name", "아카데미 소식")), 21, PixelTokens.ACCENT))
+		event_box.add_theme_constant_override("separation", PixelTokens.GAP)
+		var event_title := HBoxContainer.new()
+		event_title.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+		event_title.add_child(_icon("event"))
+		event_title.add_child(_label(str(event.get("name", "아카데미 소식")), 24, PixelTokens.INK))
+		event_box.add_child(event_title)
 		event_box.add_child(_label(str(event.get("description", "새로운 선택지가 도착했습니다.")), 16, PixelTokens.INK))
 		var choices: Array = event.get("choices", [])
 		if choices.is_empty():
@@ -1430,7 +1452,7 @@ func _build_event_sheet(body: VBoxContainer) -> void:
 func _build_profile_sheet(body: VBoxContainer) -> void:
 	var intro := _card("gold")
 	var intro_box := VBoxContainer.new()
-	intro_box.add_theme_constant_override("separation", 7)
+	intro_box.add_theme_constant_override("separation", 8)
 	intro_box.add_child(_label("성인 왕립 아카데미 수련생", 20, PixelTokens.ACCENT))
 	intro_box.add_child(_label("나이로 종료되지 않으며 선택한 전문 분야를 끝없이 개척합니다.", 16, PixelTokens.INK_MUTED))
 	intro.add_child(intro_box)
@@ -1450,14 +1472,17 @@ func _build_profile_sheet(body: VBoxContainer) -> void:
 	preset_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	preset_grid.add_theme_constant_override("v_separation", 8)
 	for preset in PRESETS:
-		preset_grid.add_child(_button(str(preset["name"]), _create_trainee.bind(str(preset["id"])), "primary" if str(preset["id"]) == _policy_preset() else "secondary", 48.0, "create_%s" % preset["id"]))
+		var create_button := _button("%s\n%s" % [preset["name"], preset["hint"]], _create_trainee.bind(str(preset["id"])), "secondary", 60.0, "create_%s" % preset["id"])
+		create_button.icon = _icon_texture(_preset_icon(str(preset["id"])))
+		create_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		preset_grid.add_child(create_button)
 	body.add_child(preset_grid)
 
 
 func _build_continue_sheet(body: VBoxContainer) -> void:
 	var save_card := _card("gold")
 	var save_box := VBoxContainer.new()
-	save_box.add_theme_constant_override("separation", 7)
+	save_box.add_theme_constant_override("separation", 8)
 	save_box.add_child(_label(str(_state.get("traineeName", "수련생")), 24, PixelTokens.ACCENT))
 	save_box.add_child(_label("%d연차 %d시즌 · 세계 티어 %d" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1)), int(_state.get("worldTier", 1))], 16, PixelTokens.INK))
 	save_box.add_child(_label("현재 활동 · %s" % _current_activity_name(), 16, PixelTokens.INK_MUTED))
@@ -2188,7 +2213,7 @@ func _build_challenge_feedback_payload(activity_result: Dictionary) -> Dictionar
 	if not rank.is_empty():
 		rank_parts.append("등급 %s" % _challenge_rank_name(rank))
 	if league_before > 0:
-		rank_parts.append("리그 %d→%d" % [league_before, league_after])
+		rank_parts.append("리그 %d > %d" % [league_before, league_after])
 	if not rank_parts.is_empty():
 		details.append("판정 · %s" % " · ".join(rank_parts))
 	var hint := str(outcome.get("hint", "")).strip_edges()
@@ -2288,7 +2313,7 @@ func _result_specialized_summary_lines(activity_result: Dictionary) -> Array[Str
 			node_text += " %s" % event_name
 		node_parts.append(node_text)
 	if not node_parts.is_empty():
-		lines.append("3노드 · %s" % " → ".join(node_parts))
+		lines.append("3노드 · %s" % " > ".join(node_parts))
 
 	var result_parts: Array[String] = []
 	if bool(outcome.get("injured", false)):
@@ -2338,7 +2363,7 @@ func _build_review_feedback_payload(review: Dictionary, activity_result: Diction
 			has_new_title = has_new_title or stars <= 1
 			has_star_up = has_star_up or stars > 1
 			if details.size() < 2:
-				details.append("★ %s · %s" % [str(title_data.get("name", title_data.get("id", "진로 칭호"))), str(title_data.get("rank", _career_rank(stars)))])
+				details.append("칭호 %s · %s" % [str(title_data.get("name", title_data.get("id", "진로 칭호"))), str(title_data.get("rank", _career_rank(stars)))])
 		if awarded.size() > 2:
 			details.append("외 %d개 칭호가 함께 성장했습니다." % (awarded.size() - 2))
 		if has_new_title and has_star_up:
@@ -2355,7 +2380,7 @@ func _build_review_feedback_payload(review: Dictionary, activity_result: Diction
 	var tier_before := int(review.get("worldTierBefore", _state.get("worldTier", 1)))
 	var tier_after := int(review.get("worldTierAfter", tier_before))
 	if tier_after > tier_before:
-		details.append("세계 티어 상승 · %d → %d" % [tier_before, tier_after])
+		details.append("세계 티어 상승 · %d > %d" % [tier_before, tier_after])
 	else:
 		details.append("성과 · 도전 승리 %d · 계약 %d" % [int(review.get("challengeWins", 0)), int(review.get("completedContracts", 0))])
 	if str(activity_result.get("kind", "")) == "challenge":
@@ -2433,14 +2458,26 @@ func _feedback_activity_name(activity_result: Dictionary) -> String:
 
 
 func _world_action_card(title: String, detail: String, activity_id: String, action_label: String, lock_reason: String = "") -> Control:
-	var card := _card("raised")
+	var kind := _activity_kind(_activity_by_id(activity_id))
+	var card := _card("transparent")
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 7)
-	box.add_child(_label(title, 18, PixelTokens.INK))
-	box.add_child(_label(detail, 16, PixelTokens.INK_MUTED))
+	box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	title_row.add_child(_icon("lock" if not lock_reason.is_empty() else _kind_icon_name(kind)))
+	var title_label := _label(title, 16, PixelTokens.INK if lock_reason.is_empty() else PixelTokens.INK_MUTED)
+	title_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	title_row.add_child(title_label)
+	box.add_child(title_row)
+	var detail_label := _label(detail, 16, PixelTokens.INK_MUTED)
+	detail_label.max_lines_visible = 2
+	box.add_child(detail_label)
+	if kind == "adventure":
+		box.add_child(_label("탐색 > 조우 > 보스", 16, PixelTokens.INFO))
 	if not lock_reason.is_empty():
 		box.add_child(_label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE))
-	var action := _button(action_label, _run_world_activity.bind(activity_id), "secondary", 48.0, "world_%s" % activity_id)
+	var action := _button(action_label, _run_world_activity.bind(activity_id), "primary" if lock_reason.is_empty() else "secondary", 48.0, "world_%s" % activity_id)
+	action.icon = _icon_texture("play")
 	action.disabled = not lock_reason.is_empty()
 	action.add_to_group("critical_cta")
 	box.add_child(action)
@@ -2672,19 +2709,9 @@ func _label(text_value: String, font_size: int = 16, color: Color = PixelTokens.
 	return label
 
 
-# 1배 도트 아이콘을 2배로 키운 텍스처. 같은 이름은 한 번만 만든다.
+# 1배 도트 아이콘을 2배로 키운 텍스처.
 func _icon_texture(icon_name: String) -> Texture2D:
-	if _icon_cache.has(icon_name):
-		return _icon_cache[icon_name]
-	var path := ICON_DIR + icon_name + ".png"
-	if not ResourceLoader.exists(path):
-		push_error("Pixel icon missing: %s" % path)
-		return null
-	var image := (load(path) as Texture2D).get_image()
-	image.resize(image.get_width() * 2, image.get_height() * 2, Image.INTERPOLATE_NEAREST)
-	var texture := ImageTexture.create_from_image(image)
-	_icon_cache[icon_name] = texture
-	return texture
+	return PixelTheme.doubled_texture(ICON_DIR + icon_name + ".png")
 
 
 func _icon(icon_name: String) -> TextureRect:
