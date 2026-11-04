@@ -55,3 +55,5 @@
 남은 문제(낮음, 기록만): 결과 창의 긴 제목이 Galmuri 24px에서 음절 단위로 줄바꿈된다(예: "미지로 향하는 은 / 잎 숲"). Godot 텍스트 서버가 한국어를 음절에서 끊는 동작이며, 내용은 모두 보인다.
 
 재확인 실행(작성자): `npm test` 종료 0(모션 46 등), `test:e2e` 3 viewport PASS(82/19), 렌더링 E2E와 `docs/qa` 렌더 갱신. 독립 재확인은 3회차에서 한다.
+
+증거: NAS1dual `agent-artifacts/princess-tycoon/2026-11-04/0b3f736/pixel-ui-review-round2/` (검수자 실행 증거와 `1d8380c` 수정 후 캡처, 목록 SHA-256은 폴더의 `MANIFEST.txt`)
