@@ -21,3 +21,5 @@ GoogleService-Info.plist
 
 # Princess Maker 2 역공학 자료는 저작권 때문에 공개 저장소에 올리지 않는다.
 extract/
+__pycache__/
+*.pyc
