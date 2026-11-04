@@ -184,10 +184,13 @@ func _run() -> void:
 	await process_frame
 	_check(layer.call("active_motion_mode") == "static", "reducedMotion 신규 결과는 정적 카드 대체")
 
-	var trainee_script := load("res://src/ui/procedural_trainee.gd")
+	var trainee_script := load("res://src/ui/pixel/pixel_trainee_view.gd")
 	var trainee: Control = trainee_script.new()
-	trainee.size = Vector2(390, 302)
+	trainee.size = Vector2(390, 388)
 	trainee.call("set_reduced_motion", true)
+	root.add_child(trainee)
+	await process_frame
+	var plain_image: Image = trainee.call("trainee_image")
 	trainee.call("set_equipment", {
 		"outfit": "OUTFIT_NOBLE",
 		"weapon": "WPN_WAND",
@@ -196,13 +199,17 @@ func _run() -> void:
 		"enhancementLevels": {"outfit": 25, "weapon": 18, "armor": 12, "accessory": 8},
 		"visualSeed": 1729,
 	})
-	root.add_child(trainee)
 	await process_frame
-	_check(int(trainee.call("_max_enhancement_level")) == 25, "장비 강화 레벨이 절차 외형 입력으로 연결")
-	var base_outfit := Color("#7a5aa6")
-	var enhanced_outfit: Color = trainee.call("_enhanced_color", base_outfit, "outfit", 31)
-	_check(not enhanced_outfit.is_equal_approx(base_outfit), "강화·시드가 장비 색 변형에 반영")
-	_check(trainee.call("_seed_accent", 79) is Color, "고정 seed 기반 문양·장식 팔레트 생성")
+	var equipped_image: Image = trainee.call("trainee_image")
+	_check(int(trainee.call("_max_enhancement_level")) == 25, "장비 강화 레벨이 도트 외형 입력으로 연결")
+	_check(plain_image != null and equipped_image != null and plain_image.get_data() != equipped_image.get_data(), "장착 장비가 페이퍼돌 레이어를 바꿈")
+	trainee.call("set_profile", "martial")
+	await process_frame
+	var martial_image: Image = trainee.call("trainee_image")
+	_check(martial_image.get_data() != equipped_image.get_data(), "성장 방향이 제복 색을 바꿈")
+	for frame_index in 40:
+		await process_frame
+	_check(int(trainee.call("current_frame")) == 0, "모션 줄이기에서는 대기 프레임이 멈춤")
 	trainee.queue_free()
 
 	var engine: Variant = main.get("_engine")

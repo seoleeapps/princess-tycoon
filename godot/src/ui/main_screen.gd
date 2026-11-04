@@ -1,14 +1,15 @@
 extends Control
 
-const RoyalTheme = preload("res://src/ui/royal_theme.gd")
-const ProceduralTrainee = preload("res://src/ui/procedural_trainee.gd")
+const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
+const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
+const PixelTraineeView = preload("res://src/ui/pixel/pixel_trainee_view.gd")
 const ResultFeedbackLayer = preload("res://src/ui/result_feedback_layer.gd")
 const ActivityProgressRing = preload("res://src/ui/activity_progress_ring.gd")
 const LocalAnalyticsPort = preload("res://src/ports/local_analytics_port.gd")
 const NoOpAdPort = preload("res://src/ports/noop_ad_port.gd")
 const NoOpIapPort = preload("res://src/ports/noop_iap_port.gd")
 const SynthAudioPort = preload("res://src/ports/synth_audio_port.gd")
-const FONT_PATH := "res://assets/fonts/NotoSansKR-VariableFont_wght.ttf"
+const ICON_DIR := "res://assets/pixel/icons/"
 
 const TABS := [
 	{"id": "home", "label": "홈"},
@@ -88,19 +89,24 @@ var _toast_serial := 0
 var _result_feedback_layer: Control
 var _trainee_name_edit: LineEdit
 var _home_avatar: Control
+var _status_panel: PanelContainer
+var _status_slot: MarginContainer
+var _header_name_label: Label
+var _header_tier_label: Label
+static var _icon_cache := {}
 
 
 func _ready() -> void:
-	var bundled_font: Font = null
-	if ResourceLoader.exists(FONT_PATH):
-		bundled_font = load(FONT_PATH)
-	theme = RoyalTheme.build(bundled_font)
+	theme = PixelTheme.build(false)
+	# 도트는 어느 뷰포트에서 그려도 nearest로 키운다(SubViewport는 프로젝트 기본 필터를 물려받지 않는다).
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_runtime_config = _load_json_dictionary("res://data/config.json")
 	_state = _fallback_state()
 	_activities = _load_activities()
 	_items = _load_json_array("res://data/items.json")
 	_events = _load_json_array("res://data/events.json")
 	_initialize_engine()
+	theme = PixelTheme.build(bool(_read(["settings", "highContrast"], false)))
 	_auto_running = bool(_read(["settings", "autoRun"], true))
 	_initialize_runtime_ports()
 	_build_shell()
@@ -266,24 +272,24 @@ func _build_shell() -> void:
 	set_meta("screen_id", "home")
 	set_meta("available_screen_ids", PackedStringArray(["home", "plan", "activity", "growth", "record", "world", "shop", "settings", "offline", "event", "profile", "continue"]))
 	var background := ColorRect.new()
-	background.color = RoyalTheme.MIDNIGHT
+	background.color = PixelTokens.STRIP_DARK
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
-	var safe_area := MarginContainer.new()
-	safe_area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	safe_area.add_theme_constant_override("margin_left", 10)
-	safe_area.add_theme_constant_override("margin_right", 10)
-	safe_area.add_theme_constant_override("margin_top", 8)
-	safe_area.add_theme_constant_override("margin_bottom", 8)
-	add_child(safe_area)
-
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	safe_area.add_child(column)
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	column.add_theme_constant_override("separation", 0)
+	add_child(column)
 	column.add_child(_build_header())
-	column.add_child(_build_activity_status())
+	# 현재 활동 창은 하나만 만든다. 홈에서는 장면 위로, 다른 탭에서는 이 자리로 옮겨 항상 보이게 한다.
+	_status_slot = MarginContainer.new()
+	_status_slot.name = "StatusSlot"
+	for side in ["left", "right", "top"]:
+		_status_slot.add_theme_constant_override("margin_" + side, PixelTokens.EDGE)
+	column.add_child(_status_slot)
+	_status_panel = _build_activity_status()
+	_status_slot.add_child(_status_panel)
 
 	_content_host = Control.new()
 	_content_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -303,99 +309,112 @@ func _build_shell() -> void:
 
 
 func _build_header() -> Control:
+	var strip := PanelContainer.new()
+	strip.name = "Header"
+	strip.theme_type_variation = PixelTheme.panel_variation("strip")
+	strip.custom_minimum_size.y = 56.0
 	var row := HBoxContainer.new()
-	row.custom_minimum_size.y = 54.0
-	row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", PixelTokens.GAP)
+	strip.add_child(row)
 
-	var menu := _button("메뉴", _open_sheet.bind("menu"), "ghost", 48.0, "menu")
-	menu.custom_minimum_size.x = 64.0
+	var menu := _button("", _open_sheet.bind("menu"), "secondary", 44.0, "menu")
+	menu.icon = _icon_texture("menu")
+	menu.tooltip_text = "메뉴"
+	menu.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	menu.custom_minimum_size.x = 44.0
 	menu.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	menu.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(menu)
 
 	var title_box := VBoxContainer.new()
 	title_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_box.add_theme_constant_override("separation", -2)
-	var title := _label("왕립 아카데미", 20, RoyalTheme.PARCHMENT)
-	var name_label := _label(str(_state.get("traineeName", "수련생")), 16, RoyalTheme.PARCHMENT_MUTED)
-	title.autowrap_mode = TextServer.AUTOWRAP_OFF
-	name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	title_box.add_child(title)
-	title_box.add_child(name_label)
+	title_box.add_theme_constant_override("separation", 2)
+	_header_name_label = _label(str(_state.get("traineeName", "수련생")), 16, PixelTokens.ON_STRIP)
+	_header_time_label = _label("", 16, PixelTokens.ON_STRIP_MUTED)
+	for label in [_header_name_label, _header_time_label]:
+		label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		title_box.add_child(label)
 	row.add_child(title_box)
 
 	var right := VBoxContainer.new()
-	right.alignment = BoxContainer.ALIGNMENT_CENTER
-	right.custom_minimum_size.x = 84.0
 	right.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_header_gold_label = _label("", 18, RoyalTheme.GOLD_SOFT, HORIZONTAL_ALIGNMENT_RIGHT)
-	_header_time_label = _label("", 16, RoyalTheme.PARCHMENT_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+	right.add_theme_constant_override("separation", 2)
+	var gold_row := HBoxContainer.new()
+	gold_row.alignment = BoxContainer.ALIGNMENT_END
+	gold_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	gold_row.add_child(_icon("coin"))
+	_header_gold_label = _label("", 16, PixelTokens.ON_STRIP, HORIZONTAL_ALIGNMENT_RIGHT)
 	_header_gold_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_header_time_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	right.add_child(_header_gold_label)
-	right.add_child(_header_time_label)
+	_header_gold_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+	gold_row.add_child(_header_gold_label)
+	right.add_child(gold_row)
+	_header_tier_label = _label("", 16, PixelTokens.ON_STRIP_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+	_header_tier_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	right.add_child(_header_tier_label)
 	row.add_child(right)
-	return row
+	return strip
 
 
-func _build_activity_status() -> Control:
-	var panel := _card("coral")
-	panel.custom_minimum_size.y = 110.0
-	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	var status_style := RoyalTheme.card_style("coral")
-	status_style.content_margin_top = 8.0
-	status_style.content_margin_bottom = 8.0
-	panel.add_theme_stylebox_override("panel", status_style)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 4)
-	panel.add_child(content)
+func _build_activity_status() -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.name = "ActivityStatus"
+	panel.theme_type_variation = PixelTheme.panel_variation("window")
+	panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", PixelTokens.GAP)
+	panel.add_child(row)
 
-	var top := HBoxContainer.new()
-	_activity_label = _label("현재 활동", 18, RoyalTheme.PARCHMENT)
-	_activity_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_activity_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_activity_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	top.add_child(_activity_label)
-	var offline := _button("방치 %s" % _duration_label(_config_int("offlineCapSeconds", 28800)), _open_sheet.bind("offline"), "ghost", 44.0, "offline_open")
-	offline.custom_minimum_size.x = 104.0
-	offline.size_flags_horizontal = Control.SIZE_SHRINK_END
-	top.add_child(offline)
-	_pause_button = _button("일시정지", _toggle_auto, "gold", 44.0, "pause")
-	_pause_button.custom_minimum_size.x = 84.0
-	_pause_button.size_flags_horizontal = Control.SIZE_SHRINK_END
-	top.add_child(_pause_button)
-	content.add_child(top)
-
-	var status_bottom := HBoxContainer.new()
-	status_bottom.add_theme_constant_override("separation", 8)
-	_reason_label = _label("", 16, RoyalTheme.PARCHMENT_MUTED)
-	_reason_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_reason_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	status_bottom.add_child(_reason_label)
 	_activity_progress = ActivityProgressRing.new()
 	_activity_progress.tooltip_text = "현재 활동 진행률"
-	status_bottom.add_child(_activity_progress)
-	content.add_child(status_bottom)
+	row.add_child(_activity_progress)
+	var text_box := VBoxContainer.new()
+	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_box.add_theme_constant_override("separation", 4)
+	_activity_label = _label("현재 활동", 16, PixelTokens.INK)
+	_reason_label = _label("", 16, PixelTokens.INK_MUTED)
+	for label in [_activity_label, _reason_label]:
+		label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		text_box.add_child(label)
+	row.add_child(text_box)
+
+	var offline := _button("8시간", _open_sheet.bind("offline"), "secondary", 44.0, "offline_open")
+	offline.text = _duration_label(_config_int("offlineCapSeconds", 28800))
+	offline.custom_minimum_size.x = 92.0
+	offline.icon = _icon_texture("moon")
+	offline.tooltip_text = "방치 최대 %s · 오프라인 정산" % offline.text
+	offline.size_flags_horizontal = Control.SIZE_SHRINK_END
+	row.add_child(offline)
+	_pause_button = _button("", _toggle_auto, "gold", 44.0, "pause")
+	_pause_button.custom_minimum_size.x = 44.0
+	_pause_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pause_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	row.add_child(_pause_button)
 	return panel
 
 
 func _build_navigation() -> Control:
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size.y = 70.0
-	panel.add_theme_stylebox_override("panel", RoyalTheme.card_style("transparent"))
+	var strip := PanelContainer.new()
+	strip.name = "Navigation"
+	strip.theme_type_variation = PixelTheme.panel_variation("strip")
+	strip.custom_minimum_size.y = 84.0
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	panel.add_child(row)
+	row.add_theme_constant_override("separation", 2)
+	strip.add_child(row)
 	for definition in TABS:
 		var tab_id := str(definition["id"])
-		var tab_button := _button(str(definition["label"]), _show_tab.bind(tab_id), "ghost", 54.0, "tab_%s" % tab_id)
+		var tab_button := _button(str(definition["label"]), _show_tab.bind(tab_id), "secondary", 72.0, "tab_%s" % tab_id)
+		tab_button.theme_type_variation = "PixelTab"
+		tab_button.icon = _icon_texture(tab_id)
+		tab_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tab_button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
 		tab_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tab_button.toggle_mode = true
 		row.add_child(tab_button)
 		tab_button.add_to_group("critical_cta")
 		_nav_buttons[tab_id] = tab_button
-	return panel
+	return strip
 
 
 func _show_tab(tab_id: String) -> void:
@@ -403,9 +422,7 @@ func _show_tab(tab_id: String) -> void:
 	for key in _nav_buttons:
 		var tab_button: Button = _nav_buttons[key]
 		tab_button.button_pressed = key == tab_id
-		var variant := "primary" if key == tab_id else "ghost"
-		tab_button.set_meta("royal_variant", variant)
-		RoyalTheme.apply_button(tab_button, variant, bool(_read(["settings", "highContrast"], false)))
+		tab_button.theme_type_variation = "PixelTabSelected" if key == tab_id else "PixelTab"
 	_render_current_page()
 	_track_event(&"screen_view", {"screen": tab_id})
 
@@ -414,6 +431,11 @@ func _render_current_page() -> void:
 	if _content_host == null:
 		return
 	_home_avatar = null
+	# 페이지를 지우기 전에 공용 현재 활동 창을 셸 자리로 되돌린다.
+	if _status_panel != null and _status_slot != null and _status_panel.get_parent() != _status_slot:
+		_status_panel.reparent(_status_slot, false)
+	if _status_slot != null:
+		_status_slot.visible = _current_tab != "home"
 	for child in _content_host.get_children():
 		child.queue_free()
 	var page: Control
@@ -436,12 +458,13 @@ func _page_scroll() -> Dictionary:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var margin := MarginContainer.new()
 	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	margin.add_theme_constant_override("margin_top", 2)
-	margin.add_theme_constant_override("margin_bottom", 12)
+	for side in ["left", "right", "top"]:
+		margin.add_theme_constant_override("margin_" + side, PixelTokens.EDGE)
+	margin.add_theme_constant_override("margin_bottom", PixelTokens.GAP)
 	scroll.add_child(margin)
 	var body := VBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 12)
+	body.add_theme_constant_override("separation", PixelTokens.GAP)
 	margin.add_child(body)
 	return {"scroll": scroll, "body": body}
 
@@ -450,76 +473,84 @@ func _build_home_page() -> Control:
 	var page := _page_scroll()
 	var body: VBoxContainer = page["body"]
 
-	var hero := PanelContainer.new()
-	hero.mouse_filter = Control.MOUSE_FILTER_PASS
-	hero.custom_minimum_size.y = 302.0
-	hero.add_theme_stylebox_override("panel", RoyalTheme.card_style("gold"))
+	# 방 장면: 수련생, 활동 말풍선, 장면 위 현재 활동 창
 	var stage := Control.new()
+	stage.name = "HomeScene"
+	stage.custom_minimum_size.y = 440.0
 	stage.mouse_filter = Control.MOUSE_FILTER_PASS
-	hero.add_child(stage)
-	var avatar := ProceduralTrainee.new()
+	stage.clip_contents = true
+	var avatar := PixelTraineeView.new()
 	_home_avatar = avatar
 	avatar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	avatar.set_profile(_policy_preset())
 	avatar.set_environment(_profile_environment())
 	avatar.set_equipment(_equipment_visual_state())
 	avatar.set_reduced_motion(bool(_read(["settings", "reducedMotion"], false)))
+	avatar.set_activity(_activity_icon_name(), _activity_elapsed / maxf(0.01, _config_float("onlineSecondsPerSlot", 5.0)))
 	stage.add_child(avatar)
-
+	var overlay := MarginContainer.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	overlay.mouse_filter = Control.MOUSE_FILTER_PASS
+	for side in ["left", "right", "top"]:
+		overlay.add_theme_constant_override("margin_" + side, PixelTokens.GAP_SMALL)
+	stage.add_child(overlay)
+	if _status_panel == null:
+		_status_panel = _build_activity_status()
+		overlay.add_child(_status_panel)
+		_refresh_chrome()
+	else:
+		_status_panel.reparent(overlay, false)
 	var profile_chip := PanelContainer.new()
+	profile_chip.theme_type_variation = PixelTheme.panel_variation("chip")
 	profile_chip.mouse_filter = Control.MOUSE_FILTER_PASS
-	profile_chip.position = Vector2(12, 12)
-	profile_chip.size = Vector2(126, 38)
-	profile_chip.add_theme_stylebox_override("panel", RoyalTheme.chip_style(RoyalTheme.GOLD))
-	profile_chip.add_child(_label("%s 성장" % _preset_name(_policy_preset()), 16, RoyalTheme.GOLD_SOFT, HORIZONTAL_ALIGNMENT_CENTER))
+	profile_chip.position = Vector2(8, 392)
+	var profile_label := _label("%s 성장" % _preset_name(_policy_preset()), 16, PixelTokens.INK)
+	profile_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	profile_chip.add_child(profile_label)
 	stage.add_child(profile_chip)
+	body.add_child(stage)
 
-	var activity_card := PanelContainer.new()
-	activity_card.mouse_filter = Control.MOUSE_FILTER_PASS
-	activity_card.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	activity_card.offset_left = 12
-	activity_card.offset_right = -12
-	activity_card.offset_top = -76
-	activity_card.offset_bottom = -12
-	activity_card.add_theme_stylebox_override("panel", RoyalTheme.card_style("transparent"))
-	var activity_text := VBoxContainer.new()
-	activity_text.add_theme_constant_override("separation", 1)
-	activity_text.add_child(_label("지금, %s" % _current_activity_name(), 19, RoyalTheme.PARCHMENT))
-	activity_text.add_child(_label(_planner_reason(), 16, RoyalTheme.PARCHMENT_MUTED))
-	activity_card.add_child(activity_text)
-	stage.add_child(activity_card)
-	body.add_child(hero)
+	# 미터 3종
+	var meters := _card("window")
+	var meter_row := HBoxContainer.new()
+	meter_row.add_theme_constant_override("separation", PixelTokens.GAP + 4)
+	meter_row.add_child(_meter_cell("energy", "에너지", float(_read(["meters", "energy"], 0)), 100.0))
+	meter_row.add_child(_meter_cell("stress", "스트레스", float(_read(["meters", "stress"], 0)), maxf(1.0, float(_read(["growthPolicy", "maxStress"], 100.0)))))
+	meter_row.add_child(_meter_cell("reputation", "평판", float(_read(["meters", "reputation"], 0)), 100.0))
+	meters.add_child(meter_row)
+	body.add_child(meters)
 
-	var resource_row := HBoxContainer.new()
-	resource_row.add_theme_constant_override("separation", 8)
-	resource_row.add_child(_resource_card("에너지", "%d" % int(_read(["meters", "energy"], 0)), RoyalTheme.MINT))
-	resource_row.add_child(_resource_card("스트레스", "%d" % int(_read(["meters", "stress"], 0)), RoyalTheme.CORAL))
-	resource_row.add_child(_resource_card("평판", "%d" % int(_read(["meters", "reputation"], 0)), RoyalTheme.GOLD))
-	body.add_child(resource_row)
-
-	var quick_title := _section_heading("오늘의 선택", "방향만 정하면 수련생이 스스로 다음 활동을 골라요.")
-	body.add_child(quick_title)
+	# 행동
 	var quick_grid := GridContainer.new()
 	quick_grid.columns = 2
-	quick_grid.add_theme_constant_override("h_separation", 8)
-	quick_grid.add_theme_constant_override("v_separation", 8)
-	quick_grid.add_child(_button("자동 1회 실행", _complete_current_activity, "primary", 48.0, "run_auto_once"))
-	quick_grid.add_child(_button("월드 출정", _open_sheet.bind("world"), "gold", 48.0, "open_world"))
+	quick_grid.add_theme_constant_override("h_separation", PixelTokens.GAP)
+	quick_grid.add_theme_constant_override("v_separation", PixelTokens.GAP)
+	var run_once := _button("자동 1회 실행", _complete_current_activity, "primary", 52.0, "run_auto_once")
+	run_once.icon = _icon_texture("play")
+	quick_grid.add_child(run_once)
+	var world := _button("월드 출정", _open_sheet.bind("world"), "gold", 52.0, "open_world")
+	world.icon = _icon_texture("world")
+	quick_grid.add_child(world)
 	quick_grid.add_child(_button("성장 방향", _show_tab.bind("plan"), "secondary", 48.0, "open_plan"))
-	quick_grid.add_child(_button("이벤트 확인", _open_sheet.bind("event"), "secondary", 48.0, "open_event"))
+	var event_count := _event_inbox().size()
+	var events := _button("이벤트 %d" % event_count if event_count > 0 else "이벤트 확인", _open_sheet.bind("event"), "secondary", 48.0, "open_event")
+	events.icon = _icon_texture("event")
+	quick_grid.add_child(events)
 	body.add_child(quick_grid)
-
+	# 최근 결과
 	var result = _read(["lastResult"], {})
-	var recent := _card("raised")
+	var recent := _card("transparent")
 	var recent_box := VBoxContainer.new()
-	recent_box.add_theme_constant_override("separation", 3)
-	recent_box.add_child(_label("최근 결과 · %s" % str(result.get("title", "수련 완료")), 17, RoyalTheme.GOLD_SOFT))
-	recent_box.add_child(_label(str(result.get("summary", "성장 결과를 확인하세요.")), 16, RoyalTheme.PARCHMENT_MUTED))
-	if result is Dictionary:
+	recent_box.add_theme_constant_override("separation", 4)
+	var title_text := str(result.get("title", "")) if result is Dictionary else ""
+	recent_box.add_child(_label("최근 · %s" % (title_text if not title_text.is_empty() else "아직 완료한 활동이 없어요"), 16, PixelTokens.INK))
+	if result is Dictionary and not str(result.get("summary", "")).is_empty():
+		recent_box.add_child(_label(str(result.get("summary", "")), 16, PixelTokens.INK_MUTED))
 		for specialized_line: String in _result_specialized_summary_lines(result as Dictionary):
-			recent_box.add_child(_label(specialized_line, 16, RoyalTheme.PARCHMENT_MUTED))
+			recent_box.add_child(_label(specialized_line, 16, PixelTokens.INK_MUTED))
 	recent.add_child(recent_box)
 	body.add_child(recent)
+
 	return page["scroll"]
 
 
@@ -586,7 +617,7 @@ func _build_plan_page() -> Control:
 	body.add_child(tag_grid)
 
 	var note := _card("transparent")
-	note.add_child(_label("현재 선택 이유 상위 3개는 활동 상태 카드에 표시되며, 정책 변경으로 진행 중 활동이 취소되지는 않습니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+	note.add_child(_label("현재 선택 이유 상위 3개는 활동 상태 카드에 표시되며, 정책 변경으로 진행 중 활동이 취소되지는 않습니다.", 16, PixelTokens.INK_MUTED))
 	body.add_child(note)
 	return page["scroll"]
 
@@ -615,8 +646,8 @@ func _build_activity_page() -> Control:
 	var automatic := _card("coral")
 	var automatic_box := VBoxContainer.new()
 	automatic_box.add_theme_constant_override("separation", 8)
-	automatic_box.add_child(_label("추천 · %s" % _current_activity_name(), 19, RoyalTheme.PARCHMENT))
-	automatic_box.add_child(_label(_planner_reason(), 16, RoyalTheme.PARCHMENT_MUTED))
+	automatic_box.add_child(_label("추천 · %s" % _current_activity_name(), 19, PixelTokens.INK))
+	automatic_box.add_child(_label(_planner_reason(), 16, PixelTokens.INK_MUTED))
 	automatic_box.add_child(_button("추천 활동 즉시 실행", _complete_current_activity, "primary", 48.0, "run_recommended"))
 	automatic.add_child(automatic_box)
 	body.add_child(automatic)
@@ -625,14 +656,14 @@ func _build_activity_page() -> Control:
 	var queue_card := _card("transparent")
 	var queue_box := VBoxContainer.new()
 	queue_box.add_theme_constant_override("separation", 5)
-	queue_box.add_child(_label("자동 큐 · %d건" % queued.size(), 17, RoyalTheme.PARCHMENT))
+	queue_box.add_child(_label("자동 큐 · %d건" % queued.size(), 17, PixelTokens.INK))
 	if queued.is_empty():
-		queue_box.add_child(_label("비어 있으면 성장 정책이 다음 활동을 자동 선택합니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+		queue_box.add_child(_label("비어 있으면 성장 정책이 다음 활동을 자동 선택합니다.", 16, PixelTokens.INK_MUTED))
 	else:
 		for queue_index in range(mini(5, queued.size())):
 			var queue_row := HBoxContainer.new()
 			queue_row.add_theme_constant_override("separation", 5)
-			queue_row.add_child(_label("%d. %s" % [queue_index + 1, _activity_name_by_id(str(queued[queue_index]))], 16, RoyalTheme.PARCHMENT))
+			queue_row.add_child(_label("%d. %s" % [queue_index + 1, _activity_name_by_id(str(queued[queue_index]))], 16, PixelTokens.INK))
 			var up := _button("↑", _move_queued_activity.bind(queue_index, -1), "ghost", 44.0)
 			up.custom_minimum_size.x = 44.0
 			up.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -649,7 +680,7 @@ func _build_activity_page() -> Control:
 			queue_row.add_child(remove)
 			queue_box.add_child(queue_row)
 		if queued.size() > 5:
-			queue_box.add_child(_label("외 %d건" % (queued.size() - 5), 16, RoyalTheme.PARCHMENT_MUTED))
+			queue_box.add_child(_label("외 %d건" % (queued.size() - 5), 16, PixelTokens.INK_MUTED))
 		queue_box.add_child(_button("자동 큐 모두 비우기", _clear_activity_queue, "ghost"))
 	queue_card.add_child(queue_box)
 	body.add_child(queue_card)
@@ -664,7 +695,7 @@ func _build_activity_page() -> Control:
 			break
 	if visible_count == 0:
 		var empty := _card("transparent")
-		empty.add_child(_label("이 분류의 활동은 세계 티어 또는 시즌 조건을 달성하면 열립니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+		empty.add_child(_label("이 분류의 활동은 세계 티어 또는 시즌 조건을 달성하면 열립니다.", 16, PixelTokens.INK_MUTED))
 		body.add_child(empty)
 	return page["scroll"]
 
@@ -674,26 +705,26 @@ func _activity_card(activity: Dictionary) -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	var title_row := HBoxContainer.new()
-	var title := _label(str(activity.get("name", activity.get("id", "활동"))), 18, RoyalTheme.PARCHMENT)
+	var title := _label(str(activity.get("name", activity.get("id", "활동"))), 18, PixelTokens.INK)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(title)
 	var mastery_level := int(_read(["mastery", str(activity.get("id", ""))], 0))
-	title_row.add_child(_chip("숙련 %d" % mastery_level, RoyalTheme.GOLD))
+	title_row.add_child(_chip("숙련 %d" % mastery_level, PixelTokens.GOLD))
 	box.add_child(title_row)
-	box.add_child(_label(str(activity.get("description", "새로운 경험으로 성장합니다.")), 16, RoyalTheme.PARCHMENT_MUTED))
+	box.add_child(_label(str(activity.get("description", "새로운 경험으로 성장합니다.")), 16, PixelTokens.INK_MUTED))
 	var facts := HBoxContainer.new()
 	facts.add_theme_constant_override("separation", 8)
 	var cost := float(activity.get("baseCost", 0.0))
 	var reward := float(activity.get("baseReward", 0.0))
 	var economy := "비용 %s G" % _format_number(cost) if cost > 0.0 else ("보수 %s G" % _format_number(reward) if reward > 0.0 else "무료")
-	facts.add_child(_chip(economy, RoyalTheme.GOLD))
-	facts.add_child(_chip("에너지 %+d" % int(activity.get("energyDelta", 0)), RoyalTheme.MINT))
-	facts.add_child(_chip("스트레스 %+d" % int(activity.get("stressDelta", 0)), RoyalTheme.CORAL))
+	facts.add_child(_chip(economy, PixelTokens.GOLD))
+	facts.add_child(_chip("에너지 %+d" % int(activity.get("energyDelta", 0)), PixelTokens.POSITIVE))
+	facts.add_child(_chip("스트레스 %+d" % int(activity.get("stressDelta", 0)), PixelTokens.NEGATIVE))
 	box.add_child(facts)
 	var activity_id := str(activity.get("id", ""))
 	var lock_reason := _activity_lock_reason(activity_id)
 	if not lock_reason.is_empty():
-		box.add_child(_label("잠금 · %s" % lock_reason, 16, RoyalTheme.DANGER))
+		box.add_child(_label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE))
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
 	var action := _button("이 활동 1회", _run_activity.bind(activity_id), "secondary", 48.0, "activity_run_%s" % activity_id)
@@ -716,9 +747,9 @@ func _build_growth_page() -> Control:
 	var summary := _card("gold")
 	var summary_box := HBoxContainer.new()
 	summary_box.add_theme_constant_override("separation", 8)
-	summary_box.add_child(_resource_card("세계 티어", "%d" % int(_state.get("worldTier", 1)), RoyalTheme.GOLD))
-	summary_box.add_child(_resource_card("명성", _format_big(_read(["bigValues", "renown"], {"mantissa": 0, "exponent": 0})), RoyalTheme.CORAL))
-	summary_box.add_child(_resource_card("칭호", "%d" % _career_title_count(), RoyalTheme.MINT))
+	summary_box.add_child(_resource_card("세계 티어", "%d" % int(_state.get("worldTier", 1)), PixelTokens.GOLD))
+	summary_box.add_child(_resource_card("명성", _format_big(_read(["bigValues", "renown"], {"mantissa": 0, "exponent": 0})), PixelTokens.NEGATIVE))
+	summary_box.add_child(_resource_card("칭호", "%d" % _career_title_count(), PixelTokens.POSITIVE))
 	summary.add_child(summary_box)
 	body.add_child(summary)
 
@@ -761,16 +792,16 @@ func _build_growth_page() -> Control:
 	var mastery: Dictionary = _read(["mastery"], {})
 	if mastery.is_empty():
 		var mastery_empty := _card("transparent")
-		mastery_empty.add_child(_label("활동을 완료하면 숙련 기록이 쌓입니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+		mastery_empty.add_child(_label("활동을 완료하면 숙련 기록이 쌓입니다.", 16, PixelTokens.INK_MUTED))
 		body.add_child(mastery_empty)
 	else:
 		for activity_id in mastery:
 			var mastery_row := _card("raised")
 			var mastery_content := HBoxContainer.new()
-			var mastery_name := _label(_activity_name_by_id(str(activity_id)), 16, RoyalTheme.PARCHMENT)
+			var mastery_name := _label(_activity_name_by_id(str(activity_id)), 16, PixelTokens.INK)
 			mastery_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			mastery_content.add_child(mastery_name)
-			mastery_content.add_child(_chip("Lv. %d" % int(mastery[activity_id]), RoyalTheme.GOLD))
+			mastery_content.add_child(_chip("Lv. %d" % int(mastery[activity_id]), PixelTokens.GOLD))
 			mastery_row.add_child(mastery_content)
 			body.add_child(mastery_row)
 	return page["scroll"]
@@ -784,7 +815,7 @@ func _build_record_page() -> Control:
 	var season_card := _card("gold")
 	var season_box := VBoxContainer.new()
 	season_box.add_theme_constant_override("separation", 7)
-	season_box.add_child(_label("%d연차 · %d시즌" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1))], 22, RoyalTheme.GOLD_SOFT))
+	season_box.add_child(_label("%d연차 · %d시즌" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1))], 22, PixelTokens.ACCENT))
 	var season_progress := ProgressBar.new()
 	season_progress.custom_minimum_size.y = 22.0
 	var slots_per_season := maxi(1, _config_int("slotsPerSeason", 28))
@@ -792,7 +823,7 @@ func _build_record_page() -> Control:
 	season_progress.value = float(_season_slot())
 	season_progress.show_percentage = false
 	season_box.add_child(season_progress)
-	season_box.add_child(_label("다음 심사까지 %d회 · 강제 종료나 초기화 없음" % (slots_per_season - _season_slot()), 16, RoyalTheme.PARCHMENT_MUTED))
+	season_box.add_child(_label("다음 심사까지 %d회 · 강제 종료나 초기화 없음" % (slots_per_season - _season_slot()), 16, PixelTokens.INK_MUTED))
 	season_card.add_child(season_box)
 	body.add_child(season_card)
 	var season_history: Array = _read(["seasonHistory"], [])
@@ -801,11 +832,11 @@ func _build_record_page() -> Control:
 		var review_card := _card("raised")
 		var review_box := VBoxContainer.new()
 		review_box.add_theme_constant_override("separation", 4)
-		review_box.add_child(_label("최근 심사 · %d연차 %d시즌" % [int(latest_review.get("year", 1)), int(latest_review.get("season", 1))], 18, RoyalTheme.PARCHMENT))
+		review_box.add_child(_label("최근 심사 · %d연차 %d시즌" % [int(latest_review.get("year", 1)), int(latest_review.get("season", 1))], 18, PixelTokens.INK))
 		review_box.add_child(_label("명성 +%d · 정책 일치 %d%% · 도전 승리 %d · 계약 %d" % [
 			int(latest_review.get("renownGained", 0)), int(float(latest_review.get("policyFit", 0.0)) * 100.0),
 			int(latest_review.get("challengeWins", 0)), int(latest_review.get("completedContracts", 0))
-		], 16, RoyalTheme.PARCHMENT_MUTED))
+		], 16, PixelTokens.INK_MUTED))
 		review_card.add_child(review_box)
 		body.add_child(review_card)
 
@@ -830,12 +861,12 @@ func _build_record_page() -> Control:
 		var contract_box := VBoxContainer.new()
 		contract_box.add_theme_constant_override("separation", 5)
 		var contract_top := HBoxContainer.new()
-		var contract_name := _label(str(contract.get("name", "주간 계약")), 17, RoyalTheme.PARCHMENT)
+		var contract_name := _label(str(contract.get("name", "주간 계약")), 17, PixelTokens.INK)
 		contract_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		contract_top.add_child(contract_name)
-		contract_top.add_child(_chip("%s G" % _format_big(contract.get("reward", {"mantissa": 0, "exponent": 0})), RoyalTheme.GOLD))
+		contract_top.add_child(_chip("%s G" % _format_big(contract.get("reward", {"mantissa": 0, "exponent": 0})), PixelTokens.GOLD))
 		contract_box.add_child(contract_top)
-		contract_box.add_child(_label(str(contract.get("description", "현재 성장 경로로 달성 가능한 계약입니다.")), 16, RoyalTheme.PARCHMENT_MUTED))
+		contract_box.add_child(_label(str(contract.get("description", "현재 성장 경로로 달성 가능한 계약입니다.")), 16, PixelTokens.INK_MUTED))
 		var contract_meta: Array[String] = []
 		var contract_region = contract.get("region", {})
 		if typeof(contract_region) == TYPE_DICTIONARY and not str(contract_region.get("name", "")).is_empty():
@@ -846,7 +877,7 @@ func _build_record_page() -> Control:
 		if typeof(bonus) == TYPE_DICTIONARY and not str(bonus.get("name", "")).is_empty():
 			contract_meta.append("보너스: %s" % str(bonus.get("name", "")))
 		if not contract_meta.is_empty():
-			contract_box.add_child(_label(" · ".join(contract_meta), 16, RoyalTheme.MINT))
+			contract_box.add_child(_label(" · ".join(contract_meta), 16, PixelTokens.POSITIVE))
 		var contract_progress := ProgressBar.new()
 		contract_progress.custom_minimum_size.y = 18.0
 		contract_progress.max_value = maxf(1.0, float(contract.get("target", 1)))
@@ -858,7 +889,7 @@ func _build_record_page() -> Control:
 		contract_box.add_child(_label("%d / %d · %s" % [
 			int(contract.get("progress", 0)), int(contract.get("target", 1)),
 			"보상 자동 수령 완료" if contract_status == "completed" else ("고정 중" if pinned_contract_id == contract_id else "진행 중")
-		], 16, RoyalTheme.PARCHMENT_MUTED))
+		], 16, PixelTokens.INK_MUTED))
 		if contract_status == "active":
 			contract_box.add_child(_button("고정 해제" if pinned_contract_id == contract_id else "이 계약 고정", _pin_contract.bind("" if pinned_contract_id == contract_id else contract_id), "gold" if pinned_contract_id == contract_id else "secondary", 48.0, "contract_pin_%s" % contract_id))
 		contract_card.add_child(contract_box)
@@ -868,7 +899,7 @@ func _build_record_page() -> Control:
 	var titles: Dictionary = _read(["careerTitles"], {})
 	if titles.is_empty():
 		var title_empty := _card("transparent")
-		title_empty.add_child(_label("첫 시즌 심사에서 가까운 진로 세 개가 제안됩니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+		title_empty.add_child(_label("첫 시즌 심사에서 가까운 진로 세 개가 제안됩니다.", 16, PixelTokens.INK_MUTED))
 		body.add_child(title_empty)
 	else:
 		for title_id in titles:
@@ -877,10 +908,10 @@ func _build_record_page() -> Control:
 			var stars := int(title_data.get("stars", 1)) if typeof(title_data) == TYPE_DICTIONARY else int(title_data)
 			var title_card := _card("coral")
 			var title_row := HBoxContainer.new()
-			var title_label := _label(title_name, 18, RoyalTheme.PARCHMENT)
+			var title_label := _label(title_name, 18, PixelTokens.INK)
 			title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			title_row.add_child(title_label)
-			title_row.add_child(_chip(_career_rank(stars), RoyalTheme.GOLD))
+			title_row.add_child(_chip(_career_rank(stars), PixelTokens.GOLD))
 			title_card.add_child(title_row)
 			body.add_child(title_card)
 
@@ -895,14 +926,14 @@ func _build_record_page() -> Control:
 				near_card.add_child(_label("%s · %d%%\n%s" % [
 					str(near.get("name", near.get("id", "진로"))), int(float(near.get("progress", 0.0)) * 100.0),
 					", ".join(near.get("missing", []))
-				], 16, RoyalTheme.PARCHMENT_MUTED))
+				], 16, PixelTokens.INK_MUTED))
 				body.add_child(near_card)
 
 	var event_history: Dictionary = _read(["eventHistory"], {})
 	body.add_child(_section_heading("이벤트 도감 · %d / 26" % event_history.size(), "해결한 사건과 마지막 선택이 로컬 기록에 남습니다."))
 	if event_history.is_empty():
 		var event_empty := _card("transparent")
-		event_empty.add_child(_label("아직 해결한 이벤트가 없습니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+		event_empty.add_child(_label("아직 해결한 이벤트가 없습니다.", 16, PixelTokens.INK_MUTED))
 		body.add_child(event_empty)
 	else:
 		for event_id in event_history:
@@ -910,7 +941,7 @@ func _build_record_page() -> Control:
 			var history_card := _card("transparent")
 			history_card.add_child(_label("%s · %d회 · 마지막 선택 %s" % [
 				_event_display_name(str(event_id)), int(history_entry.get("count", 0)), _event_choice_display_name(str(event_id), str(history_entry.get("lastChoice", "-")))
-			], 16, RoyalTheme.PARCHMENT_MUTED))
+			], 16, PixelTokens.INK_MUTED))
 			body.add_child(history_card)
 	return page["scroll"]
 
@@ -921,7 +952,7 @@ func _open_sheet(kind: String) -> void:
 	var overlay := ColorRect.new()
 	overlay.name = "Screen_%s" % kind.capitalize()
 	overlay.set_meta("screen_id", kind)
-	overlay.color = Color(0.02, 0.035, 0.08, 0.78)
+	overlay.color = PixelTokens.DIM
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_modal_layer.add_child(overlay)
@@ -935,7 +966,7 @@ func _open_sheet(kind: String) -> void:
 	sheet.offset_left = 6.0
 	sheet.offset_right = -6.0
 	sheet.offset_bottom = 0.0
-	sheet.add_theme_stylebox_override("panel", RoyalTheme.sheet_style())
+	sheet.theme_type_variation = PixelTheme.panel_variation("sheet")
 	overlay.add_child(sheet)
 
 	var column := VBoxContainer.new()
@@ -947,11 +978,13 @@ func _open_sheet(kind: String) -> void:
 	heading_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading_text.add_theme_constant_override("separation", 0)
 	var sheet_info := _sheet_title(kind)
-	heading_text.add_child(_label(str(sheet_info[0]), 24, RoyalTheme.PARCHMENT))
-	heading_text.add_child(_label(str(sheet_info[1]), 16, RoyalTheme.PARCHMENT_MUTED))
+	heading_text.add_child(_label(str(sheet_info[0]), 24, PixelTokens.INK))
+	heading_text.add_child(_label(str(sheet_info[1]), 16, PixelTokens.INK_MUTED))
 	heading.add_child(heading_text)
 	var close_button := _button("닫기", _close_sheet, "ghost", 48.0, "sheet_close")
-	close_button.custom_minimum_size.x = 64.0
+	close_button.custom_minimum_size.x = 72.0
+	close_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	close_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	heading.add_child(close_button)
 	column.add_child(heading)
 
@@ -1005,8 +1038,8 @@ func _build_menu_sheet(body: VBoxContainer) -> void:
 	var summary := _card("gold")
 	var summary_box := VBoxContainer.new()
 	summary_box.add_theme_constant_override("separation", 5)
-	summary_box.add_child(_label("%s · %s 성장" % [str(_state.get("traineeName", "수련생")), _preset_name(_policy_preset())], 20, RoyalTheme.GOLD_SOFT))
-	summary_box.add_child(_label("%d연차 %d시즌 · 세계 티어 %d" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1)), int(_state.get("worldTier", 1))], 16, RoyalTheme.PARCHMENT_MUTED))
+	summary_box.add_child(_label("%s · %s 성장" % [str(_state.get("traineeName", "수련생")), _preset_name(_policy_preset())], 20, PixelTokens.ACCENT))
+	summary_box.add_child(_label("%d연차 %d시즌 · 세계 티어 %d" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1)), int(_state.get("worldTier", 1))], 16, PixelTokens.INK_MUTED))
 	summary.add_child(summary_box)
 	body.add_child(summary)
 
@@ -1025,7 +1058,7 @@ func _build_menu_sheet(body: VBoxContainer) -> void:
 	body.add_child(grid)
 
 	var guide := _card("transparent")
-	guide.add_child(_label("하단 5탭에서는 일상 성장 흐름을, 월드와 상점 같은 확장 기능은 이 보조 시트에서 관리합니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+	guide.add_child(_label("하단 5탭에서는 일상 성장 흐름을, 월드와 상점 같은 확장 기능은 이 보조 시트에서 관리합니다.", 16, PixelTokens.INK_MUTED))
 	body.add_child(guide)
 
 
@@ -1033,12 +1066,12 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 	var world_card := _card("gold")
 	var world_box := VBoxContainer.new()
 	world_box.add_theme_constant_override("separation", 6)
-	world_box.add_child(_label("세계 티어 %d · 새벽빛 왕국" % int(_state.get("worldTier", 1)), 21, RoyalTheme.GOLD_SOFT))
+	world_box.add_child(_label("세계 티어 %d · 새벽빛 왕국" % int(_state.get("worldTier", 1)), 21, PixelTokens.ACCENT))
 	var league: Dictionary = _read(["challengeLeague"], {})
 	world_box.add_child(_label("리그 %d단계 · 이번 시즌 %d승 %d패 · 최고 %.1f" % [
 		int(league.get("leagueTier", 1)), int(league.get("seasonWins", 0)), int(league.get("seasonLosses", 0)), float(league.get("bestScore", 0.0))
-	], 16, RoyalTheme.PARCHMENT_MUTED))
-	world_box.add_child(_label("실패해도 참가 경험과 다음 시도 힌트를 얻습니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+	], 16, PixelTokens.INK_MUTED))
+	world_box.add_child(_label("실패해도 참가 경험과 다음 시도 힌트를 얻습니다.", 16, PixelTokens.INK_MUTED))
 	world_card.add_child(world_box)
 	body.add_child(world_card)
 	var region: Dictionary = _read(["generatedContent", "region"], {})
@@ -1046,14 +1079,14 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 		var region_card := _card("coral")
 		var region_box := VBoxContainer.new()
 		region_box.add_theme_constant_override("separation", 5)
-		region_box.add_child(_label(str(region.get("name", "이번 시즌 변형 지역")), 19, RoyalTheme.GOLD_SOFT))
+		region_box.add_child(_label(str(region.get("name", "이번 시즌 변형 지역")), 19, PixelTokens.ACCENT))
 		var region_key := str(region.get("baseRegionId", region.get("templateId", "REG_DEFAULT")))
 		var region_progress: Dictionary = _read(["regionProgress", region_key], {})
 		var region_clears := int(region_progress.get("clearCount", 0))
 		var clears_per_tier := maxi(1, _config_int("regionClearsPerTier", 3))
 		region_box.add_child(_label("특성 · %s · 지역 티어 %d · 클리어 %d · 시즌 %d까지" % [
 			", ".join(region.get("modifiers", [])), 1 + int(region_clears / clears_per_tier), region_clears, int(region.get("expirySeason", 1))
-		], 16, RoyalTheme.PARCHMENT_MUTED))
+		], 16, PixelTokens.INK_MUTED))
 		region_card.add_child(region_box)
 		body.add_child(region_card)
 
@@ -1088,13 +1121,13 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 		var rival_row := HBoxContainer.new()
 		var rival_text := VBoxContainer.new()
 		rival_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		rival_text.add_child(_label(str(rival.get("name", "라이벌")), 17, RoyalTheme.PARCHMENT))
+		rival_text.add_child(_label(str(rival.get("name", "라이벌")), 17, PixelTokens.INK))
 		rival_text.add_child(_label("%d위 · %s · 강점 %s / 약점 %s" % [
 			int(rival.get("leagueRank", 1)), str(rival.get("personality", "신중함")),
 			str(rival.get("strength", "균형")), str(rival.get("weakness", "균형"))
-		], 16, RoyalTheme.PARCHMENT_MUTED))
+		], 16, PixelTokens.INK_MUTED))
 		rival_row.add_child(rival_text)
-		rival_row.add_child(_chip("점수 %d" % int(rival.get("score", 0)), RoyalTheme.GOLD))
+		rival_row.add_child(_chip("점수 %d" % int(rival.get("score", 0)), PixelTokens.GOLD))
 		rival_card.add_child(rival_row)
 		body.add_child(rival_card)
 
@@ -1102,10 +1135,10 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 func _build_shop_sheet(body: VBoxContainer) -> void:
 	var wallet := _card("gold")
 	var wallet_row := HBoxContainer.new()
-	var wallet_label := _label("보유 골드", 17, RoyalTheme.PARCHMENT)
+	var wallet_label := _label("보유 골드", 17, PixelTokens.INK)
 	wallet_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	wallet_row.add_child(wallet_label)
-	wallet_row.add_child(_label("%s G" % _format_big(_read(["bigValues", "gold"], {"mantissa": 0, "exponent": 0})), 22, RoyalTheme.GOLD_SOFT))
+	wallet_row.add_child(_label("%s G" % _format_big(_read(["bigValues", "gold"], {"mantissa": 0, "exponent": 0})), 22, PixelTokens.ACCENT))
 	wallet.add_child(wallet_row)
 	body.add_child(wallet)
 
@@ -1133,12 +1166,12 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 		var item_box := VBoxContainer.new()
 		item_box.add_theme_constant_override("separation", 6)
 		var item_top := HBoxContainer.new()
-		var item_name := _label("%s · %s" % [_item_category_name(str(item.get("category", ""))), str(item.get("name", item_id))], 17, RoyalTheme.PARCHMENT)
+		var item_name := _label("%s · %s" % [_item_category_name(str(item.get("category", ""))), str(item.get("name", item_id))], 17, PixelTokens.INK)
 		item_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		item_top.add_child(item_name)
-		item_top.add_child(_chip("%s G" % _tier_item_price_text(item), RoyalTheme.GOLD))
+		item_top.add_child(_chip("%s G" % _tier_item_price_text(item), PixelTokens.GOLD))
 		item_box.add_child(item_top)
-		item_box.add_child(_label(str(item.get("description", "성장에 도움이 되는 물품입니다.")), 16, RoyalTheme.PARCHMENT_MUTED))
+		item_box.add_child(_label(str(item.get("description", "성장에 도움이 되는 물품입니다.")), 16, PixelTokens.INK_MUTED))
 		var status_parts: Array[String] = []
 		if owned > 0:
 			status_parts.append("보유 %d" % owned)
@@ -1148,7 +1181,7 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 		if not equipped_slot.is_empty():
 			status_parts.append("장착 중")
 		if not status_parts.is_empty():
-			item_box.add_child(_label(" · ".join(status_parts), 16, RoyalTheme.MINT))
+			item_box.add_child(_label(" · ".join(status_parts), 16, PixelTokens.POSITIVE))
 		var actions := HBoxContainer.new()
 		actions.add_theme_constant_override("separation", 7)
 		if owned <= 0 or bool(item.get("stackable", false)):
@@ -1169,7 +1202,7 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 	var inventory: Array = _read(["inventory"], [])
 	if inventory.is_empty():
 		var inventory_empty := _card("transparent")
-		inventory_empty.add_child(_label("보관 중인 물품이 없습니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+		inventory_empty.add_child(_label("보관 중인 물품이 없습니다.", 16, PixelTokens.INK_MUTED))
 		body.add_child(inventory_empty)
 	else:
 		for stack in inventory:
@@ -1177,10 +1210,10 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 				continue
 			var stack_card := _card("transparent")
 			var stack_row := HBoxContainer.new()
-			var stack_name := _label(_item_display_name(str(stack.get("id", "ITEM"))), 17, RoyalTheme.PARCHMENT)
+			var stack_name := _label(_item_display_name(str(stack.get("id", "ITEM"))), 17, PixelTokens.INK)
 			stack_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			stack_row.add_child(stack_name)
-			stack_row.add_child(_chip("%d%s" % [int(stack.get("count", 1)), " / %d" % inventory_stack_max if bool(_item_by_id(str(stack.get("id", ""))).get("stackable", false)) else ""], RoyalTheme.MINT))
+			stack_row.add_child(_chip("%d%s" % [int(stack.get("count", 1)), " / %d" % inventory_stack_max if bool(_item_by_id(str(stack.get("id", ""))).get("stackable", false)) else ""], PixelTokens.POSITIVE))
 			stack_card.add_child(stack_row)
 			body.add_child(stack_card)
 
@@ -1198,7 +1231,7 @@ func _build_settings_sheet(body: VBoxContainer) -> void:
 	body.add_child(_button("데이터 초기화", _replace_sheet.bind("reset"), "danger"))
 
 	var policy_note := _card("transparent")
-	policy_note.add_child(_label("광고·결제·클라우드 저장은 현재 빌드에 포함되지 않습니다. 모든 핵심 진행은 로컬에서 동작합니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+	policy_note.add_child(_label("광고·결제·클라우드 저장은 현재 빌드에 포함되지 않습니다. 모든 핵심 진행은 로컬에서 동작합니다.", 16, PixelTokens.INK_MUTED))
 	body.add_child(policy_note)
 
 
@@ -1210,25 +1243,25 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 	var last_summary: Dictionary = _state.get("lastOfflineSummary", {}) as Dictionary
 	var settled_slots := int(last_summary.get("slotsAdvanced", 0))
 	if settled_slots > 0:
-		summary_box.add_child(_label("오프라인 성장 %d회 완료" % settled_slots, 26, RoyalTheme.GOLD_SOFT))
+		summary_box.add_child(_label("오프라인 성장 %d회 완료" % settled_slots, 26, PixelTokens.ACCENT))
 		summary_box.add_child(_label("활동 %d건 · 시즌 심사 %d건%s" % [
 			(last_summary.get("completedActivities", []) as Array).size(),
 			(last_summary.get("seasonReviews", []) as Array).size(),
 			" · 8시간 상한 적용" if bool(last_summary.get("capped", false)) else "",
-		], 16, RoyalTheme.PARCHMENT_MUTED))
+		], 16, PixelTokens.INK_MUTED))
 	else:
-		summary_box.add_child(_label("정산 가능 %d회" % pending_slots, 26, RoyalTheme.GOLD_SOFT))
-	summary_box.add_child(_label("최대 %d회 · %s · 시계 역행 시 0회" % [_offline_cap_slots(), _duration_label(_config_int("offlineCapSeconds", 28800))], 16, RoyalTheme.PARCHMENT_MUTED))
+		summary_box.add_child(_label("정산 가능 %d회" % pending_slots, 26, PixelTokens.ACCENT))
+	summary_box.add_child(_label("최대 %d회 · %s · 시계 역행 시 0회" % [_offline_cap_slots(), _duration_label(_config_int("offlineCapSeconds", 28800))], 16, PixelTokens.INK_MUTED))
 	summary.add_child(summary_box)
 	body.add_child(summary)
 
 	var rules := _card("raised")
 	var rules_box := VBoxContainer.new()
 	rules_box.add_theme_constant_override("separation", 7)
-	rules_box.add_child(_label("정산 규칙", 18, RoyalTheme.PARCHMENT))
-	rules_box.add_child(_label("· 저장된 seed와 rngCounter를 그대로 사용", 16, RoyalTheme.PARCHMENT_MUTED))
-	rules_box.add_child(_label("· 온라인과 같은 활동 리듀서를 순서대로 실행", 16, RoyalTheme.PARCHMENT_MUTED))
-	rules_box.add_child(_label("· 이벤트는 최대 20건까지 받은 편지함에 보관", 16, RoyalTheme.PARCHMENT_MUTED))
+	rules_box.add_child(_label("정산 규칙", 18, PixelTokens.INK))
+	rules_box.add_child(_label("· 저장된 seed와 rngCounter를 그대로 사용", 16, PixelTokens.INK_MUTED))
+	rules_box.add_child(_label("· 온라인과 같은 활동 리듀서를 순서대로 실행", 16, PixelTokens.INK_MUTED))
+	rules_box.add_child(_label("· 이벤트는 최대 20건까지 받은 편지함에 보관", 16, PixelTokens.INK_MUTED))
 	rules.add_child(rules_box)
 	body.add_child(rules)
 
@@ -1244,8 +1277,8 @@ func _build_event_sheet(body: VBoxContainer) -> void:
 		var empty := _card("transparent")
 		var empty_box := VBoxContainer.new()
 		empty_box.add_theme_constant_override("separation", 8)
-		empty_box.add_child(_label("대기 중인 이벤트가 없습니다.", 20, RoyalTheme.PARCHMENT))
-		empty_box.add_child(_label("활동 해결당 최대 한 건이 도착하며 자동 진행은 멈추지 않아요.", 16, RoyalTheme.PARCHMENT_MUTED))
+		empty_box.add_child(_label("대기 중인 이벤트가 없습니다.", 20, PixelTokens.INK))
+		empty_box.add_child(_label("활동 해결당 최대 한 건이 도착하며 자동 진행은 멈추지 않아요.", 16, PixelTokens.INK_MUTED))
 		empty.add_child(empty_box)
 		body.add_child(empty)
 		return
@@ -1255,8 +1288,8 @@ func _build_event_sheet(body: VBoxContainer) -> void:
 		var event_card := _card("coral")
 		var event_box := VBoxContainer.new()
 		event_box.add_theme_constant_override("separation", 9)
-		event_box.add_child(_label(str(event.get("name", "아카데미 소식")), 21, RoyalTheme.GOLD_SOFT))
-		event_box.add_child(_label(str(event.get("description", "새로운 선택지가 도착했습니다.")), 16, RoyalTheme.PARCHMENT))
+		event_box.add_child(_label(str(event.get("name", "아카데미 소식")), 21, PixelTokens.ACCENT))
+		event_box.add_child(_label(str(event.get("description", "새로운 선택지가 도착했습니다.")), 16, PixelTokens.INK))
 		var choices: Array = event.get("choices", [])
 		if choices.is_empty():
 			choices = [{"id": "default", "text": "확인"}]
@@ -1266,7 +1299,7 @@ func _build_event_sheet(body: VBoxContainer) -> void:
 			var choice_button := _button(str(choice.get("text", "선택")), _resolve_event.bind(str(event.get("id", "")), str(choice.get("id", "default"))), "primary" if choice == choices[0] else "secondary", 48.0, "event_choice_%d" % choices.find(choice))
 			choice_button.add_to_group("critical_cta")
 			event_box.add_child(choice_button)
-		event_box.add_child(_label("%s 미응답 시 안전한 기본 선택이 적용됩니다." % _duration_label(_config_int("eventChoiceTimeoutSeconds", 86400)), 16, RoyalTheme.PARCHMENT_MUTED))
+		event_box.add_child(_label("%s 미응답 시 안전한 기본 선택이 적용됩니다." % _duration_label(_config_int("eventChoiceTimeoutSeconds", 86400)), 16, PixelTokens.INK_MUTED))
 		event_card.add_child(event_box)
 		body.add_child(event_card)
 
@@ -1275,19 +1308,19 @@ func _build_profile_sheet(body: VBoxContainer) -> void:
 	var intro := _card("gold")
 	var intro_box := VBoxContainer.new()
 	intro_box.add_theme_constant_override("separation", 7)
-	intro_box.add_child(_label("성인 왕립 아카데미 수련생", 20, RoyalTheme.GOLD_SOFT))
-	intro_box.add_child(_label("나이로 종료되지 않으며 선택한 전문 분야를 끝없이 개척합니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+	intro_box.add_child(_label("성인 왕립 아카데미 수련생", 20, PixelTokens.ACCENT))
+	intro_box.add_child(_label("나이로 종료되지 않으며 선택한 전문 분야를 끝없이 개척합니다.", 16, PixelTokens.INK_MUTED))
 	intro.add_child(intro_box)
 	body.add_child(intro)
 
-	body.add_child(_label("수련생 이름", 17, RoyalTheme.PARCHMENT))
+	body.add_child(_label("수련생 이름", 17, PixelTokens.INK))
 	_trainee_name_edit = LineEdit.new()
 	_trainee_name_edit.custom_minimum_size.y = 48.0
 	_trainee_name_edit.placeholder_text = "이름을 입력하세요"
 	_trainee_name_edit.text = str(_state.get("traineeName", "아리아"))
 	_trainee_name_edit.max_length = 16
 	body.add_child(_trainee_name_edit)
-	body.add_child(_label("첫 방향은 생성 후 계획 탭에서 언제든 바꿀 수 있습니다.", 16, RoyalTheme.PARCHMENT_MUTED))
+	body.add_child(_label("첫 방향은 생성 후 계획 탭에서 언제든 바꿀 수 있습니다.", 16, PixelTokens.INK_MUTED))
 
 	var preset_grid := GridContainer.new()
 	preset_grid.columns = 2
@@ -1302,9 +1335,9 @@ func _build_continue_sheet(body: VBoxContainer) -> void:
 	var save_card := _card("gold")
 	var save_box := VBoxContainer.new()
 	save_box.add_theme_constant_override("separation", 7)
-	save_box.add_child(_label(str(_state.get("traineeName", "수련생")), 24, RoyalTheme.GOLD_SOFT))
-	save_box.add_child(_label("%d연차 %d시즌 · 세계 티어 %d" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1)), int(_state.get("worldTier", 1))], 16, RoyalTheme.PARCHMENT))
-	save_box.add_child(_label("현재 활동 · %s" % _current_activity_name(), 16, RoyalTheme.PARCHMENT_MUTED))
+	save_box.add_child(_label(str(_state.get("traineeName", "수련생")), 24, PixelTokens.ACCENT))
+	save_box.add_child(_label("%d연차 %d시즌 · 세계 티어 %d" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1)), int(_state.get("worldTier", 1))], 16, PixelTokens.INK))
+	save_box.add_child(_label("현재 활동 · %s" % _current_activity_name(), 16, PixelTokens.INK_MUTED))
 	save_card.add_child(save_box)
 	body.add_child(save_card)
 	var continue_button := _button("이 기록으로 이어하기", _continue_game, "primary", 48.0, "continue_game")
@@ -1317,8 +1350,8 @@ func _build_reset_sheet(body: VBoxContainer) -> void:
 	var warning := _card("coral")
 	var warning_box := VBoxContainer.new()
 	warning_box.add_theme_constant_override("separation", 8)
-	warning_box.add_child(_label("되돌릴 수 없는 작업입니다.", 21, RoyalTheme.DANGER))
-	warning_box.add_child(_label("현재 능력치·장비·계약·칭호·이벤트 기록이 모두 초기화됩니다.", 16, RoyalTheme.PARCHMENT))
+	warning_box.add_child(_label("되돌릴 수 없는 작업입니다.", 21, PixelTokens.NEGATIVE))
+	warning_box.add_child(_label("현재 능력치·장비·계약·칭호·이벤트 기록이 모두 초기화됩니다.", 16, PixelTokens.INK))
 	warning.add_child(warning_box)
 	body.add_child(warning)
 	body.add_child(_button("초기화하지 않고 돌아가기", _replace_sheet.bind("settings"), "primary"))
@@ -1875,21 +1908,22 @@ func _refresh_chrome() -> void:
 		_header_gold_label.text = "%s G" % _format_big(_read(["bigValues", "gold"], {"mantissa": 0, "exponent": 0}))
 	if _header_time_label != null:
 		_header_time_label.text = "%d연차 · %d시즌" % [int(_read(["time", "year"], 1)), int(_read(["time", "season"], 1))]
+	if _header_name_label != null:
+		_header_name_label.text = str(_state.get("traineeName", "수련생"))
+	if _header_tier_label != null:
+		_header_tier_label.text = "세계 티어 %d" % int(_state.get("worldTier", 1))
 	if _activity_label != null:
-		_activity_label.text = _current_activity_name()
+		_activity_label.text = ("지금, %s" if _auto_running else "일시정지 · %s") % _current_activity_name()
 	if _reason_label != null:
 		_reason_label.text = _planner_reason()
 	if _pause_button != null:
-		_pause_button.text = "일시정지" if _auto_running else "계속하기"
-		RoyalTheme.apply_button(_pause_button, "gold" if _auto_running else "primary", bool(_read(["settings", "highContrast"], false)))
+		_pause_button.icon = _icon_texture("pause" if _auto_running else "play")
+		_pause_button.tooltip_text = "일시정지" if _auto_running else "계속하기"
+		_pause_button.theme_type_variation = PixelTheme.button_variation("gold" if _auto_running else "primary")
 
 
 func _refresh_high_contrast() -> void:
-	var enabled := bool(_read(["settings", "highContrast"], false))
-	for node in get_tree().get_nodes_in_group("royal_button"):
-		if node is Button and (node == self or is_ancestor_of(node)):
-			var button := node as Button
-			RoyalTheme.apply_button(button, str(button.get_meta("royal_variant", "secondary")), enabled)
+	theme = PixelTheme.build(bool(_read(["settings", "highContrast"], false)))
 
 
 func _build_toast() -> void:
@@ -1903,8 +1937,8 @@ func _build_toast() -> void:
 	_toast_panel.offset_bottom = -94.0
 	_toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast_panel.z_index = 100
-	_toast_panel.add_theme_stylebox_override("panel", RoyalTheme.card_style("gold"))
-	_toast_label = _label("", 16, RoyalTheme.PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	_toast_panel.theme_type_variation = PixelTheme.panel_variation("toast")
+	_toast_label = _label("", 16, PixelTokens.ON_STRIP, HORIZONTAL_ALIGNMENT_CENTER)
 	_toast_panel.add_child(_toast_label)
 	_toast_panel.visible = false
 	_modal_layer.add_child(_toast_panel)
@@ -2279,10 +2313,10 @@ func _world_action_card(title: String, detail: String, activity_id: String, acti
 	var card := _card("raised")
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 7)
-	box.add_child(_label(title, 18, RoyalTheme.PARCHMENT))
-	box.add_child(_label(detail, 16, RoyalTheme.PARCHMENT_MUTED))
+	box.add_child(_label(title, 18, PixelTokens.INK))
+	box.add_child(_label(detail, 16, PixelTokens.INK_MUTED))
 	if not lock_reason.is_empty():
-		box.add_child(_label("잠금 · %s" % lock_reason, 16, RoyalTheme.DANGER))
+		box.add_child(_label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE))
 	var action := _button(action_label, _run_world_activity.bind(activity_id), "secondary", 48.0, "world_%s" % activity_id)
 	action.disabled = not lock_reason.is_empty()
 	action.add_to_group("critical_cta")
@@ -2322,8 +2356,8 @@ func _setting_toggle(title: String, description: String, key: String, value: boo
 	row.add_theme_constant_override("separation", 10)
 	var text_box := VBoxContainer.new()
 	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text_box.add_child(_label(title, 18, RoyalTheme.PARCHMENT))
-	text_box.add_child(_label(description, 16, RoyalTheme.PARCHMENT_MUTED))
+	text_box.add_child(_label(title, 18, PixelTokens.INK))
+	text_box.add_child(_label(description, 16, PixelTokens.INK_MUTED))
 	row.add_child(text_box)
 	var toggle := CheckButton.new()
 	toggle.custom_minimum_size = Vector2(64, 48)
@@ -2341,13 +2375,13 @@ func _policy_slider(title: String, description: String, key: String, value: floa
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 5)
 	var top := HBoxContainer.new()
-	var title_label := _label(title, 17, RoyalTheme.PARCHMENT)
+	var title_label := _label(title, 17, PixelTokens.INK)
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(title_label)
-	var value_label := _label(str(formatter.call(value)), 17, RoyalTheme.GOLD_SOFT, HORIZONTAL_ALIGNMENT_RIGHT)
+	var value_label := _label(str(formatter.call(value)), 17, PixelTokens.ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
 	top.add_child(value_label)
 	box.add_child(top)
-	box.add_child(_label(description, 16, RoyalTheme.PARCHMENT_MUTED))
+	box.add_child(_label(description, 16, PixelTokens.INK_MUTED))
 	var slider := HSlider.new()
 	slider.set_meta("policy_key", key)
 	slider.set_meta("policy_value_label", value_label)
@@ -2364,65 +2398,84 @@ func _policy_slider(title: String, description: String, key: String, value: floa
 
 func _stat_card(title: String, value: float) -> Control:
 	var card := _card("transparent")
-	card.custom_minimum_size.y = 80.0
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	var row := HBoxContainer.new()
-	var title_label := _label(title, 16, RoyalTheme.PARCHMENT)
+	var title_label := _label(title, 16, PixelTokens.INK)
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(title_label)
-	row.add_child(_label(_format_number(value), 17, RoyalTheme.GOLD_SOFT, HORIZONTAL_ALIGNMENT_RIGHT))
+	row.add_child(_label(_format_number(value), 16, PixelTokens.ACCENT, HORIZONTAL_ALIGNMENT_RIGHT))
 	box.add_child(row)
-	var progress := ProgressBar.new()
-	progress.custom_minimum_size.y = 12.0
-	progress.value = fmod(value, 100.0)
-	progress.show_percentage = false
-	box.add_child(progress)
+	box.add_child(_gauge("stat", fmod(value, 100.0) / 100.0))
 	card.add_child(box)
 	return card
 
 
 func _resource_card(title: String, value: String, accent: Color) -> Control:
-	var card := PanelContainer.new()
-	card.mouse_filter = Control.MOUSE_FILTER_PASS
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.custom_minimum_size.y = 72.0
-	card.add_theme_stylebox_override("panel", RoyalTheme.card_style("transparent"))
+	var card := _card("transparent")
+	card.custom_minimum_size.y = 64.0
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 0)
-	box.add_child(_label(title, 16, RoyalTheme.PARCHMENT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_label(value, 19, accent, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_theme_constant_override("separation", 2)
+	box.add_child(_label(title, 16, PixelTokens.INK_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label(value, 16, PixelTokens.INK, HORIZONTAL_ALIGNMENT_CENTER))
 	card.add_child(box)
 	return card
 
 
-func _section_heading(title: String, subtitle: String = "") -> Control:
+# 홈 미터 한 칸: 아이콘, 이름, 값, 분할 게이지
+func _meter_cell(kind: String, title: String, value: float, maximum: float) -> Control:
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 1)
-	box.add_child(_label(title, 20, RoyalTheme.PARCHMENT))
-	if not subtitle.is_empty():
-		box.add_child(_label(subtitle, 16, RoyalTheme.PARCHMENT_MUTED))
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 6)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	row.add_child(_icon(kind))
+	var name_label := _label(title, 16, PixelTokens.INK)
+	name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_label)
+	var value_label := _label("%d" % int(value), 16, PixelTokens.INK, HORIZONTAL_ALIGNMENT_RIGHT)
+	value_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	value_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+	row.add_child(value_label)
+	box.add_child(row)
+	box.add_child(_gauge(kind, value / maximum))
 	return box
 
 
-func _chip(text_value: String, accent: Color) -> Control:
+func _section_heading(title: String, subtitle: String = "") -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 2)
+	box.add_child(_label(title, 24, PixelTokens.INK))
+	if not subtitle.is_empty():
+		box.add_child(_label(subtitle, 16, PixelTokens.INK_MUTED))
+	return box
+
+
+func _chip(text_value: String, _accent: Color) -> Control:
 	var chip := PanelContainer.new()
 	chip.mouse_filter = Control.MOUSE_FILTER_PASS
-	chip.add_theme_stylebox_override("panel", RoyalTheme.chip_style(accent))
-	chip.add_child(_label(text_value, 16, RoyalTheme.PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	chip.theme_type_variation = PixelTheme.panel_variation("chip")
+	var label := _label(text_value, 16, PixelTokens.INK, HORIZONTAL_ALIGNMENT_CENTER)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	chip.add_child(label)
 	return chip
 
 
+# tone: 기존 화면이 쓰던 카드 톤을 픽셀 창 종류로 옮긴다.
 func _card(tone: String = "navy") -> PanelContainer:
 	var card := PanelContainer.new()
 	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", RoyalTheme.card_style(tone))
+	var variation := {
+		"gold": "window_gold", "coral": "window_accent", "transparent": "inset", "selected": "window_selected",
+		"window": "window", "inset": "inset",
+	}.get(tone, "window") as String
+	card.theme_type_variation = PixelTheme.panel_variation(variation)
 	return card
 
 
-# ui_id는 문구가 바뀌어도 유지되는 식별자다. E2E 여정이 이 값으로 누를 버튼을 찾는다.
 func _button(label_text: String, callback: Callable = Callable(), variant: String = "secondary", min_height: float = 48.0, ui_id: String = "") -> Button:
 	var button := Button.new()
 	button.text = label_text
@@ -2436,7 +2489,7 @@ func _button(label_text: String, callback: Callable = Callable(), variant: Strin
 	button.tooltip_text = label_text.replace("\n", " · ")
 	button.set_meta("royal_variant", variant)
 	button.add_to_group("royal_button")
-	RoyalTheme.apply_button(button, variant, bool(_read(["settings", "highContrast"], false)))
+	button.theme_type_variation = PixelTheme.button_variation(variant)
 	button.pressed.connect(_on_button_pressed.bind(label_text))
 	if callback.is_valid():
 		button.pressed.connect(callback)
@@ -2447,15 +2500,70 @@ func _button(label_text: String, callback: Callable = Callable(), variant: Strin
 	return button
 
 
-func _label(text_value: String, font_size: int = 16, color: Color = RoyalTheme.PARCHMENT, alignment: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+# 글자 크기는 픽셀 폰트 설계 크기의 정수배만 쓴다: 본문 16(Neo둥근모), 제목 24(Galmuri11 Bold), 큰 숫자 32(Neo둥근모).
+func _label(text_value: String, font_size: int = 16, color: Color = PixelTokens.INK, alignment: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
 	var label := Label.new()
 	label.text = text_value
-	label.add_theme_font_size_override("font_size", max(16, font_size))
+	if font_size >= 28:
+		label.add_theme_font_size_override("font_size", PixelTheme.LARGE_SIZE)
+	elif font_size >= 20:
+		label.add_theme_font_override("font", PixelTheme.title_font())
+		label.add_theme_font_size_override("font_size", PixelTheme.TITLE_SIZE)
+	else:
+		label.add_theme_font_size_override("font_size", PixelTheme.BODY_SIZE)
 	label.add_theme_color_override("font_color", color)
 	label.horizontal_alignment = alignment
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.mouse_filter = Control.MOUSE_FILTER_PASS
 	return label
+
+
+# 1배 도트 아이콘을 2배로 키운 텍스처. 같은 이름은 한 번만 만든다.
+func _icon_texture(icon_name: String) -> Texture2D:
+	if _icon_cache.has(icon_name):
+		return _icon_cache[icon_name]
+	var path := ICON_DIR + icon_name + ".png"
+	if not ResourceLoader.exists(path):
+		push_error("Pixel icon missing: %s" % path)
+		return null
+	var image := (load(path) as Texture2D).get_image()
+	image.resize(image.get_width() * 2, image.get_height() * 2, Image.INTERPOLATE_NEAREST)
+	var texture := ImageTexture.create_from_image(image)
+	_icon_cache[icon_name] = texture
+	return texture
+
+
+func _icon(icon_name: String) -> TextureRect:
+	var rect := TextureRect.new()
+	rect.texture = _icon_texture(icon_name)
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
+
+
+func _gauge(kind: String, ratio: float) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.theme_type_variation = PixelTheme.gauge_variation(kind)
+	bar.custom_minimum_size.y = 12.0
+	bar.show_percentage = false
+	bar.max_value = 100.0
+	bar.value = clampf(ratio, 0.0, 1.0) * 100.0
+	bar.mouse_filter = Control.MOUSE_FILTER_PASS
+	return bar
+
+
+func _activity_icon_name() -> String:
+	var current_id := str(_read(["activeTask", "activityId"], _read(["activeTask", "id"], "")))
+	if current_id.contains("MAGIC"):
+		return "magic"
+	match str(_activity_by_id(current_id).get("kind", "")):
+		"job": return "coin"
+		"rest": return "home"
+		"adventure": return "world"
+		"challenge": return "record"
+		_: return "activity"
 
 
 func _load_activities() -> Array:

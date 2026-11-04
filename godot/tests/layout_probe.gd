@@ -81,6 +81,17 @@ func _check_current_ctas(main: Control, viewport_rect: Rect2, context: String) -
 			# Scroll content below the fold is intentionally reachable by scrolling;
 			# only controls presented in the current viewport are bounds-critical.
 			continue
+		var scroll := _scroll_parent(cta)
+		if scroll != null:
+			# 스크롤 목록 안의 버튼은 목록 영역이 잘라 그린다. 목록 영역 자체는 화면 안에 있어야 하고,
+			# 목록 경계에 걸리거나 가려진 버튼은 스크롤로 닿을 수 있으므로 이번 화면의 경계 검사에서 뺀다.
+			var clip: Rect2 = scroll.get_global_rect()
+			var clip_within: bool = clip.position.y >= viewport_rect.position.y - EDGE_TOLERANCE and clip.end.y <= viewport_rect.end.y + EDGE_TOLERANCE
+			if not clip_within:
+				all_valid = false
+				print("[LAYOUT] scroll area outside viewport context=%s node=%s rect=%s" % [context, str(scroll.get_path()), str(clip)])
+			if not clip.encloses(rect):
+				continue
 		checked += 1
 		var within: bool = rect.position.x >= viewport_rect.position.x - EDGE_TOLERANCE
 		within = within and rect.position.y >= viewport_rect.position.y - EDGE_TOLERANCE
@@ -135,3 +146,10 @@ func _cleanup_test_save() -> void:
 	for suffix in ["", ".bak", ".tmp", ".corrupt"]:
 		if FileAccess.file_exists(absolute + suffix):
 			DirAccess.remove_absolute(absolute + suffix)
+
+
+func _scroll_parent(control: Control) -> ScrollContainer:
+	var node := control.get_parent()
+	while node != null and not node is ScrollContainer:
+		node = node.get_parent()
+	return node as ScrollContainer

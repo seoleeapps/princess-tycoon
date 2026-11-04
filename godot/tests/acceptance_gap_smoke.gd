@@ -1,11 +1,12 @@
 extends SceneTree
 
 const MainScreen = preload("res://src/ui/main_screen.gd")
-const RoyalTheme = preload("res://src/ui/royal_theme.gd")
-const ProceduralTrainee = preload("res://src/ui/procedural_trainee.gd")
+const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
+const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
+const PixelTraineeView = preload("res://src/ui/pixel/pixel_trainee_view.gd")
 
 const SAVE_PATH: String = "user://princess_tycoon_acceptance_gap_smoke.json"
-const FONT_PATH: String = "res://assets/fonts/NotoSansKR-VariableFont_wght.ttf"
+const FONT_PATH: String = "res://assets/fonts/NeoDunggeunmo-Regular.ttf"
 
 var _failures: Array[String] = []
 var _passes: int = 0
@@ -419,10 +420,10 @@ func _test_ui_accessibility_and_first_surface(content_db: ContentDB) -> void:
 		rendered_size = bundled_font.get_string_size("왕립 아카데미 수련생")
 	_check(
 		font_exists and bundled_font != null and korean_glyphs and rendered_size.x > 0.0 and rendered_size.y > 0.0,
-		"AC-UI-04 번들 Noto Sans KR 한글 글리프 측정",
+		"AC-UI-04 번들 Neo둥근모 한글 글리프 측정",
 		"size=%s" % str(rendered_size)
 	)
-	var royal_theme: Theme = RoyalTheme.build(bundled_font)
+	var royal_theme: Theme = PixelTheme.build(false)
 	var ui: Control = MainScreen.new()
 	var state := StateFactory.create(76001, "첫 화면", content_db.config)
 	_prevent_generated_contract_side_effects(state)
@@ -434,7 +435,7 @@ func _test_ui_accessibility_and_first_surface(content_db: ContentDB) -> void:
 	ui.set("_state", state)
 	ui.set("_activities", content_db.get_activities())
 	ui.theme = royal_theme
-	var body_label: Label = ui.call("_label", "본문", 12, RoyalTheme.PARCHMENT) as Label
+	var body_label: Label = ui.call("_label", "본문", 12, PixelTokens.INK) as Label
 	var touch_button: Button = ui.call("_button", "확인", Callable(), "secondary", 1.0) as Button
 	var touch_host := VBoxContainer.new()
 	touch_host.theme = royal_theme
@@ -445,11 +446,18 @@ func _test_ui_accessibility_and_first_surface(content_db: ContentDB) -> void:
 	await process_frame
 	await process_frame
 	var touch_size: Vector2 = touch_button.size
-	var body_contrast: float = _contrast_ratio(RoyalTheme.PARCHMENT, RoyalTheme.NAVY_CARD)
-	var muted_contrast: float = _contrast_ratio(RoyalTheme.PARCHMENT_MUTED, RoyalTheme.NAVY_CARD)
-	var chip_background: Color = RoyalTheme.NAVY_RAISED.blend(Color(RoyalTheme.CORAL, 0.13))
-	var chip_contrast: float = _contrast_ratio(RoyalTheme.PARCHMENT, chip_background)
-	var primary_button_contrast: float = _contrast_ratio(RoyalTheme.MIDNIGHT, RoyalTheme.CORAL)
+	# 픽셀 토큰이 선언한 모든 글자·바탕 조합(본문, 보조, 칩, 버튼, 나무 띠)이 4.5:1 이상이어야 한다.
+	var weakest_pair := ""
+	var weakest_ratio := 99.0
+	for pair: Array in PixelTokens.CONTRAST_PAIRS:
+		var ratio := _contrast_ratio(pair[0], pair[1])
+		if ratio < weakest_ratio:
+			weakest_ratio = ratio
+			weakest_pair = "%s/%s" % [(pair[0] as Color).to_html(false), (pair[1] as Color).to_html(false)]
+	var body_contrast: float = _contrast_ratio(PixelTokens.INK, PixelTokens.PANEL)
+	var muted_contrast: float = _contrast_ratio(PixelTokens.INK_MUTED, PixelTokens.PANEL)
+	var chip_contrast: float = _contrast_ratio(PixelTokens.INK, PixelTokens.CHIP)
+	var primary_button_contrast: float = _contrast_ratio(PixelTokens.ON_PRIMARY, PixelTokens.PRIMARY)
 	_check(
 		royal_theme.default_font == bundled_font
 		and royal_theme.default_font_size >= 16
@@ -462,9 +470,9 @@ func _test_ui_accessibility_and_first_surface(content_db: ContentDB) -> void:
 		"combined=%s custom=%s" % [str(touch_size), str(touch_button.custom_minimum_size)]
 	)
 	_check(
-		body_contrast >= 4.5 and muted_contrast >= 4.5 and chip_contrast >= 4.5 and primary_button_contrast >= 4.5,
+		body_contrast >= 4.5 and muted_contrast >= 4.5 and chip_contrast >= 4.5 and primary_button_contrast >= 4.5 and weakest_ratio >= 4.5,
 		"AC-UI-04 본문·chip·주요 CTA 텍스트 대비 4.5:1 이상",
-		"body=%.2f muted=%.2f chip=%.2f primary=%.2f" % [body_contrast, muted_contrast, chip_contrast, primary_button_contrast]
+		"body=%.2f muted=%.2f chip=%.2f primary=%.2f weakest=%s %.2f" % [body_contrast, muted_contrast, chip_contrast, primary_button_contrast, weakest_pair, weakest_ratio]
 	)
 	touch_host.free()
 
@@ -473,7 +481,7 @@ func _test_ui_accessibility_and_first_surface(content_db: ContentDB) -> void:
 	var has_character := false
 	var has_dev_surface := false
 	for node: Node in _all_nodes(home):
-		if node.get_script() == ProceduralTrainee:
+		if node.get_script() == PixelTraineeView:
 			has_character = true
 		if node is Tree or node is CodeEdit or node is TextEdit:
 			has_dev_surface = true

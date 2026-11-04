@@ -1,6 +1,9 @@
 extends Control
 
-const RoyalTheme = preload("res://src/ui/royal_theme.gd")
+const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
+const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
+const ICON_DIR := "res://assets/pixel/icons/"
+const STEP := 2.0
 
 const MAX_DETAIL_LINES := 4
 const STATIC_VISIBLE_SECONDS := 4.0
@@ -38,7 +41,6 @@ func present(payload: Dictionary, reduced_motion: bool) -> void:
 		_schedule_static_hide(serial)
 	else:
 		panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
-		panel.scale = Vector2(0.88, 0.88) if str(payload.get("kind", "activity")) in ["challenge", "review", "title"] else Vector2(0.95, 0.95)
 		call_deferred("_animate_active", serial)
 
 
@@ -92,7 +94,7 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.z_index = 80
-	panel.add_theme_stylebox_override("panel", RoyalTheme.card_style(str(payload.get("tone", "raised"))))
+	panel.theme_type_variation = PixelTheme.panel_variation({"gold": "window_gold", "coral": "window_accent"}.get(str(payload.get("tone", "raised")), "window"))
 	panel.set_meta("feedback_kind", str(payload.get("kind", "activity")))
 	panel.set_meta("payload", payload.duplicate(true))
 
@@ -106,15 +108,17 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	heading.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	heading.add_theme_constant_override("separation", 8)
 	content.add_child(heading)
+	heading.add_child(_kind_icon(str(payload.get("kind", "activity"))))
 	var badge := PanelContainer.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge.add_theme_stylebox_override("panel", RoyalTheme.chip_style(_accent_for_kind(str(payload.get("kind", "activity")))))
-	var badge_label := _label(str(payload.get("badge", "성장")), 16, RoyalTheme.PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	badge.theme_type_variation = PixelTheme.panel_variation("chip")
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var badge_label := _label(str(payload.get("badge", "성장")), 16, PixelTokens.INK, HORIZONTAL_ALIGNMENT_CENTER)
 	badge_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	badge_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	badge.add_child(badge_label)
 	heading.add_child(badge)
-	var headline := _label(str(payload.get("headline", "활동 완료")), 21, RoyalTheme.GOLD_SOFT)
+	var headline := _label(str(payload.get("headline", "활동 완료")), 24, PixelTokens.INK)
 	headline.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	headline.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	headline.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -134,10 +138,10 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 		var chip := PanelContainer.new()
 		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		chip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		chip.add_theme_stylebox_override("panel", RoyalTheme.chip_style(RoyalTheme.MINT))
+		chip.theme_type_variation = PixelTheme.panel_variation("inset")
 		chip.add_to_group("result_stat_chip")
 		chip.set_meta("stat_index", floating_stat_count)
-		var stat_label := _label(stat_text, 16, RoyalTheme.GOLD_SOFT, HORIZONTAL_ALIGNMENT_CENTER)
+		var stat_label := _label(stat_text, 16, PixelTokens.POSITIVE, HORIZONTAL_ALIGNMENT_CENTER)
 		stat_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		stat_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		chip.add_child(stat_label)
@@ -156,12 +160,13 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 		var line := str(raw_line).strip_edges()
 		if line.is_empty():
 			continue
-		content.add_child(_label(line, 16, RoyalTheme.PARCHMENT_MUTED))
+		content.add_child(_label(line, 16, PixelTokens.INK_MUTED))
 		detail_count += 1
 	panel.set_meta("detail_count", detail_count)
 	return panel
 
 
+# 도트 화면에 맞춘 계단식 연출: 창이 2px 단위로 8px 올라오며 3단계로 나타나고, 능력치 칩은 하나씩 켜진다.
 func _animate_active(serial: int) -> void:
 	if serial != _active_serial or _active_panel == null or not is_instance_valid(_active_panel):
 		return
@@ -170,39 +175,43 @@ func _animate_active(serial: int) -> void:
 		_schedule_static_hide(serial)
 		return
 	var panel := _active_panel
-	panel.pivot_offset = panel.size * 0.5
 	panel.set_meta("motion_mode", "animated")
+	var rest_y := panel.position.y
 	var floating_chips := _floating_stat_chips(panel)
-	var chip_positions: Array[Vector2] = []
 	for chip: Control in floating_chips:
-		chip.pivot_offset = chip.size * 0.5
-		chip_positions.append(chip.position)
-		chip.position += Vector2(0.0, 10.0)
-		chip.scale = Vector2(0.86, 0.86)
 		chip.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	_active_tween = create_tween()
-	_active_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_active_tween.tween_property(panel, "modulate:a", 1.0, 0.18)
-	_active_tween.parallel().tween_property(panel, "scale", Vector2.ONE, 0.24)
+	_active_tween.tween_method(_step_panel.bind(panel, rest_y), 0.0, 1.0, 0.2)
 	for index: int in range(floating_chips.size()):
-		var chip := floating_chips[index]
-		var delay := 0.04 * float(index)
-		_active_tween.parallel().tween_property(chip, "modulate:a", 1.0, 0.18).set_delay(delay)
-		_active_tween.parallel().tween_property(chip, "scale", Vector2.ONE, 0.22).set_delay(delay)
-		_active_tween.parallel().tween_property(chip, "position", chip_positions[index], 0.22).set_delay(delay)
+		_active_tween.tween_interval(0.06)
+		_active_tween.tween_callback(_show_chip.bind(floating_chips[index]))
 	_active_tween.tween_interval(2.2)
-	_active_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	_active_tween.tween_property(panel, "modulate:a", 0.0, 0.3)
+	_active_tween.tween_method(_fade_panel.bind(panel), 1.0, 0.0, 0.24)
 	_active_tween.finished.connect(_finish_if_current.bind(serial))
+
+
+func _step_panel(progress: float, panel: Control, rest_y: float) -> void:
+	if not is_instance_valid(panel):
+		return
+	var steps := floorf(progress * 4.0)
+	panel.position.y = rest_y + (4.0 - steps) * STEP
+	panel.modulate.a = minf(1.0, ceilf(progress * 3.0) / 3.0)
+
+
+func _fade_panel(alpha: float, panel: Control) -> void:
+	if is_instance_valid(panel):
+		panel.modulate.a = ceilf(alpha * 3.0) / 3.0
+
+
+func _show_chip(chip: Control) -> void:
+	if is_instance_valid(chip):
+		chip.modulate = Color.WHITE
 
 
 func _apply_static_state(panel: PanelContainer) -> void:
 	panel.modulate = Color.WHITE
-	panel.scale = Vector2.ONE
-	panel.rotation = 0.0
 	for chip: Control in _floating_stat_chips(panel):
 		chip.modulate = Color.WHITE
-		chip.scale = Vector2.ONE
 	panel.set_meta("motion_mode", "static")
 
 
@@ -241,19 +250,27 @@ func _clear_active() -> void:
 	_active_panel = null
 
 
-func _accent_for_kind(kind: String) -> Color:
-	match kind:
-		"challenge": return RoyalTheme.CORAL
-		"review": return RoyalTheme.SKY
-		"title": return RoyalTheme.GOLD
-		_: return RoyalTheme.MINT
+func _kind_icon(kind: String) -> TextureRect:
+	var icon_name: String = {"challenge": "record", "review": "growth", "title": "record", "adventure": "world"}.get(kind, "activity")
+	var image := (load(ICON_DIR + icon_name + ".png") as Texture2D).get_image()
+	image.resize(image.get_width() * 2, image.get_height() * 2, Image.INTERPOLATE_NEAREST)
+	var rect := TextureRect.new()
+	rect.texture = ImageTexture.create_from_image(image)
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
 
 
 func _label(text_value: String, font_size: int, color: Color, alignment: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
 	var label := Label.new()
 	label.text = text_value
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.add_theme_font_size_override("font_size", maxi(16, font_size))
+	if font_size >= 20:
+		label.add_theme_font_override("font", PixelTheme.title_font())
+		label.add_theme_font_size_override("font_size", PixelTheme.TITLE_SIZE)
+	else:
+		label.add_theme_font_size_override("font_size", PixelTheme.BODY_SIZE)
 	label.add_theme_color_override("font_color", color)
 	label.horizontal_alignment = alignment
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
