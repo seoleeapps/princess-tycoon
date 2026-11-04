@@ -52,6 +52,7 @@ func _probe_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 		# 도트 격자는 실제 기기 논리 크기(390×844)에서 확인한다.
 		if viewport_size == Vector2i(390, 844) and PIXEL_GRID_TABS.has(tab_id):
 			_check_pixel_grid(main, "%s/%s" % [_size_label(viewport_size), tab_id])
+			_check_label_contrast(main, "%s/%s" % [_size_label(viewport_size), tab_id])
 
 	for sheet_id: String in SHEETS:
 		main.call("_open_sheet", sheet_id)
@@ -60,6 +61,7 @@ func _probe_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 		total_checked += _check_current_ctas(main, main_rect, "%s/%s" % [_size_label(viewport_size), sheet_id])
 		if viewport_size == Vector2i(390, 844):
 			_check_pixel_grid(main, "%s/%s" % [_size_label(viewport_size), sheet_id])
+			_check_label_contrast(main, "%s/%s" % [_size_label(viewport_size), sheet_id])
 		main.call("_close_sheet")
 		await process_frame
 		await process_frame
@@ -111,6 +113,41 @@ func _check_current_ctas(main: Control, viewport_rect: Rect2, context: String) -
 	_check(checked >= 5, "%s visible critical_cta >= 5" % context)
 	_check(all_valid, "AC-UI-03 %s critical_cta bounds" % context)
 	return checked
+
+
+const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
+const PANEL_BACKGROUNDS := {
+	"PixelWindow": PixelTokens.PANEL, "PixelWindowGold": PixelTokens.PANEL, "PixelWindowAccent": PixelTokens.PANEL,
+	"PixelSheet": PixelTokens.PANEL, "PixelWindowSelected": PixelTokens.SELECTED, "PixelInset": PixelTokens.INSET,
+	"PixelChip": PixelTokens.CHIP, "PixelStrip": PixelTokens.STRIP, "PixelToast": PixelTokens.TOAST,
+}
+
+
+# AC-UI-04: 보이는 글자마다 실제로 놓인 바탕(가장 가까운 도트 창, 없으면 어두운 나무 바탕)과의 대비가 4.5:1 이상이어야 한다.
+func _check_label_contrast(main: Control, context: String) -> void:
+	var failures: Array[String] = []
+	for node: Node in main.find_children("*", "Label", true, false):
+		var label := node as Label
+		if not label.is_visible_in_tree() or label.text.strip_edges().is_empty():
+			continue
+		var background := _label_background(label, main)
+		var ratio := PixelTokens.contrast_ratio(label.get_theme_color("font_color"), background)
+		if ratio < 4.5:
+			failures.append("%s %.2f '%s'" % [background.to_html(false), ratio, label.text.left(16)])
+	_check(failures.is_empty(), "AC-UI-04 %s 실제 바탕 대비 4.5:1" % context)
+	for line: String in failures.slice(0, 6):
+		print("[LAYOUT] low-contrast %s %s" % [context, line])
+
+
+func _label_background(label: Control, main: Control) -> Color:
+	var node := label.get_parent()
+	while node != null and node != main:
+		if node is Control:
+			var variation := str((node as Control).theme_type_variation)
+			if PANEL_BACKGROUNDS.has(variation):
+				return PANEL_BACKGROUNDS[variation]
+		node = node.get_parent()
+	return PixelTokens.STRIP_DARK
 
 
 # PX-05: 도트 스킨을 쓰는 컨트롤은 위치와 크기가 짝수여야 2px 도트 격자가 이웃 창과 맞는다.

@@ -7,6 +7,7 @@ const STEP := 2.0
 
 const MAX_DETAIL_LINES := 4
 const STATIC_VISIBLE_SECONDS := 4.0
+const COMPACT_VISIBLE_SECONDS := 1.6
 
 var _active_panel: PanelContainer
 var _active_tween: Tween
@@ -26,21 +27,26 @@ func _ready() -> void:
 	add_child(_static_hide_timer)
 
 
-func present(payload: Dictionary, reduced_motion: bool) -> void:
+# compact: 자동 진행으로 끝난 평범한 활동 결과. 하단에 한 줄 띠로 잠깐 보여 주고 장면을 가리지 않는다.
+func present(payload: Dictionary, reduced_motion: bool, compact: bool = false) -> void:
 	if payload.is_empty():
 		return
 	_reduced_motion = reduced_motion
 	_clear_active()
 	_active_serial += 1
 	var serial := _active_serial
-	var panel := _build_panel(payload)
+	var panel := _build_compact_panel(payload) if compact else _build_panel(payload)
 	_active_panel = panel
 	add_child(panel)
+	if compact:
+		panel.set_meta("motion_mode", "compact")
+		_static_hide_serial = serial
+		_static_hide_timer.start(COMPACT_VISIBLE_SECONDS)
+		return
 	if _reduced_motion:
 		_apply_static_state(panel)
 		_schedule_static_hide(serial)
 	else:
-		panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
 		call_deferred("_animate_active", serial)
 
 
@@ -92,7 +98,10 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	panel.anchor_bottom = 0.14
 	panel.offset_bottom = 218.0
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 결과 창 위를 누르면 창만 닫힌다. 아래의 보이지 않는 버튼이 눌리지 않게 입력을 받는다.
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.gui_input.connect(_on_panel_input)
+	panel.tooltip_text = "눌러서 닫기"
 	panel.z_index = 80
 	panel.theme_type_variation = PixelTheme.panel_variation({"gold": "window_gold", "coral": "window_accent"}.get(str(payload.get("tone", "raised")), "window"))
 	panel.set_meta("feedback_kind", str(payload.get("kind", "activity")))
@@ -175,7 +184,48 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	return panel
 
 
-# 도트 화면에 맞춘 계단식 연출: 창이 2px 단위로 8px 올라오며 3단계로 나타나고, 능력치 칩은 하나씩 켜진다.
+func _build_compact_panel(payload: Dictionary) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.name = "ResultBanner"
+	panel.theme_type_variation = PixelTheme.panel_variation("toast")
+	panel.anchor_left = 0.0
+	panel.anchor_right = 1.0
+	panel.anchor_top = 1.0
+	panel.anchor_bottom = 1.0
+	panel.offset_left = 8.0
+	panel.offset_right = -8.0
+	panel.offset_top = -148.0
+	panel.offset_bottom = -96.0
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.z_index = 80
+	panel.set_meta("feedback_kind", str(payload.get("kind", "activity")))
+	panel.set_meta("payload", payload.duplicate(true))
+	panel.set_meta("detail_count", 0)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 8)
+	panel.add_child(row)
+	row.add_child(_kind_icon(str(payload.get("kind", "activity"))))
+	var stats: Array = payload.get("floatingStats", []) as Array
+	var text := str(payload.get("headline", "활동 완료"))
+	if not stats.is_empty():
+		text += " · " + str(stats[0])
+	var label := _label(text, 16, PixelTokens.ON_STRIP)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	row.add_child(label)
+	panel.set_meta("floating_stat_count", mini(1, stats.size()))
+	return panel
+
+
+func _on_panel_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		_clear_active()
+	elif event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		_clear_active()
+
+
+# 도트 화면에 맞춘 계단식 연출: 창이 반투명 없이 2px 단위로 8px 올라오고, 능력치 칩은 하나씩 켜진다.
 func _animate_active(serial: int) -> void:
 	if serial != _active_serial or _active_panel == null or not is_instance_valid(_active_panel):
 		return
@@ -195,7 +245,7 @@ func _animate_active(serial: int) -> void:
 		_active_tween.tween_interval(0.06)
 		_active_tween.tween_callback(_show_chip.bind(floating_chips[index]))
 	_active_tween.tween_interval(2.2)
-	_active_tween.tween_method(_fade_panel.bind(panel), 1.0, 0.0, 0.24)
+	_active_tween.tween_method(_step_panel.bind(panel, rest_y), 1.0, 0.5, 0.12)
 	_active_tween.finished.connect(_finish_if_current.bind(serial))
 
 
@@ -204,12 +254,6 @@ func _step_panel(progress: float, panel: Control, rest_y: float) -> void:
 		return
 	var steps := floorf(progress * 4.0)
 	panel.position.y = rest_y + (4.0 - steps) * STEP
-	panel.modulate.a = minf(1.0, ceilf(progress * 3.0) / 3.0)
-
-
-func _fade_panel(alpha: float, panel: Control) -> void:
-	if is_instance_valid(panel):
-		panel.modulate.a = ceilf(alpha * 3.0) / 3.0
 
 
 func _show_chip(chip: Control) -> void:

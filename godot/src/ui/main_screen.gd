@@ -90,6 +90,7 @@ var _result_feedback_layer: Control
 var _trainee_name_edit: LineEdit
 var _home_avatar: Control
 var _detail_activity_id := ""
+var _rendered_tab := ""
 var _status_panel: PanelContainer
 var _status_slot: MarginContainer
 var _header_name_label: Label
@@ -379,11 +380,11 @@ func _build_activity_status() -> PanelContainer:
 		text_box.add_child(label)
 	row.add_child(text_box)
 
-	var offline := _button("8시간", _open_sheet.bind("offline"), "secondary", 44.0, "offline_open")
-	offline.text = _duration_label(_config_int("offlineCapSeconds", 28800))
+	var offline := _button("방치 8시간", _open_sheet.bind("offline"), "secondary", 44.0, "offline_open")
+	offline.text = "방치 %s" % _duration_label(_config_int("offlineCapSeconds", 28800))
+	offline.theme_type_variation = "PixelButtonCompactSecondary"
 	offline.custom_minimum_size.x = 92.0
-	offline.icon = _icon_texture("moon")
-	offline.tooltip_text = "방치 최대 %s · 오프라인 정산" % offline.text
+	offline.tooltip_text = "방치 최대 %s · 오프라인 정산" % _duration_label(_config_int("offlineCapSeconds", 28800))
 	offline.size_flags_horizontal = Control.SIZE_SHRINK_END
 	row.add_child(offline)
 	_pause_button = _button("", _toggle_auto, "gold", 44.0, "pause")
@@ -431,6 +432,12 @@ func _render_current_page() -> void:
 	if _content_host == null:
 		return
 	_home_avatar = null
+	# 자동 진행이 같은 탭을 다시 그릴 때 스크롤 위치를 지킨다(탭을 바꾸면 맨 위에서 시작).
+	var previous_scroll := 0
+	if _rendered_tab == _current_tab:
+		for child in _content_host.get_children():
+			if child is ScrollContainer and not child.is_queued_for_deletion():
+				previous_scroll = (child as ScrollContainer).scroll_vertical
 	# 페이지를 지우기 전에 공용 현재 활동 창을 셸 자리로 되돌린다.
 	if _status_panel != null and _status_slot != null and _status_panel.get_parent() != _status_slot:
 		_status_panel.reparent(_status_slot, false)
@@ -450,6 +457,16 @@ func _render_current_page() -> void:
 	set_meta("screen_id", _current_tab)
 	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_content_host.add_child(page)
+	_rendered_tab = _current_tab
+	if previous_scroll > 0 and page is ScrollContainer:
+		_restore_scroll(page as ScrollContainer, previous_scroll)
+
+
+func _restore_scroll(scroll: ScrollContainer, value: int) -> void:
+	# 새 페이지의 스크롤 범위는 다음 프레임 배치 뒤에 정해진다.
+	await get_tree().process_frame
+	if is_instance_valid(scroll):
+		scroll.scroll_vertical = value
 
 
 func _page_scroll() -> Dictionary:
@@ -642,6 +659,9 @@ func _build_activity_page() -> Control:
 				count += 1
 		var tab := _button("%s %d" % [category["name"], count], _select_activity_filter.bind(category_id), "gold" if category_id == _activity_filter else "secondary", 48.0, "filter_%s" % category_id)
 		tab.theme_type_variation = "PixelButtonCompactGold" if category_id == _activity_filter else "PixelButtonCompactSecondary"
+		# 선택한 분류는 색과 함께 눌린(들어간) 모양으로도 구분한다.
+		tab.toggle_mode = true
+		tab.button_pressed = category_id == _activity_filter
 		category_row.add_child(tab)
 	body.add_child(category_row)
 
@@ -892,7 +912,7 @@ func _build_growth_page() -> Control:
 		var relation_text := VBoxContainer.new()
 		relation_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		relation_text.add_theme_constant_override("separation", 4)
-		var relation_label := _label("%s · %d" % [RELATION_LABELS[relation_id], int(relation_value)], 16, PixelTokens.INK)
+		var relation_label := _label("%s · %d / 1000" % [RELATION_LABELS[relation_id], int(relation_value)], 16, PixelTokens.INK)
 		relation_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		relation_text.add_child(relation_label)
 		relation_text.add_child(_gauge("reputation", relation_value / 1000.0))
@@ -1129,6 +1149,7 @@ func _open_sheet(kind: String) -> void:
 		"reset": _build_reset_sheet(body)
 		"activity_detail": _build_activity_detail_sheet(body)
 		_: _build_menu_sheet(body)
+	_ink_headings(body)
 
 
 func _close_sheet() -> void:
@@ -1144,7 +1165,7 @@ func _sheet_title(kind: String) -> Array:
 		"world": return ["월드", "모험·시험·스포츠·대회·라이벌 리그"]
 		"shop": return ["상점과 인벤토리", "장비와 소비품을 성장 방향에 맞춰 준비하세요."]
 		"settings": return ["설정", "접근성·사운드·자동 진행·데이터"]
-		"offline": return ["오프라인 정산", "실제 %d초당 1회, 최대 %s까지 동일 규칙으로 처리합니다." % [
+		"offline": return ["오프라인 정산", "꺼져 있던 동안 %d초마다 1회, 최대 %s까지 이어서 진행해요." % [
 			maxi(1, _config_int("offlineSecondsPerSlot", 60)),
 			_duration_label(_config_int("offlineCapSeconds", 28800)),
 		]]
@@ -1153,7 +1174,7 @@ func _sheet_title(kind: String) -> Array:
 		"continue": return ["이어하기", "기기에 저장된 최신 수련 기록을 불러옵니다."]
 		"reset": return ["데이터 초기화", "현재 수련 기록을 지우고 처음부터 시작합니다."]
 		"activity_detail": return [_activity_name_by_id(_detail_activity_id), "활동 상세"]
-		_: return ["아카데미 메뉴", "모든 기능 경로로 이동할 수 있습니다."]
+		_: return ["아카데미 메뉴", "모든 기능으로 이동해요."]
 
 
 func _build_menu_sheet(body: VBoxContainer) -> void:
@@ -1321,7 +1342,12 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 		var actions := HBoxContainer.new()
 		actions.add_theme_constant_override("separation", 8)
 		if owned <= 0 or bool(item.get("stackable", false)):
-			actions.add_child(_button("구매", _shop_action.bind(item_id), "primary" if owned <= 0 else "secondary", 48.0, "buy_%s" % item_id))
+			var affordable := _big_to_number(_read(["bigValues", "gold"], {"mantissa": 0, "exponent": 0})) >= _tier_item_price_number(item)
+			var buy := _button("구매" if affordable else "골드 부족", _shop_action.bind(item_id), "primary" if owned <= 0 else "secondary", 48.0, "buy_%s" % item_id)
+			buy.disabled = not affordable
+			if not affordable:
+				buy.icon = _icon_texture("lock")
+			actions.add_child(buy)
 		if owned > 0 and bool(item.get("stackable", false)):
 			actions.add_child(_button("사용", _inventory_action.bind("use", item_id), "gold", 48.0, "use_%s" % item_id))
 			actions.add_child(_button("선물", _gift_item.bind(item_id, _gift_target), "secondary"))
@@ -1338,7 +1364,11 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 	var inventory: Array = _read(["inventory"], [])
 	if inventory.is_empty():
 		var inventory_empty := _card("transparent")
-		inventory_empty.add_child(_label("보관 중인 물품이 없습니다.", 16, PixelTokens.INK_MUTED))
+		var inventory_empty_row := HBoxContainer.new()
+		inventory_empty_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+		inventory_empty_row.add_child(_icon("potion"))
+		inventory_empty_row.add_child(_label("보관 중인 물품이 없어요.", 16, PixelTokens.INK_MUTED))
+		inventory_empty.add_child(inventory_empty_row)
 		body.add_child(inventory_empty)
 	else:
 		for stack in inventory:
@@ -1355,19 +1385,19 @@ func _build_shop_sheet(body: VBoxContainer) -> void:
 
 
 func _build_settings_sheet(body: VBoxContainer) -> void:
-	body.add_child(_section_heading("진행", "자동 진행 상태와 접근성 설정은 즉시 반영됩니다."))
-	body.add_child(_setting_toggle("자동 진행", "%s마다 다음 활동을 해결합니다." % _duration_label(int(ceil(_config_float("onlineSecondsPerSlot", 5.0)))), "autoRun", _auto_running))
-	body.add_child(_setting_toggle("모션 줄이기", "캐릭터 부유·오라 애니메이션을 멈춥니다.", "reducedMotion", bool(_read(["settings", "reducedMotion"], false))))
-	body.add_child(_setting_toggle("효과음", "합성 톤 기반 효과음 훅을 사용합니다.", "sound", bool(_read(["settings", "sound"], true))))
-	body.add_child(_setting_toggle("고대비", "중요 CTA와 진행 정보를 더 선명하게 표시합니다.", "highContrast", bool(_read(["settings", "highContrast"], false))))
+	body.add_child(_section_heading("진행", "바로 반영돼요."))
+	body.add_child(_setting_toggle("자동 진행", "%s마다 다음 활동을 진행해요." % _duration_label(int(ceil(_config_float("onlineSecondsPerSlot", 5.0)))), "autoRun", _auto_running))
+	body.add_child(_setting_toggle("모션 줄이기", "캐릭터 움직임과 반짝임을 멈춰요.", "reducedMotion", bool(_read(["settings", "reducedMotion"], false))))
+	body.add_child(_setting_toggle("효과음", "버튼과 보상 효과음을 켜요.", "sound", bool(_read(["settings", "sound"], true))))
+	body.add_child(_setting_toggle("고대비", "글자와 테두리를 더 진하게 보여 줘요.", "highContrast", bool(_read(["settings", "highContrast"], false))))
 
-	body.add_child(_section_heading("저장과 데이터", "활동 해결·정책 변경·백그라운드 진입 시 자동 저장됩니다."))
+	body.add_child(_section_heading("저장과 데이터", "활동이 끝나거나 설정을 바꾸면 자동 저장돼요."))
 	body.add_child(_button("지금 저장", _save_game, "primary", 48.0, "settings_save"))
 	body.add_child(_button("저장 기록 이어하기", _replace_sheet.bind("continue"), "secondary", 48.0, "settings_continue"))
 	body.add_child(_button("데이터 초기화", _replace_sheet.bind("reset"), "danger"))
 
 	var policy_note := _card("transparent")
-	policy_note.add_child(_label("광고·결제·클라우드 저장은 현재 빌드에 포함되지 않습니다. 모든 핵심 진행은 로컬에서 동작합니다.", 16, PixelTokens.INK_MUTED))
+	policy_note.add_child(_label("진행은 이 기기에만 저장돼요. 광고와 결제는 없어요.", 16, PixelTokens.INK_MUTED))
 	body.add_child(policy_note)
 
 
@@ -1400,14 +1430,16 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 	var rules_box := VBoxContainer.new()
 	rules_box.add_theme_constant_override("separation", 8)
 	rules_box.add_child(_label("정산 규칙", 18, PixelTokens.INK))
-	rules_box.add_child(_label("· 저장된 seed와 rngCounter를 그대로 사용", 16, PixelTokens.INK_MUTED))
-	rules_box.add_child(_label("· 온라인과 같은 활동 리듀서를 순서대로 실행", 16, PixelTokens.INK_MUTED))
-	rules_box.add_child(_label("· 이벤트는 최대 20건까지 받은 편지함에 보관", 16, PixelTokens.INK_MUTED))
+	rules_box.add_child(_label("· 저장된 진행 기록에서 그대로 이어서 계산해요", 16, PixelTokens.INK_MUTED))
+	rules_box.add_child(_label("· 켜져 있을 때와 같은 규칙으로 활동을 처리해요", 16, PixelTokens.INK_MUTED))
+	rules_box.add_child(_label("· 이벤트는 최대 20건까지 편지함에 보관해요", 16, PixelTokens.INK_MUTED))
 	rules.add_child(rules_box)
 	body.add_child(rules)
 
-	var collect := _button("오프라인 결과 받기", _collect_offline, "primary", 48.0, "offline_collect")
+	var collect := _button("오프라인 결과 받기" if pending_slots > 0 else "받을 결과 없음", _collect_offline, "primary", 48.0, "offline_collect")
 	collect.disabled = pending_slots <= 0
+	if collect.disabled:
+		collect.icon = _icon_texture("lock")
 	collect.add_to_group("critical_cta")
 	body.add_child(collect)
 
@@ -1418,6 +1450,7 @@ func _build_event_sheet(body: VBoxContainer) -> void:
 		var empty := _card("transparent")
 		var empty_box := VBoxContainer.new()
 		empty_box.add_theme_constant_override("separation", 8)
+		empty_box.add_child(_icon("event"))
 		empty_box.add_child(_label("대기 중인 이벤트가 없습니다.", 20, PixelTokens.INK))
 		empty_box.add_child(_label("활동 해결당 최대 한 건이 도착하며 자동 진행은 멈추지 않아요.", 16, PixelTokens.INK_MUTED))
 		empty.add_child(empty_box)
@@ -1458,6 +1491,10 @@ func _build_profile_sheet(body: VBoxContainer) -> void:
 	intro.add_child(intro_box)
 	body.add_child(intro)
 
+	if int(_read(["lifetimeStats", "activities"], 0)) > 0:
+		var warning := _card("coral")
+		warning.add_child(_label("새로 만들면 %s의 지금 기록은 지워져요. 이어서 하려면 닫기를 누르세요." % str(_state.get("traineeName", "수련생")), 16, PixelTokens.NEGATIVE))
+		body.add_child(warning)
 	body.add_child(_label("수련생 이름", 17, PixelTokens.INK))
 	_trainee_name_edit = LineEdit.new()
 	_trainee_name_edit.custom_minimum_size.y = 48.0
@@ -1547,11 +1584,11 @@ func _advance_slots(count: int, show_feedback: bool = true) -> void:
 	_activity_elapsed = 0.0
 	_refresh_chrome()
 	_render_current_page()
-	_present_result_feedback(result, feedback_checkpoint)
+	_present_result_feedback(result, feedback_checkpoint, not show_feedback)
 	_track_event(&"slots_advanced", {"count": maxi(0, count), "manual": show_feedback})
 	if show_feedback:
 		_play_sfx(SynthAudioPort.CUE_REWARD)
-		_show_toast("%s · 성장 결과를 반영했습니다." % str(_read(["lastResult", "title"], "%s 완료" % _current_activity_name())))
+		_show_toast("%s · 결과를 반영했어요." % str(_read(["lastResult", "title"], "%s 완료" % _current_activity_name())))
 
 
 func _simulate_fallback_slot() -> void:
@@ -1645,7 +1682,7 @@ func _queue_activity(activity_id: String) -> void:
 	if queued:
 		_persist_silently()
 		_render_current_page()
-		_show_toast("%s을(를) 자동 큐에 추가했습니다." % _activity_name_by_id(activity_id))
+		_show_toast("%s 자동 큐에 넣었어요." % _josa(_activity_name_by_id(activity_id), "을", "를"))
 	else:
 		_show_toast("현재 조건에서는 자동 큐에 추가할 수 없습니다.")
 
@@ -1914,7 +1951,7 @@ func _shop_action(item_id: String) -> void:
 	_track_event(&"shop_action", {"itemId": item_id, "ok": completed})
 	_play_sfx(SynthAudioPort.CUE_REWARD if completed else SynthAudioPort.CUE_FAILURE)
 	if completed:
-		_show_toast("%s을(를) 인벤토리에 넣었습니다." % _item_display_name(item_id))
+		_show_toast("%s 인벤토리에 넣었어요." % _josa(_item_display_name(item_id), "을", "를"))
 	else:
 		_show_toast(error_message)
 	_persist_silently()
@@ -1945,7 +1982,7 @@ func _gift_item(item_id: String, relation_id: String) -> void:
 	_track_event(&"gift_item", {"itemId": item_id, "relation": relation_id, "ok": succeeded})
 	_play_sfx(SynthAudioPort.CUE_REWARD if succeeded else SynthAudioPort.CUE_FAILURE)
 	_show_toast(
-		"%s에게 %s을(를) 선물했습니다." % [str(RELATION_LABELS.get(relation_id, relation_id)), _item_display_name(item_id)]
+		"%s에게 %s 선물했어요." % [str(RELATION_LABELS.get(relation_id, relation_id)), _josa(_item_display_name(item_id), "을", "를")]
 		if succeeded else str((result as Dictionary).get("error", "선물을 건네지 못했습니다."))
 	)
 	_open_sheet("shop")
@@ -2114,7 +2151,8 @@ func _result_feedback_checkpoint() -> Dictionary:
 	}
 
 
-func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary) -> void:
+# automatic: 자동 진행으로 끝난 결과. 평범한 활동 결과는 작은 띠로만 알리고, 도전·모험·심사·칭호·업무 사고는 결과 창으로 보여 준다.
+func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary, automatic: bool = false) -> void:
 	if _result_feedback_layer == null or not _result_feedback_layer.has_method("present"):
 		return
 	var completed: Array[Dictionary] = []
@@ -2148,7 +2186,8 @@ func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary) ->
 	var payload := _build_result_feedback_payload(activity_result, season_review)
 	if payload.is_empty():
 		return
-	_result_feedback_layer.call("present", payload, bool(_read(["settings", "reducedMotion"], false)))
+	var routine := automatic and str(payload.get("kind", "")) == "activity" and _result_specialized_summary_lines(activity_result).is_empty()
+	_result_feedback_layer.call("present", payload, bool(_read(["settings", "reducedMotion"], false)), routine)
 
 
 func _build_result_feedback_payload(activity_result: Dictionary, season_review: Dictionary = {}) -> Dictionary:
@@ -2473,7 +2512,19 @@ func _world_action_card(title: String, detail: String, activity_id: String, acti
 	detail_label.max_lines_visible = 2
 	box.add_child(detail_label)
 	if kind == "adventure":
-		box.add_child(_label("탐색 > 조우 > 보스", 16, PixelTokens.INFO))
+		var nodes := HBoxContainer.new()
+		nodes.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+		for index in 3:
+			nodes.add_child(_icon(["preset_explorer", "preset_martial", "preset_leader"][index]))
+			var node_label := _label(["탐색", "조우", "보스"][index], 16, PixelTokens.INFO)
+			node_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+			node_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			nodes.add_child(node_label)
+			if index < 2:
+				var arrow := _label(">", 16, PixelTokens.INK_MUTED)
+				arrow.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+				nodes.add_child(arrow)
+		box.add_child(nodes)
 	if not lock_reason.is_empty():
 		box.add_child(_label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE))
 	var action := _button(action_label, _run_world_activity.bind(activity_id), "primary" if lock_reason.is_empty() else "secondary", 48.0, "world_%s" % activity_id)
@@ -2545,10 +2596,7 @@ func _policy_slider(title: String, description: String, key: String, value: floa
 	title_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	text_box.add_child(title_label)
 	if not description.is_empty():
-		var description_label := _label(description, 16, PixelTokens.INK_MUTED)
-		description_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-		description_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		text_box.add_child(description_label)
+		text_box.add_child(_label(description, 16, PixelTokens.INK_MUTED))
 	row.add_child(text_box)
 	var minus := _button("-", Callable(), "secondary", 44.0, "step_%s_minus" % key)
 	var value_label := _label(str(formatter.call(value)), 16, PixelTokens.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
@@ -2635,13 +2683,25 @@ func _meter_cell(kind: String, title: String, value: float, maximum: float) -> C
 	return box
 
 
+# 탭 화면의 구획 제목은 어두운 나무 바탕 위에 놓이므로 밝은 글자를 쓴다. 시트(양피지) 안에서는 _open_sheet가 잉크색으로 바꾼다.
 func _section_heading(title: String, subtitle: String = "") -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 2)
-	box.add_child(_label(title, 24, PixelTokens.INK))
+	var title_label := _label(title, 24, PixelTokens.ON_STRIP)
+	title_label.set_meta("heading_role", "title")
+	box.add_child(title_label)
 	if not subtitle.is_empty():
-		box.add_child(_label(subtitle, 16, PixelTokens.INK_MUTED))
+		var subtitle_label := _label(subtitle, 16, PixelTokens.ON_STRIP_MUTED)
+		subtitle_label.set_meta("heading_role", "subtitle")
+		box.add_child(subtitle_label)
 	return box
+
+
+func _ink_headings(root: Node) -> void:
+	for node: Node in root.find_children("*", "Label", true, false):
+		match str(node.get_meta("heading_role", "")):
+			"title": (node as Label).add_theme_color_override("font_color", PixelTokens.INK)
+			"subtitle": (node as Label).add_theme_color_override("font_color", PixelTokens.INK_MUTED)
 
 
 func _chip(text_value: String, _accent: Color) -> Control:
@@ -2734,6 +2794,15 @@ func _gauge(kind: String, ratio: float) -> ProgressBar:
 	return bar
 
 
+# 받침 유무로 조사를 고른다. 예: _josa("응용 마력학", "을", "를") → "응용 마력학을"
+func _josa(word: String, with_final: String, without_final: String) -> String:
+	if word.is_empty():
+		return word
+	var code := word.unicode_at(word.length() - 1)
+	var has_final := code >= 0xAC00 and code <= 0xD7A3 and (code - 0xAC00) % 28 != 0
+	return word + (with_final if has_final else without_final)
+
+
 func _preset_icon(preset_id: String) -> String:
 	return "magic" if preset_id == "scholar" else "preset_" + preset_id
 
@@ -2801,11 +2870,37 @@ func _activity_by_id(activity_id: String) -> Dictionary:
 
 
 func _activity_lock_reason(activity_id: String) -> String:
+	var requirement := _activity_requirement_reason(activity_id)
 	var decision = _read(["lastPlannerDecision"], {})
 	if typeof(decision) == TYPE_DICTIONARY:
 		var rejected = decision.get("rejected", {})
 		if typeof(rejected) == TYPE_DICTIONARY and rejected.has(activity_id):
-			return str(rejected[activity_id])
+			return _friendly_rejection(str(rejected[activity_id]), requirement)
+	return requirement
+
+
+# 플래너의 거절 문구를 플레이어가 이해할 수 있는 말로 바꾼다. 구체적인 능력치·티어 조건이 있으면 그것을 먼저 보여 준다.
+func _friendly_rejection(raw: String, requirement: String) -> String:
+	var number := RegEx.create_from_string("(\\d+)").search(raw)
+	var slot := number.get_string(1) if number != null else ""
+	if raw.begins_with("잠금 조건"):
+		return requirement if not requirement.is_empty() else "조건을 채우면 열려요"
+	if raw.begins_with("시즌 일정"):
+		return "시즌 %s일째에 열려요" % slot
+	if raw.begins_with("예정 도전"):
+		return "시즌 %s일째 시험과 겹쳐요" % slot
+	if raw.begins_with("성장 정책에서 제외"):
+		return "금지 태그에 들어 있어요"
+	if raw.begins_with("회복 활동"):
+		return "지금은 회복이 먼저예요"
+	if raw.begins_with("비용 지불"):
+		return "골드가 부족해요"
+	if raw.begins_with("최소 보유금"):
+		return "최소 보유금 아래로 내려가요"
+	return raw
+
+
+func _activity_requirement_reason(activity_id: String) -> String:
 	var activity := _activity_by_id(activity_id)
 	var requires: Dictionary = activity.get("requires", {}) as Dictionary
 	for key in (requires.get("gte", {}) as Dictionary):
@@ -2836,6 +2931,11 @@ func _current_activity_name() -> String:
 	return "다음 활동 준비"
 
 
+# 플래너 이유는 "성장 방향 +1.450"처럼 점수가 붙어 온다. 화면에는 이유 이름만 보여 준다.
+func _reason_label_text(raw: String) -> String:
+	return RegEx.create_from_string("\\s*[+-]\\d+(\\.\\d+)?$").sub(raw.strip_edges(), "").strip_edges()
+
+
 func _planner_reason() -> String:
 	var result: Array[String] = []
 	var decision = _read(["lastPlannerDecision"], {})
@@ -2843,7 +2943,7 @@ func _planner_reason() -> String:
 		var decision_reasons = decision.get("reasons", [])
 		if typeof(decision_reasons) == TYPE_ARRAY:
 			for reason in decision_reasons:
-				var text := str(reason.get("text", reason)) if typeof(reason) == TYPE_DICTIONARY else str(reason)
+				var text := _reason_label_text(str(reason.get("text", reason)) if typeof(reason) == TYPE_DICTIONARY else str(reason))
 				if not text.is_empty() and not result.has(text):
 					result.append(text)
 				if result.size() == 3:
@@ -2994,6 +3094,11 @@ func _equipment_visual_state() -> Dictionary:
 	result["enhancementLevels"] = levels
 	result["visualSeed"] = int(_state.get("seed", 1))
 	return result
+
+
+func _tier_item_price_number(item: Dictionary) -> float:
+	var tier_growth := maxf(1.0, _config_float("activityCostTierGrowth", 1.11))
+	return maxf(0.0, float(item.get("basePrice", 0.0))) * pow(tier_growth, float(maxi(0, int(_state.get("worldTier", 1)) - 1)))
 
 
 func _tier_item_price_text(item: Dictionary) -> String:
