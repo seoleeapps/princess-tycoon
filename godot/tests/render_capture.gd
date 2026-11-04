@@ -30,31 +30,23 @@ func _run() -> void:
 		push_error("[RENDER] main scene load failed")
 		quit(1)
 		return
-	var logical_viewport := SubViewport.new()
-	logical_viewport.name = "Logical390x844"
-	logical_viewport.size = LOGICAL_SIZE
-	logical_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	logical_viewport.disable_3d = true
-	root.add_child(logical_viewport)
+	# 실제 기기처럼 390×844 좌표계를 기기 해상도에서 직접 그린다(canvas_items + keep).
+	# 글자와 도트를 확대하지 않고 기기 배율로 래스터해 정수가 아닌 배율의 도트 굵기를 그대로 보여 준다.
+	var scale := minf(float(_capture_size.x) / LOGICAL_SIZE.x, float(_capture_size.y) / LOGICAL_SIZE.y)
+	var render_size := Vector2i(roundi(LOGICAL_SIZE.x * scale), roundi(LOGICAL_SIZE.y * scale))
+	var device_viewport := SubViewport.new()
+	device_viewport.name = "Device%dx%d" % [_capture_size.x, _capture_size.y]
+	device_viewport.size = render_size
+	device_viewport.size_2d_override = LOGICAL_SIZE
+	device_viewport.size_2d_override_stretch = true
+	if "oversampling" in device_viewport:
+		device_viewport.set("oversampling", true)
+	device_viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	device_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	device_viewport.disable_3d = true
+	root.add_child(device_viewport)
 	var main := packed.instantiate() as Control
-	logical_viewport.add_child(main)
-
-	var capture_viewport := SubViewport.new()
-	capture_viewport.name = "Capture%dx%d" % [_capture_size.x, _capture_size.y]
-	capture_viewport.size = _capture_size
-	capture_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	capture_viewport.disable_3d = true
-	root.add_child(capture_viewport)
-	var background := ColorRect.new()
-	background.color = Color.BLACK
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	capture_viewport.add_child(background)
-	var presentation := TextureRect.new()
-	presentation.texture = logical_viewport.get_texture()
-	presentation.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	presentation.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	presentation.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	capture_viewport.add_child(presentation)
+	device_viewport.add_child(main)
 
 	for _frame: int in range(4):
 		await process_frame
@@ -62,14 +54,20 @@ func _run() -> void:
 		main.call("_complete_current_activity")
 	for _frame: int in range(4):
 		await process_frame
-	var texture := capture_viewport.get_texture()
+	await RenderingServer.frame_post_draw
+	var texture := device_viewport.get_texture()
 	if texture == null:
 		push_error("[RENDER] viewport texture unavailable")
 		_cleanup_save()
 		quit(1)
 		return
-	var image := texture.get_image()
-	if image == null or image.get_size() != _capture_size:
+	var rendered := texture.get_image()
+	var image := Image.create(_capture_size.x, _capture_size.y, false, Image.FORMAT_RGBA8)
+	image.fill(Color.BLACK)
+	if rendered != null:
+		rendered.convert(Image.FORMAT_RGBA8)
+		image.blit_rect(rendered, Rect2i(Vector2i.ZERO, rendered.get_size()), (_capture_size - rendered.get_size()) / 2)
+	if rendered == null or image.get_size() != _capture_size:
 		push_error("[RENDER] size mismatch expected=%s actual=%s" % [str(_capture_size), str(image.get_size() if image != null else Vector2i.ZERO)])
 		_cleanup_save()
 		quit(1)
@@ -80,8 +78,7 @@ func _run() -> void:
 		push_error("[RENDER] png save failed error=%d" % error)
 		quit(1)
 		return
-	logical_viewport.queue_free()
-	capture_viewport.queue_free()
+	device_viewport.queue_free()
 	await process_frame
 	print("[RENDER] PASS size=%dx%d output=%s" % [_capture_size.x, _capture_size.y, _output_path])
 	quit(0)

@@ -11,7 +11,7 @@
 - 결정적 자동 플래너가 예산, 스트레스, 위험도, 금지 태그를 지키며 다음 활동을 고릅니다.
 - 오프라인 진행은 최대 8시간을 같은 리듀서로 정산합니다.
 - 기본 콘텐츠: 활동 43종, 이벤트 26종, 상점 21종, 진로 칭호 38종.
-- 원작 추출물 대신 Godot 절차 드로잉과 OFL 한글 폰트를 사용합니다.
+- 원작 추출물 대신 코드로 만든 저해상도 도트 아트와 OFL 한글 픽셀 폰트를 사용합니다.
 
 ## 실행
 
@@ -22,8 +22,15 @@ godot --editor --path godot
 # 게임
 godot --path godot
 
-# 문서·데이터·Godot import/compile/smoke
+# 문서·데이터·도트 에셋 재생성 비교·Godot import/compile/smoke
 npm test
+
+# 화면 좌표 입력 E2E 여정(3개 viewport), 렌더링 모드 캡처
+npm run test:e2e
+npm run capture:e2e
+
+# 도트 스킨·아이콘·배경·페이퍼돌 재생성(Python, Pillow)
+python3 scripts/pixel_art/generate.py
 
 # 장기 밸런스 시뮬레이션
 npm run test:balance
@@ -45,7 +52,8 @@ docs/
   qa/                           3개 모바일 비율·결과 피드백 실제 렌더
 extract/                        역공학 도구와 연구용 추출물(런타임 미포함)
 godot/
-  assets/fonts/                 라이선스가 확인된 번들 한글 폰트
+  assets/fonts/                 라이선스가 확인된 번들 한글 픽셀 폰트
+  assets/pixel/                 scripts/pixel_art/generate.py가 만든 도트 스킨·아이콘·배경·페이퍼돌
   data/                         밸런스와 콘텐츠 JSON
   scenes/                       모바일 화면
   src/core/                     결정적 게임 규칙과 세이브
@@ -70,7 +78,7 @@ flowchart LR
 ## 저작권·에셋 정책
 
 - `extract/`의 이미지, 폰트, 텍스트, 음원은 분석·재현 레퍼런스 전용입니다.
-- 실행 빌드에는 신규 절차 비주얼과 라이선스가 확인된 폰트만 포함합니다.
+- 실행 빌드에는 코드로 만든 도트 비주얼과 라이선스가 확인된 폰트만 포함합니다.
 - 유료 이미지/음악 생성 API, 원작 리소스, 실제 광고/IAP SDK는 1차 구현 범위에 포함하지 않습니다.
 
 ## 검증 결과

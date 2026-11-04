@@ -1,6 +1,10 @@
 extends Control
 
-const RoyalTheme = preload("res://src/ui/royal_theme.gd")
+# 현재 활동 진행률. 16칸 도트 고리로 그리고, 칸은 아트 1px = 논리 2px 격자에 맞춘다.
+
+const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
+const SEGMENTS := 16
+const CELL := 4.0
 
 var value := 0.0:
 	set(next_value):
@@ -14,14 +18,18 @@ func _ready() -> void:
 	queue_redraw()
 
 
+func filled_segments() -> int:
+	return int(floor(value / 100.0 * SEGMENTS))
+
+
 func _draw() -> void:
-	var center := size * 0.5
-	var radius := maxf(8.0, minf(size.x, size.y) * 0.5 - 5.0)
-	draw_arc(center, radius, 0.0, TAU, 40, Color(RoyalTheme.NAVY_RAISED, 0.95), 5.0, true)
-	var ratio := clampf(value / 100.0, 0.0, 1.0)
-	if ratio > 0.0:
-		var end_angle := -PI * 0.5 + TAU * ratio
-		draw_arc(center, radius, -PI * 0.5, end_angle, maxi(3, int(40.0 * ratio)), RoyalTheme.CORAL, 5.0, true)
-		var endpoint := center + Vector2(cos(end_angle), sin(end_angle)) * radius
-		draw_circle(endpoint, 3.0, RoyalTheme.GOLD_SOFT)
-	draw_circle(center, 3.0, RoyalTheme.GOLD)
+	var center := Vector2(floorf(size.x * 0.25) * 2.0, floorf(size.y * 0.25) * 2.0)
+	var radius := 16.0
+	var filled := filled_segments()
+	for index in SEGMENTS:
+		var angle := -PI * 0.5 + TAU * float(index) / SEGMENTS
+		var point := center + Vector2(cos(angle), sin(angle)) * radius - Vector2(CELL, CELL) * 0.5
+		point = Vector2(floorf(point.x * 0.5) * 2.0, floorf(point.y * 0.5) * 2.0)
+		draw_rect(Rect2(point - Vector2(2, 2), Vector2(CELL + 4.0, CELL + 4.0)), PixelTokens.STRIP_DARK)
+		draw_rect(Rect2(point, Vector2(CELL, CELL)), PixelTokens.GAUGE["magic"] if index < filled else PixelTokens.SECONDARY)
+	draw_rect(Rect2(center - Vector2(2, 2), Vector2(4, 4)), PixelTokens.GOLD)
