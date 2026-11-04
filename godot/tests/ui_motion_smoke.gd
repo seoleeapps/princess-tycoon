@@ -124,6 +124,12 @@ func _run() -> void:
 	_check(str(activity_payload.get("kind", "")) == "activity", "활동 결과 payload 분류")
 	# 능력치는 칩으로, 보상은 상세 줄로 보인다(칩이 모든 성장을 보여 주면 같은 성장 줄은 반복하지 않는다).
 	var shown_text := _joined_details(activity_payload) + " " + " ".join(activity_payload.get("floatingStats", []))
+	# 칩(최대 3개)이 못 보여 주는 네 번째 이후 성장은 성장 줄로 남아야 한다.
+	var wide_payload: Dictionary = main.call("_build_result_feedback_payload", {"activityId": "EDU_LITERATURE", "kind": "education", "title": "왕립 교양학 완료", "gains": {"intelligence": 8.4, "communication": 4.1, "refinement": 2.0, "art": 1.2}}, {})
+	_check(_joined_details(wide_payload).contains("예술 +1.2"), "네 번째 이후 성장도 결과 창에 표시")
+	var before_events := {"worldTier": 1, "titles": 0, "stats": 100.0, "gold": 50.0, "events": 2}
+	var after_events := {"worldTier": 1, "titles": 0, "stats": 100.0, "gold": 50.0, "events": 5}
+	_check((main.call("_progress_changes", before_events, after_events) as Array).has("처리한 이벤트 3건"), "정산 이벤트는 처리 횟수로 셈")
 	_check(shown_text.contains("지력 +8.4") and shown_text.contains("골드 +250"), "실제 스탯·보상 결과 표시")
 	_check((activity_payload.get("floatingStats", []) as Array).size() == 2, "능력치별 플로팅 토큰 생성")
 	layer.call("present", activity_payload, false)

@@ -2031,12 +2031,16 @@ func _progress_snapshot() -> Dictionary:
 	var stat_total := 0.0
 	for value in (_read(["stats"], {}) as Dictionary).values():
 		stat_total += float(value)
+	# 같은 이벤트가 여러 번 처리되면 기록 항목의 count만 늘어나므로 count를 합산한다.
+	var events_handled := 0
+	for entry in (_read(["eventHistory"], {}) as Dictionary).values():
+		events_handled += int((entry as Dictionary).get("count", 1)) if entry is Dictionary else 1
 	return {
 		"worldTier": int(_state.get("worldTier", 1)),
 		"titles": _career_title_count(),
 		"stats": stat_total,
 		"gold": _big_to_number(_read(["bigValues", "gold"], {"mantissa": 0, "exponent": 0})),
-		"events": (_read(["eventHistory"], {}) as Dictionary).size(),
+		"events": events_handled,
 	}
 
 
@@ -2354,10 +2358,8 @@ func _build_result_feedback_payload(activity_result: Dictionary, season_review: 
 func _build_activity_feedback_payload(activity_result: Dictionary) -> Dictionary:
 	var details: Array[String] = []
 	details.append_array(_result_specialized_summary_lines(activity_result))
-	# 능력치 칩(최대 3개)이 모든 성장을 보여 주면 같은 내용의 성장 줄은 반복하지 않는다.
-	var gains: Dictionary = activity_result.get("gains", {}) as Dictionary
-	var growth_line := _feedback_growth_line(gains)
-	if not growth_line.is_empty() and _feedback_stat_tokens(gains).size() > 3:
+	var growth_line := _feedback_growth_line(activity_result.get("gains", {}) as Dictionary)
+	if not growth_line.is_empty():
 		details.append(growth_line)
 	details.append_array(_feedback_reward_lines(activity_result))
 	var outcome: Dictionary = activity_result.get("outcome", {}) as Dictionary
@@ -2596,12 +2598,14 @@ func _build_review_feedback_payload(review: Dictionary, activity_result: Diction
 	}
 
 
+# 결과 창의 능력치 칩은 큰 순서로 3개까지다. 성장 줄은 칩이 못 보여 준 나머지 능력치만 담는다.
 func _feedback_growth_line(gains: Dictionary) -> String:
-	var parts := _feedback_stat_tokens(gains)
-	return "성장 · %s" % " · ".join(parts) if not parts.is_empty() else ""
+	var parts := _feedback_stat_tokens(gains, 0).slice(3)
+	return "그 외 성장 · %s" % " · ".join(parts) if not parts.is_empty() else ""
 
 
-func _feedback_stat_tokens(gains: Dictionary) -> Array[String]:
+# limit 0이면 0이 아닌 변화 전부를 큰 순서로 돌려준다.
+func _feedback_stat_tokens(gains: Dictionary, limit: int = 3) -> Array[String]:
 	var keys: Array = gains.keys()
 	keys.sort_custom(func(left: Variant, right: Variant) -> bool:
 		return absf(float(gains[left])) > absf(float(gains[right]))
@@ -2616,7 +2620,7 @@ func _feedback_stat_tokens(gains: Dictionary) -> Array[String]:
 			"+" if value > 0.0 else "",
 			_feedback_number(value),
 		])
-		if parts.size() >= 3:
+		if limit > 0 and parts.size() >= limit:
 			break
 	return parts
 
