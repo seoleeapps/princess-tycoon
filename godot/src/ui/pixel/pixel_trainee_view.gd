@@ -67,6 +67,19 @@ func set_activity(icon_name: String, ratio: float) -> void:
 	queue_redraw()
 
 
+# 매 프레임 불려도 게이지가 2px 단위로 바뀔 때만 다시 그린다.
+func set_progress(ratio: float) -> void:
+	var next := clampf(ratio, 0.0, 1.0)
+	var changed := _progress_step(next) != _progress_step(progress)
+	progress = next
+	if changed:
+		queue_redraw()
+
+
+func _progress_step(value: float) -> int:
+	return int(floorf(32.0 * value / SCALE))
+
+
 func current_frame() -> int:
 	return _frame
 
@@ -110,10 +123,12 @@ func _draw_bubble(anchor: Vector2) -> void:
 	draw_texture(bubble, origin)
 	var icon := PixelTheme.doubled_texture(ICON_DIR + activity_icon + ".png")
 	draw_texture(icon, _even(origin + Vector2((bubble_size.x - icon.get_size().x) * 0.5, 4.0)))
-	var bar := Rect2(_even(Vector2(origin.x - 2.0, origin.y + bubble_size.y + 2.0)), Vector2(bubble_size.x + 4.0, 8.0))
+	# 어두운 벽 위에서도 보이도록 밝은 바탕 칸에 진행을 채운다.
+	var bar := Rect2(_even(Vector2(origin.x - 2.0, origin.y + bubble_size.y + 2.0)), Vector2(bubble_size.x + 4.0, 10.0))
 	draw_rect(bar, PixelTokens.STRIP_DARK)
+	draw_rect(Rect2(bar.position + Vector2(2, 2), bar.size - Vector2(4, 4)), PixelTokens.SECONDARY)
 	var fill_width := floorf((bar.size.x - 4.0) * progress / SCALE) * SCALE
-	draw_rect(Rect2(bar.position + Vector2(2, 2), Vector2(fill_width, 4.0)), PixelTokens.GAUGE["magic"])
+	draw_rect(Rect2(bar.position + Vector2(2, 2), Vector2(fill_width, 6.0)), PixelTokens.GAUGE["magic"])
 
 
 # 장비 강화 레벨이 높을수록 몸 주변 반짝임이 늘어난다. 위치는 visualSeed로 고정한다.
