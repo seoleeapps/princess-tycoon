@@ -92,6 +92,8 @@ var _home_avatar: Control
 var _detail_activity_id := ""
 var _rendered_tab := ""
 var _page_dirty := false
+var _scroll_probe_value := -1
+var _scroll_still_frames := 0
 var _status_panel: PanelContainer
 var _status_slot: MarginContainer
 var _header_name_label: Label
@@ -141,7 +143,8 @@ func _notification(what: int) -> void:
 
 
 func _process(delta: float) -> void:
-	if _page_dirty and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+	_track_scroll_motion()
+	if _page_dirty and not _list_in_motion():
 		_page_dirty = false
 		_render_current_page()
 	if not _auto_running or int(_state.get("pendingOfflineSlots", 0)) > 0:
@@ -375,8 +378,15 @@ func _build_activity_status() -> PanelContainer:
 	_activity_progress = ActivityProgressRing.new()
 	_activity_progress.tooltip_text = "현재 활동 진행률"
 	row.add_child(_activity_progress)
+	# 글이 좁은 폭에서 말줄임되므로, 누르면 현재 활동과 다음 선택 이유 전체를 알림으로 보여 준다.
+	var text_button := _button("", _show_status_detail, "secondary", 44.0, "status_detail")
+	text_button.theme_type_variation = "PixelRowButton"
+	text_button.tooltip_text = "현재 활동과 선택 이유 보기"
+	text_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var text_box := VBoxContainer.new()
-	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	text_box.add_theme_constant_override("separation", 4)
 	_activity_label = _label("현재 활동", 16, PixelTokens.INK)
 	_reason_label = _label("", 16, PixelTokens.INK_MUTED)
@@ -384,7 +394,8 @@ func _build_activity_status() -> PanelContainer:
 		label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		text_box.add_child(label)
-	row.add_child(text_box)
+	text_button.add_child(text_box)
+	row.add_child(text_button)
 
 	var offline := _button("방치 8시간", _open_sheet.bind("offline"), "secondary", 44.0, "offline_open")
 	offline.text = "방치 %s" % _duration_label(_config_int("offlineCapSeconds", 28800))
@@ -1195,6 +1206,24 @@ func _close_sheet(keep: Node = null) -> void:
 			child.queue_free()
 
 
+# 손가락이 눌려 있거나 목록이 관성으로 움직이는 중이면 자동 진행의 화면 갱신을 미룬다.
+func _list_in_motion() -> bool:
+	return Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or _scroll_still_frames < 6
+
+
+func _track_scroll_motion() -> void:
+	var value := -1
+	if _content_host != null:
+		for child in _content_host.get_children():
+			if child is ScrollContainer and not child.is_queued_for_deletion():
+				value = (child as ScrollContainer).scroll_vertical
+	if value != _scroll_probe_value:
+		_scroll_probe_value = value
+		_scroll_still_frames = 0
+	else:
+		_scroll_still_frames += 1
+
+
 # 결과 창은 시트보다 위에 그려지므로 입력도 시트보다 먼저 받도록 모달 층의 마지막 자식으로 둔다.
 func _raise_feedback_layer() -> void:
 	if _modal_layer != null and _result_feedback_layer != null and _result_feedback_layer.get_parent() == _modal_layer:
@@ -1204,6 +1233,17 @@ func _raise_feedback_layer() -> void:
 # 새 페이지·시트를 배치가 끝날 때까지 숨겼다가 같은 스크롤 위치로 보여 주고 옛 것을 지운다(한 프레임 맨 위 깜빡임 방지).
 func _swap_in_after_layout(shown: CanvasItem, scroll: ScrollContainer, value: int, old_nodes: Array) -> void:
 	await get_tree().process_frame
+	# 교체 직전의 옛 목록 위치를 다시 읽어 그 사이 움직임도 이어받는다.
+	for old in old_nodes:
+		if is_instance_valid(old):
+			var old_scroll := old as ScrollContainer if old is ScrollContainer else null
+			if old_scroll == null:
+				for found in (old as Node).find_children("*", "ScrollContainer", true, false):
+					old_scroll = found as ScrollContainer
+					break
+			if old_scroll != null:
+				value = old_scroll.scroll_vertical
+				break
 	if is_instance_valid(scroll):
 		scroll.scroll_vertical = value
 	if is_instance_valid(shown):
@@ -1468,6 +1508,15 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 	var settled_slots := int(last_summary.get("slotsAdvanced", 0))
 	if settled_slots > 0:
 		summary_box.add_child(_label("오프라인 성장 %d회 완료" % settled_slots, 26, PixelTokens.ACCENT))
+		for change: String in last_summary.get("changes", []) as Array:
+			# 줄어든 값(골드 지출 등)은 오름 화살표 없이 붉은 글자로 보여 준다.
+			var decreased := change.contains(" -")
+			var change_row := HBoxContainer.new()
+			change_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+			if not decreased:
+				change_row.add_child(_icon("up"))
+			change_row.add_child(_label(change, 16, PixelTokens.NEGATIVE if decreased else PixelTokens.POSITIVE))
+			summary_box.add_child(change_row)
 		summary_box.add_child(_label("활동 %d건 · 시즌 심사 %d건%s" % [
 			(last_summary.get("completedActivities", []) as Array).size(),
 			(last_summary.get("seasonReviews", []) as Array).size(),
@@ -1475,7 +1524,7 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 		], 16, PixelTokens.INK_MUTED))
 	else:
 		summary_box.add_child(_label("정산 가능 %d회" % pending_slots, 26, PixelTokens.ACCENT))
-	summary_box.add_child(_label("최대 %d회 · %s · 시계 역행 시 0회" % [_offline_cap_slots(), _duration_label(_config_int("offlineCapSeconds", 28800))], 16, PixelTokens.INK_MUTED))
+	summary_box.add_child(_label("최대 %d회 · %s · 기기 시계를 되돌리면 0회" % [_offline_cap_slots(), _duration_label(_config_int("offlineCapSeconds", 28800))], 16, PixelTokens.INK_MUTED))
 	summary.add_child(summary_box)
 	body.add_child(summary)
 
@@ -1600,6 +1649,10 @@ func _replace_sheet(kind: String) -> void:
 	_open_sheet(kind)
 
 
+func _show_status_detail() -> void:
+	_show_toast("%s\n이유 · %s" % [_activity_label.text if _activity_label != null else _current_activity_name(), _planner_reason()])
+
+
 func _toggle_auto() -> void:
 	_auto_running = not _auto_running
 	_state["settings"]["autoRun"] = _auto_running
@@ -1613,7 +1666,7 @@ func _toggle_auto() -> void:
 			_engine.call("set_auto_run", _auto_running)
 	_refresh_chrome()
 	_persist_silently()
-	_show_toast("자동 진행을 %s했습니다." % ("시작" if _auto_running else "일시정지"))
+	_show_toast("자동 진행을 %s했어요." % ("시작" if _auto_running else "일시정지"))
 
 
 func _complete_current_activity() -> void:
@@ -1637,7 +1690,7 @@ func _advance_slots(count: int, show_feedback: bool = true) -> void:
 	_activity_elapsed = 0.0
 	_refresh_chrome()
 	# 손가락으로 목록을 끄는 중이면 자동 진행의 화면 갱신을 손을 뗄 때까지 미룬다.
-	if not show_feedback and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+	if not show_feedback and _list_in_motion():
 		_page_dirty = true
 	else:
 		_render_current_page()
@@ -1721,7 +1774,7 @@ func _run_activity(activity_id: String) -> void:
 	_play_sfx(SynthAudioPort.CUE_REWARD if succeeded else SynthAudioPort.CUE_FAILURE)
 	if succeeded:
 		_present_result_feedback(result, feedback_checkpoint)
-		_show_toast("%s 1회를 해결했습니다." % _activity_name_by_id(activity_id))
+		_show_toast("%s 1회를 해결했어요." % _activity_name_by_id(activity_id))
 	else:
 		_show_toast(_friendly_rejection(str((result as Dictionary).get("error", "활동을 실행하지 못했어요.")), _activity_requirement_reason(activity_id)) if result is Dictionary else "활동을 실행하지 못했어요.")
 
@@ -1741,7 +1794,7 @@ func _queue_activity(activity_id: String) -> void:
 		_render_current_page()
 		_show_toast("%s 자동 큐에 넣었어요." % _josa(_activity_name_by_id(activity_id), "을", "를"))
 	else:
-		_show_toast("현재 조건에서는 자동 큐에 추가할 수 없습니다.")
+		_show_toast("현재 조건에서는 자동 큐에 추가할 수 없어요.")
 
 
 func _remove_queued_activity(queue_index: int) -> void:
@@ -1792,7 +1845,7 @@ func _finish_queue_edit(updated: bool, success_message: String) -> void:
 		_render_current_page()
 		_show_toast(success_message)
 	else:
-		_show_toast("자동 큐를 변경하지 못했습니다.")
+		_show_toast("자동 큐를 변경하지 못했어요.")
 
 
 func _pin_contract(contract_id: String) -> void:
@@ -1807,9 +1860,9 @@ func _pin_contract(contract_id: String) -> void:
 	if updated:
 		_persist_silently()
 		_render_current_page()
-		_show_toast("계약 고정을 해제했습니다." if contract_id.is_empty() else "계약을 자동 플래너 우선 목표로 고정했습니다.")
+		_show_toast("계약 고정을 해제했어요." if contract_id.is_empty() else "계약을 자동 플래너 우선 목표로 고정했어요.")
 	else:
-		_show_toast("계약 고정을 변경하지 못했습니다.")
+		_show_toast("계약 고정을 변경하지 못했어요.")
 
 
 func _run_world_activity(activity_id: String) -> void:
@@ -1825,7 +1878,7 @@ func _apply_preset(preset: String) -> void:
 		policy["weights"] = {}
 	_apply_policy(policy)
 	_render_current_page()
-	_show_toast("성장 방향을 %s으로 변경했습니다." % _preset_name(preset))
+	_show_toast("성장 방향을 %s으로 변경했어요." % _preset_name(preset))
 
 
 func _toggle_banned_tag(tag_id: String) -> void:
@@ -1946,11 +1999,12 @@ func _toggle_setting(pressed: bool, key: String) -> void:
 		_refresh_high_contrast()
 	_persist_silently()
 	_track_event(&"setting_changed", {"setting": key, "enabled": pressed})
-	_show_toast("설정을 반영했습니다.")
+	_show_toast("설정을 반영했어요.")
 
 
 func _collect_offline() -> void:
 	var pending := clampi(int(_state.get("pendingOfflineSlots", 0)), 0, _offline_cap_slots())
+	var before := _progress_snapshot()
 	var offline_summary: Dictionary = {}
 	if _engine != null and _engine.has_method("settle_offline"):
 		var result = _engine.call("settle_offline", _now_unix())
@@ -1960,13 +2014,46 @@ func _collect_offline() -> void:
 	elif pending > 0:
 		_advance_slots(pending, false)
 	_state["pendingOfflineSlots"] = 0
+	offline_summary["changes"] = _progress_changes(before, _progress_snapshot())
 	_state["lastOfflineSummary"] = offline_summary
 	_persist_silently()
 	_refresh_chrome()
+	# 시트 아래의 홈도 정산 뒤 값으로 다시 그린다.
+	_render_current_page()
 	_open_sheet("offline")
 	_track_event(&"offline_settled", {"requestedSlots": pending, "settledSlots": int(offline_summary.get("slotsAdvanced", pending))})
 	_play_sfx(SynthAudioPort.CUE_REWARD if pending > 0 else SynthAudioPort.CUE_FAILURE)
-	_show_toast("오프라인 결과를 반영했습니다.")
+	_show_toast("오프라인 결과를 반영했어요.")
+
+
+# 오프라인 정산 전후로 무엇이 바뀌었는지 보여 주기 위한 요약 값
+func _progress_snapshot() -> Dictionary:
+	var stat_total := 0.0
+	for value in (_read(["stats"], {}) as Dictionary).values():
+		stat_total += float(value)
+	return {
+		"worldTier": int(_state.get("worldTier", 1)),
+		"titles": _career_title_count(),
+		"stats": stat_total,
+		"gold": _big_to_number(_read(["bigValues", "gold"], {"mantissa": 0, "exponent": 0})),
+		"events": (_read(["eventHistory"], {}) as Dictionary).size(),
+	}
+
+
+func _progress_changes(before: Dictionary, after: Dictionary) -> Array[String]:
+	var lines: Array[String] = []
+	if int(after["worldTier"]) != int(before["worldTier"]):
+		lines.append("세계 티어 %d > %d" % [int(before["worldTier"]), int(after["worldTier"])])
+	if int(after["titles"]) > int(before["titles"]):
+		lines.append("새 진로 칭호 %d개" % (int(after["titles"]) - int(before["titles"])))
+	if float(after["stats"]) - float(before["stats"]) >= 1.0:
+		lines.append("능력치 합 +%s" % _format_number(float(after["stats"]) - float(before["stats"])))
+	var gold_delta := float(after["gold"]) - float(before["gold"])
+	if absf(gold_delta) >= 1.0:
+		lines.append("골드 %s%s" % ["+" if gold_delta > 0.0 else "-", _format_number(absf(gold_delta))])
+	if int(after["events"]) > int(before["events"]):
+		lines.append("처리한 이벤트 %d건" % (int(after["events"]) - int(before["events"])))
+	return lines
 
 
 func _resolve_event(event_id: String, choice_id: String) -> void:
@@ -1987,7 +2074,7 @@ func _resolve_event(event_id: String, choice_id: String) -> void:
 	_open_sheet("event")
 	_track_event(&"event_resolved", {"eventId": event_id, "choiceId": choice_id, "ok": succeeded})
 	_play_sfx(SynthAudioPort.CUE_REWARD if succeeded else SynthAudioPort.CUE_FAILURE)
-	_show_toast("선택을 기록했습니다. 자동 성장은 계속됩니다." if succeeded else "이벤트 선택을 반영하지 못했습니다.")
+	_show_toast("선택을 기록했어요. 자동 성장은 계속돼요." if succeeded else "이벤트 선택을 반영하지 못했어요.")
 
 
 func _shop_action(item_id: String) -> void:
@@ -2077,7 +2164,7 @@ func _inventory_action(action: String, item_id: String) -> void:
 
 func _save_game() -> void:
 	var called := _persist_silently()
-	_show_toast("현재 수련 기록을 저장했습니다." if called else "현재 세션 상태를 유지했습니다.")
+	_show_toast("현재 수련 기록을 저장했어요." if called else "현재 세션 상태를 유지했어요.")
 
 
 func _continue_game() -> void:
@@ -2094,7 +2181,7 @@ func _continue_game() -> void:
 	_refresh_chrome()
 	if int(_state.get("pendingOfflineSlots", 0)) > 0:
 		_open_sheet("offline")
-	_show_toast("최신 수련 기록으로 이어갑니다.")
+	_show_toast("최신 수련 기록으로 이어가요.")
 
 
 func _create_trainee(preset: String) -> void:
@@ -2122,7 +2209,7 @@ func _create_trainee(preset: String) -> void:
 	_close_sheet()
 	_show_tab("home")
 	_refresh_chrome()
-	_show_toast("%s의 수련을 시작합니다." % trainee_name)
+	_show_toast("%s의 수련을 시작해요." % trainee_name)
 
 
 func _reset_game() -> void:
@@ -2142,7 +2229,7 @@ func _reset_game() -> void:
 	_close_sheet()
 	_show_tab("home")
 	_refresh_chrome()
-	_show_toast("새 수련 기록을 시작했습니다.")
+	_show_toast("새 수련 기록을 시작했어요.")
 
 
 func _refresh_chrome() -> void:
@@ -2178,6 +2265,8 @@ func _build_toast() -> void:
 	_toast_panel.offset_top = -150.0
 	_toast_panel.offset_bottom = -94.0
 	_toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 여러 줄 알림은 아래 탭을 가리지 않도록 위로 늘어난다.
+	_toast_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_toast_panel.z_index = 100
 	_toast_panel.theme_type_variation = PixelTheme.panel_variation("toast")
 	_toast_label = _label("", 16, PixelTokens.ON_STRIP, HORIZONTAL_ALIGNMENT_CENTER)
@@ -2243,7 +2332,9 @@ func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary, au
 	var payload := _build_result_feedback_payload(activity_result, season_review)
 	if payload.is_empty():
 		return
-	var routine := automatic and str(payload.get("kind", "")) == "activity" and _result_specialized_summary_lines(activity_result).is_empty()
+	# 평범한 근무("근무 결과 · 평온한 근무")도 띠로 알리고, 업무 사고가 있을 때만 결과 창을 띄운다.
+	var incident := bool((activity_result.get("outcome", {}) as Dictionary).get("incident", false))
+	var routine := automatic and str(payload.get("kind", "")) == "activity" and not incident
 	_raise_feedback_layer()
 	_result_feedback_layer.call("present", payload, bool(_read(["settings", "reducedMotion"], false)), routine)
 
@@ -2263,8 +2354,10 @@ func _build_result_feedback_payload(activity_result: Dictionary, season_review: 
 func _build_activity_feedback_payload(activity_result: Dictionary) -> Dictionary:
 	var details: Array[String] = []
 	details.append_array(_result_specialized_summary_lines(activity_result))
-	var growth_line := _feedback_growth_line(activity_result.get("gains", {}) as Dictionary)
-	if not growth_line.is_empty():
+	# 능력치 칩(최대 3개)이 모든 성장을 보여 주면 같은 내용의 성장 줄은 반복하지 않는다.
+	var gains: Dictionary = activity_result.get("gains", {}) as Dictionary
+	var growth_line := _feedback_growth_line(gains)
+	if not growth_line.is_empty() and _feedback_stat_tokens(gains).size() > 3:
 		details.append(growth_line)
 	details.append_array(_feedback_reward_lines(activity_result))
 	var outcome: Dictionary = activity_result.get("outcome", {}) as Dictionary
@@ -2281,10 +2374,11 @@ func _build_activity_feedback_payload(activity_result: Dictionary) -> Dictionary
 		details.append("숙련 · %d" % int(activity_result.get("mastery", 0)))
 	if details.is_empty() and not str(activity_result.get("summary", "")).is_empty():
 		details.append(str(activity_result.get("summary", "")))
+	var had_incident := bool(outcome.get("incident", false))
 	return {
 		"kind": "activity",
-		"badge": "성장",
-		"tone": "raised",
+		"badge": "사고" if had_incident else "성장",
+		"tone": "coral" if had_incident else "raised",
 		"headline": str(activity_result.get("title", "활동 완료")),
 		"floatingStats": _feedback_stat_tokens(activity_result.get("gains", {}) as Dictionary),
 		"details": details,
@@ -2936,7 +3030,7 @@ func _activity_by_id(activity_id: String) -> Dictionary:
 func _activity_lock_reason(activity_id: String) -> String:
 	var active_id := str(_read(["activeTask", "activityId"], ""))
 	if active_id == activity_id and _activity_kind(_activity_by_id(activity_id)) == "challenge":
-		return "지금 진행 중이에요"
+		return "진행 중 · 추천 카드로 실행"
 	var requirement := _activity_requirement_reason(activity_id)
 	var decision = _read(["lastPlannerDecision"], {})
 	if typeof(decision) == TYPE_DICTIONARY:

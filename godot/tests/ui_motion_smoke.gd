@@ -39,8 +39,36 @@ func _run() -> void:
 	var lock_state: Dictionary = main.get("_state") as Dictionary
 	var saved_task: Variant = lock_state.get("activeTask")
 	lock_state["activeTask"] = {"activityId": "CH_EXAM_ACADEMY", "remainingSlots": 1}
-	_check(str(main.call("_activity_lock_reason", "CH_EXAM_ACADEMY")) == "지금 진행 중이에요", "진행 중인 시험은 다시 참가할 수 없음")
+	_check(str(main.call("_activity_lock_reason", "CH_EXAM_ACADEMY")) == "진행 중 · 추천 카드로 실행", "진행 중인 시험은 다시 참가할 수 없음")
 	lock_state["activeTask"] = saved_task
+	# 자동 진행으로 끝난 평범한 근무는 띠, 업무 사고는 결과 창(사고 배지)으로 보여 준다.
+	var calm_job := {"completedActivities": [{"activityId": "JOB_FARM", "kind": "job", "title": "학당 농장 완료", "gains": {"stamina": 3.0}, "outcome": {"event": "평온한 근무", "incident": false}}]}
+	main.call("_present_result_feedback", calm_job, {}, true)
+	await process_frame
+	var feedback_layer: Variant = main.get("_result_feedback_layer")
+	_check(str(feedback_layer.call("active_motion_mode")) == "compact", "자동 진행의 평온한 근무 결과는 하단 띠")
+	var incident_job := {"completedActivities": [{"activityId": "JOB_FARM", "kind": "job", "title": "학당 농장 완료", "gains": {"stamina": 3.0}, "outcome": {"event": "도구 파손", "incident": true, "stressGain": 6.0}}]}
+	main.call("_present_result_feedback", incident_job, {}, true)
+	await process_frame
+	var incident_payload: Dictionary = (feedback_layer.get("_active_panel") as Control).get_meta("payload", {}) as Dictionary
+	_check(str(feedback_layer.call("active_motion_mode")) != "compact" and str(incident_payload.get("badge", "")) == "사고", "업무 사고는 사고 배지 결과 창")
+	feedback_layer.call("_clear_active")
+	# 목록이 움직이는 동안에는 자동 진행의 화면 갱신을 미룬다.
+	main.call("_show_tab", "activity")
+	for frame_index in 12:
+		await process_frame
+	var activity_scroll: ScrollContainer = null
+	for child in (main.get("_content_host") as Node).get_children():
+		if child is ScrollContainer and not child.is_queued_for_deletion():
+			activity_scroll = child as ScrollContainer
+	activity_scroll.scroll_vertical = 120
+	await process_frame
+	_check(bool(main.call("_list_in_motion")), "목록이 움직이는 중이면 갱신을 미룸")
+	for frame_index in 10:
+		await process_frame
+	_check(not bool(main.call("_list_in_motion")), "목록이 멈추면 갱신 재개")
+	main.call("_show_tab", "home")
+	await process_frame
 	var avatar_now: Variant = main.get("_home_avatar")
 	for frame_index in 30:
 		await process_frame
@@ -94,7 +122,9 @@ func _run() -> void:
 	}
 	var activity_payload: Dictionary = main.call("_build_result_feedback_payload", activity_result, {})
 	_check(str(activity_payload.get("kind", "")) == "activity", "활동 결과 payload 분류")
-	_check(_joined_details(activity_payload).contains("지력 +8.4") and _joined_details(activity_payload).contains("골드 +250"), "실제 스탯·보상 결과 표시")
+	# 능력치는 칩으로, 보상은 상세 줄로 보인다(칩이 모든 성장을 보여 주면 같은 성장 줄은 반복하지 않는다).
+	var shown_text := _joined_details(activity_payload) + " " + " ".join(activity_payload.get("floatingStats", []))
+	_check(shown_text.contains("지력 +8.4") and shown_text.contains("골드 +250"), "실제 스탯·보상 결과 표시")
 	_check((activity_payload.get("floatingStats", []) as Array).size() == 2, "능력치별 플로팅 토큰 생성")
 	layer.call("present", activity_payload, false)
 	await process_frame

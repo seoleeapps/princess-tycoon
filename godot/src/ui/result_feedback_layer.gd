@@ -175,6 +175,7 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 		var detail := _label(line, 16, PixelTokens.INK_MUTED)
 		if detail_count == 0:
 			detail.max_lines_visible = 2
+			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		else:
 			detail.autowrap_mode = TextServer.AUTOWRAP_OFF
 			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
