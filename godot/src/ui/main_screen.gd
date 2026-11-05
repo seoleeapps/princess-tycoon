@@ -76,6 +76,9 @@ const TIP_SCREEN := {
 var _tips_showing: Dictionary = {}
 var _unlock_notice_text := ""
 var _unlock_notice_until := 0
+# 시험 겹침이 풀리는 slot은 행마다 잠금 판단과 문구에 함께 쓰므로 같은 프레임·같은 상태에서는 한 번만 계산한다.
+var _free_slot_memo := {}
+var _free_slot_memo_frame := -1
 var _unlock_teaser_tab: Button
 var _nav_row: HBoxContainer
 var _gift_target := "citizens"
@@ -3270,7 +3273,14 @@ func _gold_shortfall_text(activity_id: String) -> String:
 func _schedule_free_slot(activity_id: String) -> int:
 	if _engine == null or not _engine.has_method("activity_schedule_free_slot"):
 		return -1
-	return int(_engine.call("activity_schedule_free_slot", activity_id, _state))
+	var frame := Engine.get_process_frames()
+	if frame != _free_slot_memo_frame:
+		_free_slot_memo.clear()
+		_free_slot_memo_frame = frame
+	var key := "%s|%d|%d|%d" % [activity_id, int(_read(["time", "slot"], 0)), int(_state.get("worldTier", 1)), _unlock_stage()]
+	if not _free_slot_memo.has(key):
+		_free_slot_memo[key] = int(_engine.call("activity_schedule_free_slot", activity_id, _state))
+	return int(_free_slot_memo[key])
 
 
 # 고를 수 있게 되는 날. 이번 시즌이면 "N일째부터 열려요", 다음 시즌이면 "다음 시즌 N일째부터", 모르면 겹치는 시험 날.

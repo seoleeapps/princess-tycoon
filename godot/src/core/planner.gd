@@ -255,29 +255,47 @@ func schedule_free_slot(state: Dictionary, activity: Dictionary, horizon: int = 
 	var span: int = horizon if horizon > 0 else slots_per_season * 2
 	var duration: int = maxi(1, int(activity.get("durationSlots", 1)))
 	var first: int = maxi(0, int((state.get("time", {}) as Dictionary).get("slot", 0))) + 1
+	# 열린 시험의 (시즌 안 slot, 길이)를 한 번만 모은다. 거리 계산은 _next_unlocked_challenge_schedule_from과 같다.
+	var exams: Array[Vector2i] = _unlocked_scheduled_challenges(state)
+	if exams.is_empty():
+		return first
 	for next_absolute_slot: int in range(first, first + span):
-		if _inside_scheduled_challenge(state, next_absolute_slot):
-			continue
-		var next_schedule: Dictionary = _next_unlocked_challenge_schedule_from(state, next_absolute_slot)
-		if next_schedule.is_empty() or int(next_schedule.get("distance", duration)) >= duration:
+		var season_base: int = (next_absolute_slot - 1) / slots_per_season * slots_per_season
+		var running: bool = false
+		var distance: int = 2147483647
+		for exam: Vector2i in exams:
+			for base: int in [season_base - slots_per_season, season_base]:
+				var start: int = base + exam.x
+				if next_absolute_slot >= start and next_absolute_slot < start + exam.y:
+					running = true
+			var scheduled_absolute: int = season_base + exam.x
+			if scheduled_absolute < next_absolute_slot:
+				scheduled_absolute += slots_per_season
+			distance = mini(distance, scheduled_absolute - next_absolute_slot)
+		if not running and distance >= duration:
 			return next_absolute_slot
 	return -1
 
 
-func _inside_scheduled_challenge(state: Dictionary, next_absolute_slot: int) -> bool:
+func _unlocked_scheduled_challenges(state: Dictionary) -> Array[Vector2i]:
 	var schedule: Dictionary = _config.get("challengeScheduleSlots", {}) as Dictionary
-	var slots_per_season: int = maxi(1, int(_config.get("slotsPerSeason", 28)))
-	var season_base: int = (next_absolute_slot - 1) / slots_per_season * slots_per_season
+	var exams: Array[Vector2i] = []
 	for activity: Dictionary in _activities:
 		var activity_id: String = str(activity.get("id", ""))
 		if str(activity.get("kind", "")) != "challenge" or not schedule.has(activity_id):
 			continue
-		if not requirements_met(state, activity.get("requires", {}) as Dictionary):
-			continue
-		var length: int = maxi(1, int(activity.get("durationSlots", 1)))
+		if requirements_met(state, activity.get("requires", {}) as Dictionary):
+			exams.append(Vector2i(int(schedule[activity_id]), maxi(1, int(activity.get("durationSlots", 1)))))
+	return exams
+
+
+func _inside_scheduled_challenge(state: Dictionary, next_absolute_slot: int) -> bool:
+	var slots_per_season: int = maxi(1, int(_config.get("slotsPerSeason", 28)))
+	var season_base: int = (next_absolute_slot - 1) / slots_per_season * slots_per_season
+	for exam: Vector2i in _unlocked_scheduled_challenges(state):
 		for base: int in [season_base - slots_per_season, season_base]:
-			var start: int = base + int(schedule[activity_id])
-			if next_absolute_slot >= start and next_absolute_slot < start + length:
+			var start: int = base + exam.x
+			if next_absolute_slot >= start and next_absolute_slot < start + exam.y:
 				return true
 	return false
 
