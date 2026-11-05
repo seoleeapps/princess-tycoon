@@ -255,6 +255,8 @@ func _run() -> void:
 	_check(layer.call("active_motion_mode") == "static", "reducedMotion 신규 결과는 정적 카드 대체")
 	var full_panel: Control = layer.get("_active_panel") as Control
 	_check(full_panel != null and full_panel.mouse_filter == Control.MOUSE_FILTER_STOP, "결과 창은 탭을 받아 아래 버튼으로 새지 않음")
+	# 결과 창이 떠 있으면 한 줄 띠를 띄우지 않으므로, 창을 닫은 뒤 자동 결과를 띄운다.
+	layer.call("_clear_active")
 	layer.call("present", challenge_payload, false, true)
 	await process_frame
 	var banner: Control = layer.get("_active_panel") as Control
@@ -331,6 +333,16 @@ func _run() -> void:
 			if (raw_label as Label).text.begins_with("다음 준비"):
 				single_hint = raw_label as Label
 	_check(single_hint != null and single_hint.max_lines_visible == 2 and single_hint.get_visible_line_count() == 2, "한 줄 새로 열림과 함께여도 첫 상세 줄은 2줄")
+
+	# 결과 창이 떠 있는 동안 평범한 자동 결과(한 줄 띠)가 그 창을 지우지 않는다(직접 실행 직후 자동 진행이 돌 때).
+	layer.call("present", {"kind": "activity", "badge": "성장", "tone": "raised", "headline": "왕립 교양학 완료", "floatingStats": ["지력 +8.4"], "details": [], "notice": "새로 열림 · 아르바이트 3종"}, true)
+	await process_frame
+	layer.call("present", {"kind": "activity", "headline": "기숙사 휴식 완료", "floatingStats": ["체력 +1.0"], "details": []}, true, true)
+	await process_frame
+	var kept_panel := layer.get("_active_panel") as Control
+	var kept_notice := str((kept_panel.get_meta("payload", {}) as Dictionary).get("notice", "")) if kept_panel != null else ""
+	_check(kept_notice == "새로 열림 · 아르바이트 3종" and str(layer.call("active_motion_mode")) != "compact", "결과 창이 떠 있으면 한 줄 자동 결과 띠가 창을 대신하지 않음")
+	layer.call("_clear_active")
 
 	# 결과 창과 함께 단계가 열리면 결과 창의 첫 줄로 알리고 알림 띠에는 넣지 않는다(이슈 #11).
 	var notice_engine: Object = main.get("_engine") as Object

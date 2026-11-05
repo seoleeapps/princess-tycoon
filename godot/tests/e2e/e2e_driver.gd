@@ -149,8 +149,8 @@ func tap(control: Control) -> bool:
 		await frames()
 		if not cancelled:
 			return true
-		print("[E2E] window focus changed during a tap on %s; tapping again" % control.name)
-	return true
+		print("[E2E] window focus changed during a tap on %s; %s" % [control.name, "tapping again" if attempt == 0 else "giving up"])
+	return false
 
 
 # 손가락으로 끄는 동작. 목록·카드 위에서 시작해도 실제 기기처럼 스크롤되는지 확인한다.

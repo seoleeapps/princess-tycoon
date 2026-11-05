@@ -32,6 +32,9 @@ func _ready() -> void:
 func present(payload: Dictionary, reduced_motion: bool, compact: bool = false) -> void:
 	if payload.is_empty():
 		return
+	# 결과 창(도전·심사·새로 열림 등)이 떠 있는 동안 평범한 자동 결과는 띄우지 않는다. 그 결과는 홈의 최근 결과에 남는다.
+	if compact and has_active_feedback() and str(_active_panel.get_meta("motion_mode", "")) != "compact":
+		return
 	_reduced_motion = reduced_motion
 	_clear_active()
 	_active_serial += 1

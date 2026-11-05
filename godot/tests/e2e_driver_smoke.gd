@@ -38,6 +38,16 @@ func _run() -> void:
 	await e2e.tap(button)
 	process_frame.disconnect(lose_focus)
 	_check(injected[0] and _presses == 1, "누르는 사이 창 포커스를 잃어 취소된 탭은 한 번 다시 누름 (눌림 %d)" % _presses)
+	# 다시 누른 탭까지 취소되면 성공으로 돌려주지 않는다(실패 지점이 다음 단계로 밀리지 않게).
+	_presses = 0
+	var always_lose := func() -> void:
+		if button.is_pressed():
+			e2e.viewport.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
+			root.focus_exited.emit()
+	process_frame.connect(always_lose)
+	var tapped: bool = await e2e.tap(button)
+	process_frame.disconnect(always_lose)
+	_check(not tapped and _presses == 0, "두 번 모두 취소된 탭은 실패로 돌려줌 (결과 %s, 눌림 %d)" % [str(tapped), _presses])
 	_cleanup()
 	if _failures.is_empty():
 		print("[E2E-DRIVER] PASS checks=%d" % _passes)
