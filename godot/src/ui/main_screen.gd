@@ -139,7 +139,9 @@ func _notification(what: int) -> void:
 		# clock rollback must preserve a future boundary before online ticks resume.
 		var needs_boundary_settlement := not bool(_read(["settings", "autoRun"], true)) or last_boundary > resume_now
 		if needs_boundary_settlement and _engine != null and _engine.has_method("settle_offline"):
-			_adopt_engine_result(_engine.call("settle_offline", resume_now))
+			var boundary_result = _engine.call("settle_offline", resume_now)
+			_adopt_engine_result(boundary_result)
+			_absorb_offline_unlocks(boundary_result)
 			_persist_silently()
 		_auto_running = bool(_read(["settings", "autoRun"], true))
 		_state["pendingOfflineSlots"] = _pending_offline_slots()
@@ -201,7 +203,9 @@ func _initialize_engine() -> void:
 		_stamp_engine_time_boundary(now)
 		_persist_silently()
 	elif loaded_ok and (last_seen > now or not bool(_read(["settings", "autoRun"], true))) and _engine.has_method("settle_offline"):
-		_adopt_engine_result(_engine.call("settle_offline", now))
+		var startup_result = _engine.call("settle_offline", now)
+		_adopt_engine_result(startup_result)
+		_absorb_offline_unlocks(startup_result)
 		_persist_silently()
 	_state["pendingOfflineSlots"] = _pending_offline_slots()
 
@@ -2105,13 +2109,7 @@ func _collect_offline() -> void:
 		_advance_slots(pending, false)
 	_state["pendingOfflineSlots"] = 0
 	offline_summary["changes"] = _progress_changes(before, _progress_snapshot())
-	# 오프라인 동안 열린 단계는 알림 띠 대신 정산 시트에 목록으로 보여 준다.
-	var offline_unlocks: Array[String] = []
-	for opened: Variant in offline_summary.get("newUnlocks", []) as Array:
-		offline_unlocks.append(_unlock_label(int(opened)))
-	offline_summary["unlockLabels"] = offline_unlocks
-	if not offline_unlocks.is_empty():
-		_acknowledge_unlocks("offline")
+	offline_summary["unlockLabels"] = _absorb_offline_unlocks(offline_summary)
 	_state["lastOfflineSummary"] = offline_summary
 	_persist_silently()
 	_refresh_chrome()
@@ -3370,7 +3368,27 @@ func _announce_unlocks() -> void:
 	_show_toast(_unlock_notice_text)
 
 
+# 오프라인 정산(받기와 앱 시작·복귀의 경계 정산)으로 열린 단계는 알림 띠 대신 정산 시트 목록으로 보여 준다.
+# 경계 정산은 계약상 0 slot이라 보통 비어 있지만, 같은 처리로 묶어 띠가 뜨지 않게 한다.
+func _absorb_offline_unlocks(result: Variant) -> Array[String]:
+	var labels: Array[String] = []
+	if typeof(result) != TYPE_DICTIONARY:
+		return labels
+	for opened: Variant in (result as Dictionary).get("newUnlocks", []) as Array:
+		labels.append(_unlock_label(int(opened)))
+	if not labels.is_empty():
+		_acknowledge_unlocks("offline")
+		if not (result as Dictionary).has("changes"):
+			var summary: Dictionary = (_state.get("lastOfflineSummary", {}) as Dictionary).duplicate(true)
+			summary["unlockLabels"] = labels
+			_state["lastOfflineSummary"] = summary
+	return labels
+
+
 func _acknowledge_unlocks(source: String) -> void:
+	if source == "offline":
+		# 오프라인으로 연 단계는 띠를 띄우지 않으므로, 직전 온라인 알림도 다음 알림에 붙이지 않는다.
+		_unlock_notice_until = 0
 	if _engine == null or not _engine.has_method("acknowledge_unlocks"):
 		return
 	var unlocks = _state.get("unlocks")
