@@ -16,16 +16,24 @@ static func rewrap(label: Label) -> void:
 	var font: Font = label.get_theme_font("font")
 	var font_size: int = label.get_theme_font_size("font_size")
 	var lines: Array[String] = []
-	var line := ""
-	for word: String in str(label.get_meta("source_text", label.text)).split(" ", false):
-		var candidate := word if line.is_empty() else "%s %s" % [line, word]
-		if line.is_empty() or font.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= width:
-			line = candidate
-		else:
-			lines.append(line)
-			line = word
-	if not line.is_empty():
+	# 원문의 줄바꿈은 그대로 두고 각 줄 안에서만 나눈다.
+	for paragraph: String in str(label.get_meta("source_text", label.text)).split("\n"):
+		var line := ""
+		for word: String in paragraph.split(" ", false):
+			var candidate := word if line.is_empty() else "%s %s" % [line, word]
+			if line.is_empty() or font.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= width:
+				line = candidate
+			else:
+				lines.append(line)
+				line = word
 		lines.append(line)
 	var wrapped := "\n".join(lines)
 	if label.text != wrapped:
 		label.text = wrapped
+
+
+# 글자를 바꿀 때 원문을 새로 기억하고 지금 폭으로 다시 나눈다(알림 띠처럼 글자가 바뀌는 라벨).
+static func set_text(label: Label, text: String) -> void:
+	label.set_meta("source_text", text)
+	label.text = text
+	rewrap(label)

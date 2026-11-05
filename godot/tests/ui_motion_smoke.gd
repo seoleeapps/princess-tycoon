@@ -361,7 +361,7 @@ func _run() -> void:
 		for raw_label: Node in review_panel.find_children("*", "Label", true, false):
 			if (raw_label as Label).text.begins_with("새로 열림 · "):
 				notice_line = (raw_label as Label).text
-	var toast_text := (main.get("_toast_label") as Label).text
+	var toast_text := (main.get("_toast_label") as Label).text.replace("\n", " ")
 	var review_unlocks: Dictionary = (main.get("_state") as Dictionary).get("unlocks", {}) as Dictionary
 	_check(not notice_line.is_empty() and not toast_text.contains("새로 열림") and int(review_unlocks.get("announced", 0)) == 5, "심사로 열린 단계는 심사 결과 창 안에 [%s] 알림 띠 [%s]" % [notice_line, toast_text.replace("\n", " / ")])
 	# 자동 진행 결과와 함께 열리면 한 줄 띠 대신 결과 창으로 보여 그 첫 줄에서 알린다(띠와 알림 띠가 겹치지 않게).
@@ -383,7 +383,7 @@ func _run() -> void:
 		for raw_label: Node in auto_panel.find_children("*", "Label", true, false):
 			if (raw_label as Label).text.begins_with("새로 열림 · "):
 				auto_notice = (raw_label as Label).text
-	var auto_toast := (main.get("_toast_label") as Label).text
+	var auto_toast := (main.get("_toast_label") as Label).text.replace("\n", " ")
 	_check(int(((main.get("_state") as Dictionary).get("unlocks", {}) as Dictionary).get("announced", 0)) == 2 and str(layer.call("active_motion_mode")) != "compact" and not auto_notice.is_empty() and not auto_toast.contains("새로 열림"), "자동 진행 결과와 함께 열린 단계는 결과 창 첫 줄로 [%s] 띠 [%s]" % [auto_notice, auto_toast.replace("\n", " / ")])
 	# 끝난 활동 없이(진행 중) 날짜로 열리면 결과가 없으므로 알림 띠로 알린다.
 	layer.call("_clear_active")
@@ -396,7 +396,7 @@ func _run() -> void:
 	main.call("_adopt_engine_result", notice_engine.call("initialize_from_state", day_state))
 	main.call("_advance_slots", 1, false)
 	await process_frame
-	var day_toast := (main.get("_toast_label") as Label).text
+	var day_toast := (main.get("_toast_label") as Label).text.replace("\n", " ")
 	_check(int(((main.get("_state") as Dictionary).get("unlocks", {}) as Dictionary).get("announced", 0)) == 4 and day_toast.contains("새로 열림 · ") and not bool(layer.call("has_active_feedback")), "결과 없이 날짜로 열린 단계는 알림 띠로 [%s]" % day_toast.replace("\n", " / "))
 
 	var trainee_script := load("res://src/ui/pixel/pixel_trainee_view.gd")

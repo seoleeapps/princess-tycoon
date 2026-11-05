@@ -130,7 +130,7 @@ func _first_session(main: Control) -> void:
 			await e2e.frames(4)
 			# 직접 실행으로 열리면 결과 창의 첫 줄에, 자동 진행의 한 줄 띠와 함께 열리면 알림 띠에 한 번만 보인다.
 			var notice := main.get("_toast_label") as Label
-			var in_toast := notice != null and notice.is_visible_in_tree() and notice.text.contains("새로 열림 · 아르바이트")
+			var in_toast := notice != null and notice.is_visible_in_tree() and notice.text.replace("\n", " ").contains("새로 열림 · 아르바이트")
 			var card_notice := _search(_result_layer(main), func(node: Node) -> bool: return node is Label and (node as Label).text.begins_with("새로 열림 · 아르바이트")) as Label
 			e2e.step("stage 2 shows an unlock notice once", (card_notice != null) != in_toast, "card=%s toast=%s" % ["" if card_notice == null else card_notice.text, "" if notice == null else notice.text])
 			e2e.step("stage 2 teases the plan tab", _find_id(main, "tab_teaser") != null)
@@ -167,7 +167,7 @@ func _first_session(main: Control) -> void:
 
 	await _tap_id(main, "status_detail", "open status detail")
 	var toast := main.get("_toast_label") as Label
-	e2e.step("status detail shows full reason", toast != null and toast.is_visible_in_tree() and toast.text.contains("이유 ·"), "" if toast == null else toast.text)
+	e2e.step("status detail shows full reason", toast != null and toast.is_visible_in_tree() and toast.text.replace("\n", " ").contains("이유 ·"), "" if toast == null else toast.text)
 	await _tap_id(main, "pause", "pause auto run")
 	e2e.expect_equal("auto run paused", bool(_read(main, ["settings", "autoRun"], true)), false)
 	await e2e.shot("12-paused")
@@ -198,7 +198,7 @@ func _return_offline(main: Control) -> void:
 	e2e.step("offline sheet lists what changed", _find_label_prefix(again, "능력치 합 +") != null)
 	e2e.step("offline sheet lists new unlocks", _find_label_prefix(again, "새로 열림 · 세부 규칙") != null and _find_label_prefix(again, "새로 열림 · 월드") != null)
 	var offline_toast := again.get("_toast_label") as Label
-	e2e.step("offline unlocks show no notice banner", offline_toast == null or not offline_toast.text.contains("새로 열림"), "" if offline_toast == null else offline_toast.text)
+	e2e.step("offline unlocks show no notice banner", offline_toast == null or not offline_toast.text.replace("\n", " ").contains("새로 열림"), "" if offline_toast == null else offline_toast.text)
 	e2e.step("home redrawn with settled values", _content_page(again) != home_before)
 	e2e.step("time advanced offline", int(_read(again, ["time", "slot"], 0)) > slot_saved)
 	e2e.expect_equal("offline progress opened every stage", _unlock_stage(again), 7)

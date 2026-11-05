@@ -135,13 +135,14 @@ func is_allowed(state: Dictionary, activity: Dictionary) -> bool:
 	return rejection_reason(state, activity).is_empty()
 
 
-func rejection_reason(state: Dictionary, activity: Dictionary) -> String:
+# allow_exam_overlap: 플레이어가 직접 고른 원정은 시험 일정보다 먼저 하므로 "예정 도전 우선" 규칙만 빼고 판정한다(이슈 #12).
+func rejection_reason(state: Dictionary, activity: Dictionary, allow_exam_overlap: bool = false) -> String:
 	var policy: Dictionary = GrowthPolicy.sanitize(state.get("growthPolicy", {}) as Dictionary)
 	var meters: Dictionary = state.get("meters", {}) as Dictionary
 	var recovery_forced: bool = bool(state.get("forceRest", false))
 	recovery_forced = recovery_forced or float(meters.get("energy", 100.0)) < float(_config.get("forcedRecoveryEnergyThreshold", 20.0))
 	recovery_forced = recovery_forced or float(meters.get("stress", 0.0)) >= float(policy.get("maxStress", 72.0))
-	return _hard_rejection(state, policy, activity, recovery_forced)
+	return _hard_rejection(state, policy, activity, recovery_forced, allow_exam_overlap)
 
 
 func tier_cost(activity: Dictionary, world_tier: int) -> Dictionary:
@@ -205,7 +206,7 @@ func stage_met(state: Dictionary, requires: Dictionary) -> bool:
 	return UnlockProgress.stage_of(state) >= int(requires.get("stage", 1))
 
 
-func _hard_rejection(state: Dictionary, policy: Dictionary, activity: Dictionary, recovery_forced: bool) -> String:
+func _hard_rejection(state: Dictionary, policy: Dictionary, activity: Dictionary, recovery_forced: bool, allow_exam_overlap: bool = false) -> String:
 	if not stage_met(state, activity.get("requires", {}) as Dictionary):
 		return "해금 단계 잠금"
 	if not requirements_met(state, activity.get("requires", {}) as Dictionary):
@@ -222,7 +223,7 @@ func _hard_rejection(state: Dictionary, policy: Dictionary, activity: Dictionary
 			if next_slot_in_season != scheduled_slot:
 				return "시즌 일정 잠금: %d번 슬롯 참가" % scheduled_slot
 			scheduled_now = true
-	else:
+	elif not allow_exam_overlap:
 		var next_schedule: Dictionary = _next_unlocked_challenge_schedule(state)
 		if not next_schedule.is_empty():
 			var duration: int = maxi(1, int(activity.get("durationSlots", 1)))
@@ -275,6 +276,46 @@ func schedule_free_slot(state: Dictionary, activity: Dictionary, horizon: int = 
 		if not running and distance >= duration:
 			return next_absolute_slot
 	return -1
+
+
+# 직접 고른 원정이 덮어 빠지게 되는 시험 id(시작 순). 원정은 진행 중인 활동이 끝난 다음 칸에 시작한다.
+func schedule_conflicts(state: Dictionary, activity: Dictionary) -> Array[String]:
+	var slots: Dictionary = schedule_conflict_slots(state, activity)
+	var ordered: Array = slots.keys()
+	ordered.sort_custom(func(left: Variant, right: Variant) -> bool: return int(slots[left]) < int(slots[right]))
+	var result: Array[String] = []
+	for challenge_id: Variant in ordered:
+		result.append(str(challenge_id))
+	return result
+
+
+# 빠지게 되는 시험 id → 그 시험이 시작하는 칸의 절대 번호(다음에 진행할 칸 기준, 1부터). 화면이 이번·다음 시즌을 구분한다.
+func schedule_conflict_slots(state: Dictionary, activity: Dictionary) -> Dictionary:
+	var schedule: Dictionary = _config.get("challengeScheduleSlots", {}) as Dictionary
+	var slots_per_season: int = maxi(1, int(_config.get("slotsPerSeason", 28)))
+	var start: int = maxi(0, int((state.get("time", {}) as Dictionary).get("slot", 0))) + 1
+	var duration: int = maxi(1, int(activity.get("durationSlots", 1)))
+	var active: Variant = state.get("activeTask")
+	if active is Dictionary:
+		var remaining: int = maxi(0, int((active as Dictionary).get("remainingSlots", 0)))
+		if str((active as Dictionary).get("activityId", (active as Dictionary).get("id", ""))) == str(activity.get("id", "")):
+			# 같은 원정이 이미 진행 중이면 이어 하는 것이라 남은 칸만 덮는다.
+			duration = maxi(1, remaining)
+		else:
+			start += remaining
+	var season_base: int = (start - 1) / slots_per_season * slots_per_season
+	var slots: Dictionary = {}
+	for challenge: Dictionary in _activities:
+		var challenge_id: String = str(challenge.get("id", ""))
+		if str(challenge.get("kind", "")) != "challenge" or not schedule.has(challenge_id):
+			continue
+		if not requirements_met(state, challenge.get("requires", {}) as Dictionary):
+			continue
+		for base: int in [season_base, season_base + slots_per_season]:
+			var exam_start: int = base + int(schedule[challenge_id])
+			if exam_start >= start and exam_start < start + duration and not slots.has(challenge_id):
+				slots[challenge_id] = exam_start
+	return slots
 
 
 func _unlocked_scheduled_challenges(state: Dictionary) -> Array[Vector2i]:
