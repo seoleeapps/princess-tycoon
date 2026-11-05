@@ -41,7 +41,10 @@ func generate(state: Dictionary, content_db: ContentDB) -> Dictionary:
 	var rivals: Array[Dictionary] = _generate_rivals(base_seed, tier, season_index, state, content_db.procedural, content_db.config, content_db)
 	_challenge_feasibility = _challenge_score_feasibility(state, unlocked, rivals, content_db, content_db.config)
 	_challenge_feasibility_active = true
-	var contracts: Array[Dictionary] = _generate_contracts(base_seed, tier, season_index, next_slot_in_season, unlocked, content_db.procedural, content_db.config, recent_templates, state)
+	# 계약은 해금 5단계부터 생성한다(GDD §2.2). 계약 생성은 자체 파생 seed를 쓰므로 건너뛰어도 다른 난수에 영향이 없다.
+	var contracts: Array[Dictionary] = []
+	if UnlockProgress.stage_of(state) >= content_db.feature_stage("contracts"):
+		contracts = _generate_contracts(base_seed, tier, season_index, next_slot_in_season, unlocked, content_db.procedural, content_db.config, recent_templates, state)
 	_challenge_feasibility_active = false
 	_challenge_feasibility = {}
 	var region: Dictionary = _generate_region(base_seed, tier, season_index, unlocked, content_db.procedural, content_db.config)

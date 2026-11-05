@@ -9,6 +9,8 @@ const MAIN_TABS: Array[String] = ["home", "plan", "activity", "growth", "record"
 const PIXEL_GRID_TABS: Array[String] = ["home", "plan", "activity", "growth", "record"]
 const SHEETS: Array[String] = ["world", "shop", "settings", "offline", "event", "profile", "continue"]
 const EDGE_TOLERANCE: float = 1.5
+# AC-UNLOCK-11: 단계마다 보이는 탭·예고·안내가 다르므로 대표 단계의 열린 화면도 확인한다.
+const UNLOCK_STAGES: Array[int] = [1, 2, 3, 4, 5, 6]
 const SAVE_PATH := "user://qa_layout_probe_save.json"
 
 var _failures: Array[String] = []
@@ -43,6 +45,22 @@ func _probe_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	var main_rect: Rect2 = main.get_global_rect()
 	_check(main_rect.size.x > 0.0 and main_rect.size.y > 0.0, "%s root bounds" % _size_label(viewport_size))
 
+	for stage: int in UNLOCK_STAGES:
+		await _set_unlock_stage(main, stage)
+		for tab_id: String in MAIN_TABS:
+			if not bool(main.call("_feature_open", tab_id)):
+				continue
+			main.call("_show_tab", tab_id)
+			await process_frame
+			await process_frame
+			var context := "%s/stage%d/%s" % [_size_label(viewport_size), stage, tab_id]
+			_check_current_ctas(main, main_rect, context, 1)
+			_check_nav_text_fits(main, context)
+			if viewport_size == Vector2i(390, 844):
+				_check_pixel_grid(main, context)
+				_check_label_contrast(main, context)
+	await _set_unlock_stage(main, 7)
+
 	var total_checked: int = 0
 	for tab_id: String in MAIN_TABS:
 		main.call("_show_tab", tab_id)
@@ -73,7 +91,41 @@ func _probe_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	await process_frame
 
 
-func _check_current_ctas(main: Control, viewport_rect: Rect2, context: String) -> int:
+# 하단 탭(예고 탭 포함)의 글자가 탭 너비 안에 들어가야 한다(잘리면 열림 조건을 읽을 수 없다).
+func _check_nav_text_fits(main: Control, context: String) -> void:
+	var clipped: Array[String] = []
+	var row: Node = main.get("_nav_row") as Node
+	if row == null:
+		return
+	for child: Node in row.get_children():
+		if child is not Button or not (child as Button).is_visible_in_tree():
+			continue
+		var button := child as Button
+		var font: Font = button.get_theme_font("font")
+		var font_size: int = button.get_theme_font_size("font_size")
+		for line: String in button.text.split("\n"):
+			if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > button.size.x - 8.0:
+				clipped.append("%s:%s" % [str(button.get_meta("ui_id", "")), line])
+	if not clipped.is_empty():
+		print("[LAYOUT] clipped tab text %s %s" % [context, str(clipped)])
+	_check(clipped.is_empty(), "AC-UNLOCK-11 %s 탭 글자 잘림 없음" % context)
+
+
+# 엔진 상태의 해금 단계를 바꾸고 화면을 다시 그린다. 안내는 다시 보이도록 비운다.
+func _set_unlock_stage(main: Control, stage: int) -> void:
+	var engine: Object = main.get("_engine") as Object
+	if engine == null:
+		return
+	var state: Dictionary = engine.call("get_state") as Dictionary
+	state["unlocks"] = {"stage": stage, "announced": stage, "tipsSeen": []}
+	main.call("_adopt_engine_result", engine.call("initialize_from_state", state))
+	main.call("_refresh_chrome")
+	main.call("_show_tab", "home")
+	await process_frame
+	await process_frame
+
+
+func _check_current_ctas(main: Control, viewport_rect: Rect2, context: String, minimum: int = 5) -> int:
 	var checked: int = 0
 	var all_valid: bool = true
 	for candidate: Node in get_nodes_in_group("critical_cta"):
@@ -110,7 +162,7 @@ func _check_current_ctas(main: Control, viewport_rect: Rect2, context: String) -
 		if not within or not touch_size or not finite:
 			all_valid = false
 			print("[LAYOUT] invalid context=%s node=%s rect=%s viewport=%s" % [context, str(cta.get_path()), str(rect), str(viewport_rect)])
-	_check(checked >= 5, "%s visible critical_cta >= 5" % context)
+	_check(checked >= minimum, "%s visible critical_cta >= %d" % [context, minimum])
 	_check(all_valid, "AC-UI-03 %s critical_cta bounds" % context)
 	return checked
 

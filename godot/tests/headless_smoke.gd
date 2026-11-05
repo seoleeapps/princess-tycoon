@@ -43,7 +43,7 @@ func _run() -> void:
 	_check(ctas.size() >= 6, "critical_cta 그룹 노출")
 	var touch_targets_ok: bool = true
 	for cta: Node in ctas:
-		if cta is Control:
+		if cta is Control and (cta as Control).is_visible_in_tree():
 			var control: Control = cta as Control
 			if control.size.x < 44.0 or control.size.y < 44.0:
 				touch_targets_ok = false
@@ -63,6 +63,39 @@ func _run() -> void:
 		_check(int((after.get("time", {}) as Dictionary).get("slot", -1)) == before_slot + 1, "GameEngine 상태 진행")
 		_check(bool((engine.call("validate_state") as Dictionary).get("ok", false)), "GameEngine 상호작용 후 상태 유효")
 
+	# 새 게임은 1단계라 계획 탭과 월드 시트가 열리지 않는다(AC-UNLOCK-01).
+	main.call("_show_tab", "plan")
+	await process_frame
+	_check(str(main.get_meta("screen_id", "")) == "home", "1단계에서 잠긴 계획 탭은 홈으로")
+	main.call("_open_sheet", "world")
+	await process_frame
+	_check(_find_screen_node(main, "world") == null, "1단계에서 잠긴 월드 시트는 열리지 않음")
+	# AC-UNLOCK-12: 아직 열리지 않은 개념(위험, 계약, 프리셋)은 이유 줄에 쓰지 않는다.
+	_check(not bool(main.call("_reason_concept_open", "위험 부담")) and not bool(main.call("_reason_concept_open", "고정 계약")) and bool(main.call("_reason_concept_open", "성장 방향")), "1단계 이유 줄은 열린 개념만")
+	_check(not str(main.call("_planner_reason")).contains("위험") and not str(main.call("_planner_reason")).contains("계약"), "1단계 현재 활동 이유에 잠긴 개념 없음")
+	# 단계가 열리기 전 결정에 남은 해금 잠금은 이미 열린 활동의 잠금 이유로 보이지 않는다.
+	var stale_state: Dictionary = main.get("_state") as Dictionary
+	stale_state["lastPlannerDecision"] = {"rejected": {"EDU_PAINTING": "해금 단계 잠금"}}
+	(stale_state["unlocks"] as Dictionary)["stage"] = 4
+	_check(str(main.call("_activity_lock_reason", "EDU_PAINTING")) == "", "열린 활동에 지난 결정의 해금 잠금 문구 없음")
+	(stale_state["unlocks"] as Dictionary)["stage"] = 1
+	_check(str(main.call("_activity_lock_reason", "EDU_PAINTING")) == "아직 열리지 않았어요", "열리지 않은 활동은 쉬운 잠금 문구")
+	# 직전 온라인 새로 열림 알림이 남아 있어도 오프라인 정산 알림에는 붙지 않는다.
+	main.set("_unlock_notice_text", "새로 열림 · 아르바이트 3종")
+	main.set("_unlock_notice_until", Time.get_ticks_msec() + 5000)
+	main.call("_collect_offline")
+	await process_frame
+	var settle_toast: Label = main.get("_toast_label") as Label
+	_check(settle_toast != null and not settle_toast.text.contains("새로 열림"), "오프라인 정산 알림에 직전 새로 열림 문구 없음")
+	main.call("_close_sheet")
+	await process_frame
+	# 기능 경로 도달(AC-UI-02)은 모든 단계를 연 뒤 확인한다.
+	if engine != null and engine.has_method("initialize_from_state"):
+		var opened: Dictionary = engine.call("get_state") as Dictionary
+		opened["unlocks"] = {"stage": 7, "announced": 7, "tipsSeen": []}
+		main.call("_adopt_engine_result", engine.call("initialize_from_state", opened))
+		main.call("_refresh_chrome")
+		await process_frame
 	for tab_id: String in ["home", "plan", "activity", "growth", "record"]:
 		main.call("_show_tab", tab_id)
 		await process_frame

@@ -14,6 +14,7 @@ const SELL_RATIO: float = 0.5
 var _state: Dictionary = {}
 var _content_db: ContentDB = ContentDB.new()
 var _planner: Planner = Planner.new()
+var _unlock: UnlockProgress = UnlockProgress.new()
 var _generator: ProceduralGenerator = ProceduralGenerator.new()
 var _content_report: Dictionary = {}
 var _save_path: String = DEFAULT_SAVE_PATH
@@ -24,6 +25,7 @@ var _now_boundary_unix: int = -1
 func initialize(seed_value: int = 1) -> Dictionary:
 	_content_report = _content_db.load_all("res://data")
 	_planner.configure(_content_db.config, _content_db.profiles, _content_db.activities)
+	_configure_unlocks()
 	_state = StateFactory.create(seed_value, "아리아", _content_db.config)
 	_apply_policy_preferred_tags()
 	_state["contentReport"] = _content_report.duplicate(true)
@@ -38,7 +40,13 @@ func initialize(seed_value: int = 1) -> Dictionary:
 func initialize_from_state(saved_state: Dictionary) -> Dictionary:
 	_content_report = _content_db.load_all("res://data")
 	_planner.configure(_content_db.config, _content_db.profiles, _content_db.activities)
+	_configure_unlocks()
+	var had_unlocks: bool = saved_state.get("unlocks") is Dictionary
 	_state = StateFactory.ensure_v2_shape(saved_state)
+	# 해금 단계가 없던 저장은 진행값으로 단계를 계산해, 이미 쓰던 기능이 잠기지 않게 한다.
+	if not had_unlocks:
+		_state["unlocks"] = _unlock.legacy_unlocks(_state)
+	_unlock.sanitize(_state)
 	_apply_policy_preferred_tags()
 	_state["contentReport"] = _content_report.duplicate(true)
 	if (state_generated_content()).get("contracts", []).is_empty():
@@ -58,6 +66,41 @@ func get_state() -> Dictionary:
 
 func get_content_report() -> Dictionary:
 	return _content_report.duplicate(true)
+
+
+func unlock_status() -> Dictionary:
+	_ensure_initialized()
+	return _unlock.status(_state)
+
+
+func is_feature_unlocked(feature_id: String) -> bool:
+	_ensure_initialized()
+	return _unlock.is_feature_unlocked(_state, feature_id)
+
+
+func unlock_stage_entry(stage_number: int) -> Dictionary:
+	return _unlock.stage_entry(stage_number)
+
+
+func unlock_tip(feature_id: String) -> String:
+	return _unlock.tip(feature_id)
+
+
+# 화면이 새로 열림 알림을 띄웠거나 정산 시트에 보여 준 뒤 호출한다.
+func acknowledge_unlocks() -> void:
+	_ensure_initialized()
+	var unlocks: Dictionary = UnlockProgress.ensure_unlocks(_state)
+	unlocks["announced"] = int(unlocks.get("stage", 1))
+
+
+func mark_unlock_tip_seen(feature_id: String) -> void:
+	_ensure_initialized()
+	var unlocks: Dictionary = UnlockProgress.ensure_unlocks(_state)
+	if unlocks.get("tipsSeen") is not Array:
+		unlocks["tipsSeen"] = []
+	var seen: Array = unlocks["tipsSeen"] as Array
+	if not seen.has(feature_id):
+		seen.append(feature_id)
 
 
 func get_content_db() -> ContentDB:
@@ -100,6 +143,10 @@ func set_policy(
 	for key: Variant in next_policy.keys():
 		response[key] = next_policy[key]
 	return response
+
+
+func _configure_unlocks() -> void:
+	_unlock.configure(_content_db.unlocks, _config_int("slotsPerSeason", SLOTS_PER_SEASON))
 
 
 func _apply_policy_preferred_tags() -> void:
@@ -150,6 +197,9 @@ func queue_activity(activity_id: String) -> Dictionary:
 	var activity: Dictionary = _content_db.get_activity(activity_id)
 	if activity.is_empty():
 		return {"ok": false, "error": "존재하지 않는 활동"}
+	# 열리지 않은 활동은 자동 큐에도 넣지 않는다(AC-UNLOCK-03).
+	if not _planner.stage_met(_state, activity.get("requires", {}) as Dictionary):
+		return {"ok": false, "error": "해금 단계 잠금", "activityId": activity_id}
 	var queue: Array = _state.get("activityQueue", []) as Array
 	queue.append(activity_id)
 	return {"ok": true, "queued": activity_id, "queueSize": queue.size()}
@@ -248,12 +298,15 @@ func advance_slots(slot_count: int, now_unix: int = -1) -> Dictionary:
 	var requested: int = maxi(0, slot_count)
 	var completed: Array[Dictionary] = []
 	var reviews: Array[Dictionary] = []
+	var new_unlocks: Array[int] = []
 	for _slot_index: int in range(requested):
 		var step: Dictionary = _advance_one_slot()
 		if step.has("completed"):
 			completed.append((step["completed"] as Dictionary).duplicate(true))
 		if step.has("seasonReview"):
 			reviews.append((step["seasonReview"] as Dictionary).duplicate(true))
+		for opened: Variant in step.get("newUnlocks", []) as Array:
+			new_unlocks.append(int(opened))
 	if now_unix >= 0:
 		_stamp_unanchored_events(now_unix)
 		_resolve_expired_events(now_unix)
@@ -263,6 +316,7 @@ func advance_slots(slot_count: int, now_unix: int = -1) -> Dictionary:
 		"slotsAdvanced": requested,
 		"completedActivities": completed,
 		"seasonReviews": reviews,
+		"newUnlocks": new_unlocks,
 	})
 
 
@@ -298,6 +352,7 @@ func settle_offline(now_unix: int = -1) -> Dictionary:
 	var slots: int = elapsed / seconds_per_slot
 	var completed: Array = []
 	var reviews: Array = []
+	var new_unlocks: Array = []
 	# Expiry is applied at each simulated slot boundary. This keeps choices that
 	# expire mid-offline-window in the same reducer order as online progression.
 	for slot_index: int in range(slots):
@@ -305,6 +360,7 @@ func settle_offline(now_unix: int = -1) -> Dictionary:
 		var step_result: Dictionary = advance_slots(1, boundary_unix)
 		completed.append_array(step_result.get("completedActivities", []) as Array)
 		reviews.append_array(step_result.get("seasonReviews", []) as Array)
+		new_unlocks.append_array(step_result.get("newUnlocks", []) as Array)
 	_stamp_unanchored_events(now_value)
 	_resolve_expired_events(now_value)
 	_state["lastSimulatedAt"] = now_value
@@ -316,6 +372,7 @@ func settle_offline(now_unix: int = -1) -> Dictionary:
 		"clockRollback": false,
 		"completedActivities": completed,
 		"seasonReviews": reviews,
+		"newUnlocks": new_unlocks,
 	})
 
 
@@ -387,6 +444,10 @@ func _advance_one_slot() -> Dictionary:
 			_state["activeTask"] = null
 	var time: Dictionary = _state.get("time", {}) as Dictionary
 	time["slot"] = int(time.get("slot", 0)) + 1
+	# 시즌 심사보다 먼저 단계를 갱신해야 심사에서 새로 열린 계약을 생성한다.
+	var opened_stages: Array[int] = _unlock.refresh(_state)
+	if not opened_stages.is_empty():
+		step_result["newUnlocks"] = opened_stages
 	var slots_per_season: int = maxi(1, _config_int("slotsPerSeason", SLOTS_PER_SEASON))
 	if int(time["slot"]) % slots_per_season == 0:
 		var completed_period: Dictionary = {"season": int(time.get("season", 1)), "year": int(time.get("year", 1))}
@@ -418,7 +479,8 @@ func _ensure_active_task() -> void:
 				"reasons": ["플레이어가 자동 큐에 지정"],
 				"ranked": [],
 			}
-		elif queued_rejection.begins_with("예정 도전 우선") or queued_rejection.begins_with("시즌 일정 잠금"):
+		# 기존 저장의 자동 큐에 남은 미해금 활동은 지우지 않고 열릴 때까지 큐에 둔다.
+		elif queued_rejection.begins_with("예정 도전 우선") or queued_rejection.begins_with("시즌 일정 잠금") or queued_rejection == "해금 단계 잠금":
 			queue.append(queued_id)
 	if selected_activity.is_empty():
 		decision = _planner.choose(_state, _content_db.activities)
@@ -1134,6 +1196,9 @@ func resolve_default_event(event_or_instance_id: String) -> Dictionary:
 
 
 func _maybe_queue_event(activity: Dictionary, context: Dictionary) -> Dictionary:
+	# 이벤트는 해금 6단계부터 만든다. 그 전에는 난수도 쓰지 않는다.
+	if not _unlock.is_feature_unlocked(_state, "events"):
+		return {}
 	var inbox: Array = _state.get("eventInbox", []) as Array
 	if inbox.size() >= _config_int("eventInboxMax", EVENT_INBOX_MAX):
 		return {}
@@ -1996,6 +2061,14 @@ func validate_state() -> Dictionary:
 	for key: String in ["gold", "lifetimeGold", "renown", "lifetimeRenown"]:
 		if not BigValue.is_valid(((_state.get("bigValues", {}) as Dictionary).get(key, BigValue.zero()) as Dictionary)):
 			errors.append("BigValue 형식 오류: %s" % key)
+	var unlocks: Dictionary = _state.get("unlocks", {}) as Dictionary if _state.get("unlocks") is Dictionary else {}
+	var stage_number: int = int(unlocks.get("stage", 0))
+	if stage_number < 1 or stage_number > _unlock.max_stage():
+		errors.append("해금 단계 범위 오류")
+	elif int(unlocks.get("announced", 0)) < 1 or int(unlocks.get("announced", 0)) > stage_number:
+		errors.append("해금 알림 단계 범위 오류")
+	elif stage_number < _unlock.computed_stage(_state):
+		errors.append("해금 단계가 진행값보다 낮음")
 	return {"ok": errors.is_empty(), "errors": errors}
 
 

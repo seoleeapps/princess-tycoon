@@ -120,7 +120,7 @@
   "relationKeys": ["guardian", "steward", "rival", "citizens"],
   "equipmentSlots": ["outfit", "weapon", "armor", "accessory"],
   "activityKinds": ["education", "job", "rest", "adventure", "challenge"],
-  "requireOperators": ["gte", "lte", "worldTier", "season", "flags"],
+  "requireOperators": ["gte", "lte", "worldTier", "season", "flags", "stage"],
   "startStats": {
     "stamina": 80,
     "strength": 55,

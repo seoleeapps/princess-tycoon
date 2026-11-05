@@ -8,7 +8,8 @@ extends SceneTree
 const E2EDriver := preload("res://tests/e2e/e2e_driver.gd")
 const MAIN_SCENE := "res://scenes/main.tscn"
 const START_UNIX := 1_800_000_000
-const OFFLINE_SECONDS := 3600
+# 7단계(84일)를 넘기도록 2시간(120일)을 비운다.
+const OFFLINE_SECONDS := 7200
 const TRAINEE_NAME := "세라"
 
 var e2e: E2EDriver
@@ -50,7 +51,8 @@ func _run() -> void:
 
 
 func _first_session(main: Control) -> void:
-	e2e.begin("first-session", ["home", "profile", "plan", "activity", "result", "growth", "record", "world", "shop", "settings", "menu", "event"])
+	# 첫 세션은 단계적 해금 1~3단계를 실제로 지난다(GDD §2.2). 4단계 이후 기능은 복귀 여정에서 확인한다.
+	e2e.begin("first-session", ["home", "profile", "activity", "result", "plan", "growth", "settings", "menu"])
 	e2e.step("starts on home", _screen(main) == "home")
 	await e2e.shot("01-home")
 
@@ -73,101 +75,16 @@ func _first_session(main: Control) -> void:
 	e2e.step("profile sheet closed", _find_screen(main, "profile") == null)
 	e2e.expect_equal("new trainee has no unearned titles", (_read(main, ["careerTitles"], {}) as Dictionary).size(), 0)
 	e2e.expect_equal("new trainee has no unearned mastery", (_read(main, ["mastery"], {}) as Dictionary).size(), 0)
+	e2e.expect_equal("new trainee starts at unlock stage 1", _unlock_stage(main), 1)
+	# AC-UNLOCK-01: 홈·활동 탭과 다음 단계 예고 하나만 보인다.
+	e2e.step("stage 1 shows home and activity tabs only", _find_id(main, "tab_home") != null and _find_id(main, "tab_activity") != null and _find_id(main, "tab_plan") == null and _find_id(main, "tab_record") == null)
+	e2e.step("stage 1 has no tab teaser because stage 2 opens jobs", _find_id(main, "tab_teaser") == null)
+	e2e.step("stage 1 home hides world and events", _find_id(main, "open_world") == null and _find_id(main, "open_event") == null)
 	await e2e.shot("04-home-new-trainee")
 
-	await _tap_id(main, "open_world", "open world sheet")
-	e2e.step("world sheet visible", _find_screen(main, "world") != null)
-	await e2e.shot("05-world")
-	var world_id := _first_enabled_id(main, "world_")
-	if e2e.step("unlocked world action found", not world_id.is_empty(), _button_states(main, "world_")):
-		var slot_world := int(_read(main, ["time", "slot"], 0))
-		await _tap_id(main, world_id, "start world action")
-		e2e.step("world action advanced time", int(_read(main, ["time", "slot"], 0)) > slot_world)
-		await e2e.shot("06-world-result")
-		# 시트 위에 뜬 결과 창을 누르면 창만 닫히고 시트는 그대로여야 한다(아래 시트 버튼이 눌리지 않음).
-		var card := _result_layer(main).get("_active_panel") as Control
-		if e2e.step("result card shown over world sheet", card != null and bool(_result_layer(main).call("has_active_feedback")) and card.mouse_filter == Control.MOUSE_FILTER_STOP):
-			e2e.step("tap result card over sheet", await e2e.tap(card))
-			await e2e.frames(3)
-			e2e.step("card closes and world sheet stays", not bool(_result_layer(main).call("has_active_feedback")) and _find_screen(main, "world") != null)
-	await _close_sheet(main)
-
-	await _tap_id(main, "tab_plan", "open plan tab")
-	e2e.step("plan tab visible", _screen(main) == "plan")
-	await _tap_id(main, "preset_scholar", "pick scholar direction")
-	e2e.expect_equal("direction changed", str(_read(main, ["growthPolicy", "preset"], "")), "scholar")
-	var stress_before := float(_read(main, ["growthPolicy", "maxStress"], 0.0))
-	await _tap_id(main, "step_maxStress_plus", "raise max stress one step")
-	e2e.expect_equal("max stress stepped", float(_read(main, ["growthPolicy", "maxStress"], 0.0)), minf(95.0, stress_before + 1.0))
-	await e2e.shot("07-plan")
-
-	await _tap_id(main, "tab_activity", "open activity tab")
-	e2e.step("activity tab visible", _screen(main) == "activity")
-	await e2e.shot("08-activity")
-	var scroll := _page_scroll(main)
-	var slot_before := int(_read(main, ["time", "slot"], 0))
-	var gold_before := str(_read(main, ["bigValues", "gold"], {}))
-	if e2e.step("activity list scroll exists", scroll != null):
-		var start := _first_button_point(scroll)
-		await e2e.drag(start, start - Vector2(0, 260), 12, 0.25)
-		await e2e.frames(4)
-		e2e.step("list scrolls when the drag starts on a card button", scroll.scroll_vertical > 0, "scroll=%d" % scroll.scroll_vertical)
-		e2e.step("drag does not run an activity", int(_read(main, ["time", "slot"], 0)) == slot_before and str(_read(main, ["bigValues", "gold"], {})) == gold_before)
-		# 자동 진행이 다음 슬롯을 처리하며 목록을 다시 그려도 스크롤 위치가 유지돼야 한다.
-		var kept_scroll := scroll.scroll_vertical
-		var slot_auto := int(_read(main, ["time", "slot"], 0))
-		e2e.step("auto run advances a slot", await e2e.wait_for(func() -> bool: return int(_read(main, ["time", "slot"], 0)) > slot_auto, 420))
-		await e2e.frames(3)
-		var scroll_after := _page_scroll(main)
-		e2e.step("list keeps scroll after auto refresh", scroll_after != null and absi(scroll_after.scroll_vertical - kept_scroll) <= 2, "before=%d after=%d" % [kept_scroll, scroll_after.scroll_vertical if scroll_after != null else -1])
-	await e2e.shot("09-activity-scrolled")
-	var run_id := _first_enabled_id(main, "activity_run_")
-	for attempt in 3:
-		if not run_id.is_empty():
-			break
-		# 예정된 시험이 수동 활동을 막으면 플레이어처럼 추천 활동을 먼저 실행한다.
-		await _tap_id(main, "run_recommended", "run the scheduled recommendation first")
-		await e2e.frames(4)
-		run_id = _first_enabled_id(main, "activity_run_")
-	if e2e.step("unlocked activity found", not run_id.is_empty(), "%s | meters=%s gold=%s locks=%s" % [_button_states(main, "activity_run_"), JSON.stringify(_read(main, ["meters"], {})), JSON.stringify(_read(main, ["bigValues", "gold"], {})), _lock_labels(main)]):
-		var mastery_key := run_id.trim_prefix("activity_run_")
-		var mastery_before := int(_read(main, ["mastery", mastery_key], 0))
-		await _tap_id(main, run_id, "run one activity")
-		e2e.step("result feedback shown", await e2e.wait_for(func() -> bool: return _result_layer(main).call("has_active_feedback"), 30))
-		var toast_label = main.get("_toast_label")
-		e2e.step("activity mastery increased", int(_read(main, ["mastery", mastery_key], 0)) > mastery_before,
-			"activity=%s mastery=%s toast=%s" % [mastery_key, JSON.stringify(_read(main, ["mastery"], {})), "" if toast_label == null else (toast_label as Label).text])
-		await e2e.shot("10-activity-result")
-	var detail_id := _first_enabled_id(main, "activity_run_").trim_prefix("activity_run_")
-	if e2e.step("unlocked activity for detail", not detail_id.is_empty()):
-		await _tap_id(main, "activity_detail_" + detail_id, "open activity detail")
-		e2e.step("activity detail sheet visible", _find_screen(main, "activity_detail") != null)
-		await e2e.shot("10b-activity-detail")
-		var queue_before := (_read(main, ["activityQueue"], []) as Array).size()
-		await _tap_id(main, "detail_queue", "queue from detail")
-		e2e.expect_equal("activity queued", (_read(main, ["activityQueue"], []) as Array).size(), queue_before + 1)
-		await _close_sheet(main)
-
-	await _tap_id(main, "tab_growth", "open growth tab")
-	e2e.step("growth tab visible", _screen(main) == "growth")
-	await e2e.shot("11-growth")
-	await _tap_id(main, "tab_record", "open record tab")
-	e2e.step("record tab visible", _screen(main) == "record")
-	await e2e.shot("12-record")
-
-	await _open_from_menu(main, "menu_shop", "shop")
-	await e2e.shot("13-shop")
-	var tea_before := _inventory_count(main, "ITEM_TEA")
-	await _tap_id(main, "buy_ITEM_TEA", "buy a consumable")
-	e2e.expect_equal("consumable added", _inventory_count(main, "ITEM_TEA"), tea_before + 1)
-	# 구매 뒤 시트를 다시 그려도 목록 위치가 유지돼야 한다.
-	await e2e.frames(3)
-	var shop_scroll := _sheet_scroll(main, "shop")
-	e2e.step("shop keeps scroll after purchase", shop_scroll != null and shop_scroll.scroll_vertical > 0, "scroll=%d" % (shop_scroll.scroll_vertical if shop_scroll != null else -1))
-	await _close_sheet(main)
-
+	# 설정·접근성은 1단계부터 쓸 수 있어야 한다(AC-UNLOCK-08).
 	await _open_from_menu(main, "menu_settings", "settings")
-	await e2e.shot("14-settings")
+	await e2e.shot("05-settings")
 	var motion_toggle := _find_id(main, "toggle_reducedMotion")
 	if e2e.step("reduced motion toggle visible", motion_toggle != null):
 		e2e.step("tap reduced motion", await e2e.tap(motion_toggle))
@@ -177,23 +94,81 @@ func _first_session(main: Control) -> void:
 		e2e.step("tap high contrast", await e2e.tap(contrast_toggle))
 		e2e.expect_equal("high contrast on", bool(_read(main, ["settings", "highContrast"], false)), true)
 		await e2e.frames(3)
-		await e2e.shot("14b-settings-high-contrast")
+		await e2e.shot("05b-settings-high-contrast")
 		e2e.step("tap high contrast off", await e2e.tap(_find_id(main, "toggle_highContrast")))
 		e2e.expect_equal("high contrast off", bool(_read(main, ["settings", "highContrast"], true)), false)
 	await _close_sheet(main)
+
+	await _tap_id(main, "tab_activity", "open activity tab")
+	e2e.step("activity tab visible", _screen(main) == "activity")
+	e2e.expect_equal("stage 1 lists three study activities", _count_ids(main, "activity_run_"), 3)
+	e2e.step("stage 1 teases the next activities", _find_id(main, "unlock_teaser_row") != null)
+	await e2e.shot("06-activity-stage1")
+	# 1단계 활동을 직접 실행해 2단계(활동 3회)와 3단계(활동 8회)를 연다.
+	var first_run_checked := false
+	var stage2_shot := false
+	for attempt in 14:
+		if int(_read(main, ["lifetimeStats", "activities"], 0)) >= 8:
+			break
+		var run_id := _first_enabled_id(main, "activity_run_")
+		if run_id.is_empty():
+			await _tap_id(main, "run_recommended", "run the recommendation when no row is runnable")
+			await e2e.frames(4)
+			continue
+		var mastery_key := run_id.trim_prefix("activity_run_")
+		var mastery_before := int(_read(main, ["mastery", mastery_key], 0))
+		await _tap_id(main, run_id, "run one activity (%s)" % mastery_key)
+		if not first_run_checked:
+			first_run_checked = true
+			e2e.step("result feedback shown", await e2e.wait_for(func() -> bool: return _result_layer(main).call("has_active_feedback"), 30))
+			e2e.step("activity mastery increased", int(_read(main, ["mastery", mastery_key], 0)) > mastery_before, "activity=%s" % mastery_key)
+			await e2e.shot("07-activity-result")
+		if _unlock_stage(main) == 2 and not stage2_shot:
+			stage2_shot = true
+			await e2e.frames(4)
+			var notice := main.get("_toast_label") as Label
+			e2e.step("stage 2 shows an unlock notice", notice != null and notice.is_visible_in_tree() and notice.text.contains("새로 열림 · 아르바이트"), "" if notice == null else notice.text)
+			e2e.step("stage 2 teases the plan tab", _find_id(main, "tab_teaser") != null)
+			await e2e.shot("08-activity-stage2")
+	e2e.step("eight activities open stage 3", int(_read(main, ["lifetimeStats", "activities"], 0)) >= 8 and _unlock_stage(main) >= 3, "activities=%d stage=%d" % [int(_read(main, ["lifetimeStats", "activities"], 0)), _unlock_stage(main)])
+	await _tap_id(main, "filter_job", "show job activities")
+	e2e.step("stage 2 job is listed", _find_id(main, "activity_run_JOB_CARE") != null, _button_states(main, "activity_run_"))
+	await e2e.shot("08b-activity-jobs")
+	await _tap_id(main, "filter_education", "back to study activities")
+
+	var detail_id := _first_enabled_id(main, "activity_run_").trim_prefix("activity_run_")
+	if e2e.step("unlocked activity for detail", not detail_id.is_empty()):
+		await _tap_id(main, "activity_detail_" + detail_id, "open activity detail")
+		e2e.step("activity detail sheet visible", _find_screen(main, "activity_detail") != null)
+		await e2e.shot("09-activity-detail")
+		var queue_before := (_read(main, ["activityQueue"], []) as Array).size()
+		await _tap_id(main, "detail_queue", "queue from detail")
+		e2e.expect_equal("activity queued", (_read(main, ["activityQueue"], []) as Array).size(), queue_before + 1)
+		await _close_sheet(main)
+
+	e2e.step("stage 3 opens plan and growth tabs", _find_id(main, "tab_plan") != null and _find_id(main, "tab_growth") != null)
+	await _tap_id(main, "tab_plan", "open plan tab")
+	e2e.step("plan tab visible", _screen(main) == "plan")
+	e2e.step("plan shows its first-visit tip", _find_id(main, "tip_plan") != null)
+	e2e.step("stage 3 plan hides detailed rules", _find_id(main, "step_maxStress_plus") == null and _find_id(main, "preset_custom") == null)
+	await _tap_id(main, "preset_scholar", "pick scholar direction")
+	e2e.expect_equal("direction changed", str(_read(main, ["growthPolicy", "preset"], "")), "scholar")
+	await e2e.shot("10-plan-stage3")
+	await _tap_id(main, "tip_ok_plan", "dismiss the plan tip")
+	e2e.step("plan tip closes", _find_id(main, "tip_plan") == null)
+	await _tap_id(main, "tab_growth", "open growth tab")
+	e2e.step("growth tab visible", _screen(main) == "growth")
+	await e2e.shot("11-growth")
 
 	await _tap_id(main, "status_detail", "open status detail")
 	var toast := main.get("_toast_label") as Label
 	e2e.step("status detail shows full reason", toast != null and toast.is_visible_in_tree() and toast.text.contains("이유 ·"), "" if toast == null else toast.text)
 	await _tap_id(main, "pause", "pause auto run")
 	e2e.expect_equal("auto run paused", bool(_read(main, ["settings", "autoRun"], true)), false)
-	await e2e.shot("15-paused")
+	await e2e.shot("12-paused")
 	await _tap_id(main, "pause", "resume auto run")
 	e2e.expect_equal("auto run resumed", bool(_read(main, ["settings", "autoRun"], false)), true)
 
-	await _open_from_menu(main, "menu_event", "event")
-	await e2e.shot("16-event")
-	await _close_sheet(main)
 	await _tap_id(main, "menu", "open menu for save")
 	await _tap_id(main, "menu_save", "save now")
 	await _close_sheet(main)
@@ -201,7 +176,8 @@ func _first_session(main: Control) -> void:
 
 
 func _return_offline(main: Control) -> void:
-	e2e.begin("return-offline", ["save", "offline", "event", "continue"])
+	# 2시간 뒤 돌아오면 오프라인 정산이 120일을 처리해 7단계까지 연다. 이후 기존 기능 경로를 확인한다.
+	e2e.begin("return-offline", ["save", "offline", "world", "plan", "activity", "record", "shop", "event", "continue"])
 	var slot_saved := int(_read(main, ["time", "slot"], 0))
 	await e2e.unmount(main)
 	ProjectSettings.set_setting("princess_tycoon/testing/fixed_unix", START_UNIX + OFFLINE_SECONDS)
@@ -210,21 +186,100 @@ func _return_offline(main: Control) -> void:
 	e2e.expect_equal("direction restored", str(_read(again, ["growthPolicy", "preset"], "")), "scholar")
 	e2e.step("offline sheet opens on return", await e2e.wait_for(func() -> bool: return _find_screen(again, "offline") != null, 30))
 	e2e.step("offline slots pending", int(_state(again).get("pendingOfflineSlots", 0)) > 0)
-	await e2e.shot("17-offline")
+	await e2e.shot("13-offline")
 	var home_before := _content_page(again)
 	await _tap_id(again, "offline_collect", "collect offline result")
 	e2e.expect_equal("offline slots settled", int(_state(again).get("pendingOfflineSlots", -1)), 0)
 	e2e.step("offline sheet lists what changed", _find_label_prefix(again, "능력치 합 +") != null)
+	e2e.step("offline sheet lists new unlocks", _find_label_prefix(again, "새로 열림 · 세부 규칙") != null and _find_label_prefix(again, "새로 열림 · 월드") != null)
+	var offline_toast := again.get("_toast_label") as Label
+	e2e.step("offline unlocks show no notice banner", offline_toast == null or not offline_toast.text.contains("새로 열림"), "" if offline_toast == null else offline_toast.text)
 	e2e.step("home redrawn with settled values", _content_page(again) != home_before)
 	e2e.step("time advanced offline", int(_read(again, ["time", "slot"], 0)) > slot_saved)
-	await e2e.shot("18-offline-collected")
+	e2e.expect_equal("offline progress opened every stage", _unlock_stage(again), 7)
+	await e2e.shot("14-offline-collected")
 	await _close_sheet(again)
 
+	# 긴 방치 뒤에는 에너지가 낮아 회복이 먼저일 수 있다. 플레이어처럼 추천 활동(휴식)을 먼저 실행한다.
+	await _tap_id(again, "open_world", "open world sheet")
+	e2e.step("world sheet visible", _find_screen(again, "world") != null)
+	var world_id := _first_enabled_id(again, "world_")
+	for recovery in 4:
+		if not world_id.is_empty():
+			break
+		await _close_sheet(again)
+		await _tap_id(again, "tab_activity", "open activity tab to recover")
+		await _tap_id(again, "run_recommended", "run the recommended recovery first")
+		await e2e.frames(4)
+		await _tap_id(again, "tab_home", "back to home")
+		await _tap_id(again, "open_world", "reopen world sheet")
+		world_id = _first_enabled_id(again, "world_")
+	await e2e.shot("15-world")
+	if e2e.step("unlocked world action found", not world_id.is_empty(), "%s | %s | meters=%s" % [_button_states(again, "world_"), _lock_labels(again), JSON.stringify(_read(again, ["meters"], {}))]):
+		var slot_world := int(_read(again, ["time", "slot"], 0))
+		await _tap_id(again, world_id, "start world action")
+		e2e.step("world action advanced time", int(_read(again, ["time", "slot"], 0)) > slot_world)
+		await e2e.shot("16-world-result")
+		# 시트 위에 뜬 결과 창을 누르면 창만 닫히고 시트는 그대로여야 한다(아래 시트 버튼이 눌리지 않음).
+		var card := _result_layer(again).get("_active_panel") as Control
+		if e2e.step("result card shown over world sheet", card != null and bool(_result_layer(again).call("has_active_feedback")) and card.mouse_filter == Control.MOUSE_FILTER_STOP):
+			e2e.step("tap result card over sheet", await e2e.tap(card))
+			await e2e.frames(3)
+			e2e.step("card closes and world sheet stays", not bool(_result_layer(again).call("has_active_feedback")) and _find_screen(again, "world") != null)
+	await _close_sheet(again)
+
+	await _tap_id(again, "tab_plan", "open plan tab")
+	e2e.step("seen plan tip stays hidden after restart", _find_id(again, "tip_plan") == null)
+	e2e.expect_equal("stage 7 plan shows one tip at a time", _count_ids(again, "tip_ok_"), 1)
+	await _tap_id(again, "tip_ok_customWeights", "dismiss the custom weights tip")
+	e2e.step("next plan tip appears after dismissing", _find_id(again, "tip_rules") != null and _count_ids(again, "tip_ok_") == 1)
+	var stress_before := float(_read(again, ["growthPolicy", "maxStress"], 0.0))
+	await _tap_id(again, "step_maxStress_plus", "raise max stress one step")
+	e2e.expect_equal("max stress stepped", float(_read(again, ["growthPolicy", "maxStress"], 0.0)), minf(95.0, stress_before + 1.0))
+	await e2e.shot("17-plan")
+
+	await _tap_id(again, "tab_activity", "open activity tab")
+	e2e.step("activity tab visible", _screen(again) == "activity")
+	await e2e.shot("18-activity")
+	var scroll := _page_scroll(again)
+	var slot_before := int(_read(again, ["time", "slot"], 0))
+	var gold_before := str(_read(again, ["bigValues", "gold"], {}))
+	if e2e.step("activity list scroll exists", scroll != null):
+		var start := _first_button_point(scroll)
+		await e2e.drag(start, start - Vector2(0, 260), 12, 0.25)
+		await e2e.frames(4)
+		e2e.step("list scrolls when the drag starts on a card button", scroll.scroll_vertical > 0, "scroll=%d" % scroll.scroll_vertical)
+		e2e.step("drag does not run an activity", int(_read(again, ["time", "slot"], 0)) == slot_before and str(_read(again, ["bigValues", "gold"], {})) == gold_before)
+		# 자동 진행이 다음 슬롯을 처리하며 목록을 다시 그려도 스크롤 위치가 유지돼야 한다.
+		var kept_scroll := scroll.scroll_vertical
+		var slot_auto := int(_read(again, ["time", "slot"], 0))
+		e2e.step("auto run advances a slot", await e2e.wait_for(func() -> bool: return int(_read(again, ["time", "slot"], 0)) > slot_auto, 420))
+		await e2e.frames(3)
+		var scroll_after := _page_scroll(again)
+		e2e.step("list keeps scroll after auto refresh", scroll_after != null and absi(scroll_after.scroll_vertical - kept_scroll) <= 2, "before=%d after=%d" % [kept_scroll, scroll_after.scroll_vertical if scroll_after != null else -1])
+	await e2e.shot("19-activity-scrolled")
+
+	await _tap_id(again, "tab_record", "open record tab")
+	e2e.step("record tab visible", _screen(again) == "record")
+	await e2e.shot("20-record")
+
+	await _open_from_menu(again, "menu_shop", "shop")
+	await e2e.shot("21-shop")
+	var tea_before := _inventory_count(again, "ITEM_TEA")
+	await _tap_id(again, "buy_ITEM_TEA", "buy a consumable")
+	e2e.expect_equal("consumable added", _inventory_count(again, "ITEM_TEA"), tea_before + 1)
+	# 구매 뒤 시트를 다시 그려도 목록 위치가 유지돼야 한다.
+	await e2e.frames(3)
+	var shop_scroll := _sheet_scroll(again, "shop")
+	e2e.step("shop keeps scroll after purchase", shop_scroll != null and shop_scroll.scroll_vertical > 0, "scroll=%d" % (shop_scroll.scroll_vertical if shop_scroll != null else -1))
+	await _close_sheet(again)
+
+	await _tap_id(again, "tab_home", "back to home")
 	await _tap_id(again, "open_event", "open event inbox")
 	e2e.step("event sheet visible", _find_screen(again, "event") != null)
 	var inbox_before := (_read(again, ["eventInbox"], []) as Array).size()
 	if inbox_before > 0:
-		await e2e.shot("19-event-choice")
+		await e2e.shot("22-event-choice")
 		await _tap_id(again, "event_choice_0", "choose first event option")
 		e2e.step("event resolved", (_read(again, ["eventInbox"], []) as Array).size() < inbox_before)
 	else:
@@ -232,12 +287,31 @@ func _return_offline(main: Control) -> void:
 	await _close_sheet(again)
 
 	await _open_from_menu(again, "menu_continue", "continue")
-	await e2e.shot("20-continue")
+	await e2e.shot("23-continue")
 	await _tap_id(again, "continue_game", "continue saved trainee")
 	e2e.step("continue returns home", _screen(again) == "home")
 	e2e.expect_equal("continued trainee", str(_state(again).get("traineeName", "")), TRAINEE_NAME)
 	e2e.end()
 	await e2e.unmount(again)
+
+
+# 지금 보이는(숨김·삭제 예정 아님) 버튼 중 ui_id가 prefix로 시작하는 수.
+func _count_ids(main: Control, prefix: String) -> int:
+	var sheet := _top_sheet(main)
+	return _count_visible(sheet if sheet != null else main, prefix)
+
+
+func _count_visible(node: Node, prefix: String) -> int:
+	if node.is_queued_for_deletion() or (node is CanvasItem and not (node as CanvasItem).is_visible_in_tree()):
+		return 0
+	var count := 1 if node is BaseButton and str(node.get_meta("ui_id", "")).begins_with(prefix) else 0
+	for child in node.get_children():
+		count += _count_visible(child, prefix)
+	return count
+
+
+func _unlock_stage(main: Control) -> int:
+	return int(_read(main, ["unlocks", "stage"], 0))
 
 
 func _mount_main() -> Control:

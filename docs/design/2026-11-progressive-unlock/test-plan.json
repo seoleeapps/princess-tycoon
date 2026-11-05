@@ -1,0 +1,40 @@
+{
+  "$comment": "seoleeapps 저장소라 Seorilabs 중앙 검증기 대상이 아니다. 형식은 중앙 test-plan 스키마를 따른다. 스토어 출시는 GDD §13상 범위 밖이라 release는 null이고 끝 지점은 main 병합이다. 새 화면이 아니어서 redesign은 false이며, 대신 L3 실행과 첫 세션 UX를 다른 에이전트가 1회 독립 검수한다.",
+  "schemaVersion": 1,
+  "level": "L3",
+  "baseline": "f67378ae9697e3996b6515a85ccb8afe2294456a",
+  "changedFeatures": [
+    "progressive-unlock",
+    "planner",
+    "events",
+    "contracts",
+    "challenges",
+    "save-migration",
+    "offline-modal",
+    "ui-shell",
+    "home",
+    "plan",
+    "activity",
+    "growth",
+    "record",
+    "world",
+    "shop-inventory",
+    "new-trainee"
+  ],
+  "environments": [
+    "dev"
+  ],
+  "redesign": false,
+  "foundationRerun": false,
+  "floorOverrides": [],
+  "release": null,
+  "endPoint": "main-merge",
+  "devRuns": [
+    "npm test",
+    "npm run test:e2e",
+    "npm run capture:e2e",
+    "npm run test:balance",
+    "npm run build:web"
+  ],
+  "reviewRounds": 1
+}

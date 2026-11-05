@@ -22,6 +22,7 @@ const EXPECTED_ACTIVITY_KINDS: Dictionary = {
 
 var config: Dictionary = {}
 var procedural: Dictionary = {}
+var unlocks: Dictionary = {}
 var profiles: Array[Dictionary] = []
 var activities: Array[Dictionary] = []
 var events: Array[Dictionary] = []
@@ -42,6 +43,7 @@ func load_all(base_path: String = "res://data") -> Dictionary:
 	var object_specs: Array[Dictionary] = [
 		{"file": "config.json", "target": "config"},
 		{"file": "procedural.json", "target": "procedural"},
+		{"file": "unlocks.json", "target": "unlocks"},
 	]
 	for spec: Dictionary in object_specs:
 		var object_result: Dictionary = _read_json(base_path.path_join(str(spec["file"])), TYPE_DICTIONARY)
@@ -73,6 +75,7 @@ func load_all(base_path: String = "res://data") -> Dictionary:
 	GrowthPolicy.configure_profiles(profiles)
 	_rebuild_indexes(errors)
 	errors.append_array(_validate_schema())
+	errors.append_array(_validate_unlocks())
 	var count_report: Dictionary = validate_counts()
 	for count_error: Variant in count_report.get("errors", []):
 		errors.append(str(count_error))
@@ -85,6 +88,7 @@ func load_all(base_path: String = "res://data") -> Dictionary:
 			"items": items.size(),
 			"careers": careers.size(),
 			"profiles": profiles.size(),
+			"unlockStages": (unlocks.get("stages", []) as Array).size(),
 		},
 		"activityKinds": count_report.get("activityKinds", {}),
 	}
@@ -94,6 +98,7 @@ func load_all(base_path: String = "res://data") -> Dictionary:
 func clear() -> void:
 	config.clear()
 	procedural.clear()
+	unlocks.clear()
 	profiles.clear()
 	activities.clear()
 	events.clear()
@@ -134,6 +139,13 @@ func validate_counts() -> Dictionary:
 		if int(kind_counts.get(kind, 0)) != int(EXPECTED_ACTIVITY_KINDS[kind]):
 			errors.append("활동 분류 %s 개수 불일치: 기대 %d, 실제 %d" % [kind, int(EXPECTED_ACTIVITY_KINDS[kind]), int(kind_counts.get(kind, 0))])
 	return {"ok": errors.is_empty(), "errors": errors, "activityKinds": kind_counts}
+
+
+func feature_stage(feature_id: String) -> int:
+	for raw_stage: Variant in unlocks.get("stages", []) as Array:
+		if raw_stage is Dictionary and ((raw_stage as Dictionary).get("features", []) as Array).has(feature_id):
+			return int((raw_stage as Dictionary).get("stage", 1))
+	return 1
 
 
 func get_activity(content_id: String) -> Dictionary:
@@ -209,6 +221,21 @@ func _index_entries(entries: Array[Dictionary], target: Dictionary, label: Strin
 			errors.append("%s 중복 id: %s" % [label, content_id])
 		else:
 			target[content_id] = entry
+
+
+# 해금 단계 데이터와 활동별 requires.stage가 서로 맞는지 확인한다.
+func _validate_unlocks() -> Array[String]:
+	var errors: Array[String] = UnlockProgress.validate(unlocks)
+	var max_stage: int = (unlocks.get("stages", []) as Array).size()
+	for activity: Dictionary in activities:
+		var requires: Dictionary = activity.get("requires", {}) as Dictionary
+		var activity_stage: int = int(requires.get("stage", 0))
+		if activity_stage < 1 or activity_stage > max_stage:
+			errors.append("activity %s requires.stage는 1~%d이어야 합니다." % [str(activity.get("id", "")), max_stage])
+	var rest_home: Dictionary = get_activity("REST_HOME")
+	if int((rest_home.get("requires", {}) as Dictionary).get("stage", 0)) != 1:
+		errors.append("REST_HOME은 1단계에서 열려야 합니다(회복 대체 활동).")
+	return errors
 
 
 func _validate_schema() -> Array[String]:

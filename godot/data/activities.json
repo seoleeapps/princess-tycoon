@@ -13,7 +13,7 @@
     "primaryStat": "etiquette",
     "gains": {"refinement": 5, "etiquette": 11, "communication": 3},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 1},
     "tags": ["study", "indoor", "social", "safe"]
   },
   {
@@ -30,7 +30,7 @@
     "primaryStat": "intelligence",
     "gains": {"intelligence": 12, "communication": 6},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 1},
     "tags": ["study", "indoor", "academic"]
   },
   {
@@ -47,7 +47,7 @@
     "primaryStat": "art",
     "gains": {"sensitivity": 5, "style": 4, "art": 13},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["study", "indoor", "art", "creative"]
   },
   {
@@ -64,7 +64,7 @@
     "primaryStat": "art",
     "gains": {"sensitivity": 6, "art": 10, "communication": 4},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["study", "indoor", "art", "performance"]
   },
   {
@@ -81,7 +81,7 @@
     "primaryStat": "dance",
     "gains": {"stamina": 5, "style": 5, "dance": 13},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["study", "physical", "art", "performance"]
   },
   {
@@ -98,7 +98,7 @@
     "primaryStat": "cooking",
     "gains": {"discipline": 3, "cooking": 13, "housework": 4},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["study", "indoor", "care", "craft"]
   },
   {
@@ -115,7 +115,7 @@
     "primaryStat": "housework",
     "gains": {"discipline": 4, "cooking": 3, "housework": 12},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["study", "indoor", "care", "practical"]
   },
   {
@@ -132,7 +132,7 @@
     "primaryStat": "faith",
     "gains": {"morals": 8, "faith": 11, "communication": 2},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["study", "indoor", "faith", "care"]
   },
   {
@@ -149,7 +149,7 @@
     "primaryStat": "combat",
     "gains": {"stamina": 7, "strength": 7, "combat": 11},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 1},
     "tags": ["study", "physical", "martial", "combat"]
   },
   {
@@ -166,7 +166,7 @@
     "primaryStat": "combat",
     "gains": {"strength": 8, "discipline": 5, "combat": 14},
     "fixedDeltas": {},
-    "requires": {"gte": {"strength": 50}},
+    "requires": {"stage": 4, "gte": {"strength": 50}},
     "tags": ["study", "physical", "martial", "combat"]
   },
   {
@@ -183,7 +183,7 @@
     "primaryStat": "magic",
     "gains": {"intelligence": 8, "discipline": 3, "magic": 15},
     "fixedDeltas": {},
-    "requires": {"gte": {"intelligence": 60}},
+    "requires": {"stage": 4, "gte": {"intelligence": 60}},
     "tags": ["study", "indoor", "academic", "magic"]
   },
   {
@@ -200,7 +200,7 @@
     "primaryStat": "nursing",
     "gains": {"sensitivity": 4, "morals": 5, "nursing": 14},
     "fixedDeltas": {},
-    "requires": {"gte": {"morals": 50}},
+    "requires": {"stage": 4, "gte": {"morals": 50}},
     "tags": ["study", "care", "healing", "service"]
   },
   {
@@ -217,7 +217,7 @@
     "primaryStat": "etiquette",
     "gains": {"refinement": 9, "etiquette": 16, "communication": 10},
     "fixedDeltas": {},
-    "requires": {"gte": {"refinement": 120, "etiquette": 100}},
+    "requires": {"stage": 4, "gte": {"refinement": 120, "etiquette": 100}},
     "tags": ["study", "social", "leadership", "advanced"]
   },
   {
@@ -234,7 +234,7 @@
     "primaryStat": "magic",
     "gains": {"intelligence": 14, "discipline": 6, "magic": 22},
     "fixedDeltas": {},
-    "requires": {"gte": {"intelligence": 180, "magic": 150}, "worldTier": 2},
+    "requires": {"stage": 4, "gte": {"intelligence": 180, "magic": 150}, "worldTier": 2},
     "tags": ["study", "academic", "magic", "advanced", "risk"]
   },
   {
@@ -251,7 +251,7 @@
     "primaryStat": "combat",
     "gains": {"stamina": 12, "strength": 12, "discipline": 8, "combat": 21},
     "fixedDeltas": {},
-    "requires": {"gte": {"strength": 160, "combat": 150}, "worldTier": 2},
+    "requires": {"stage": 4, "gte": {"strength": 160, "combat": 150}, "worldTier": 2},
     "tags": ["study", "physical", "martial", "leadership", "advanced", "risk"]
   },
   {
@@ -268,7 +268,7 @@
     "primaryStat": "nursing",
     "gains": {"morals": 3, "housework": 3, "nursing": 6},
     "fixedDeltas": {"reputation": 1},
-    "requires": {},
+    "requires": {"stage": 2},
     "tags": ["job", "service", "care", "safe", "reward"]
   },
   {
@@ -285,7 +285,7 @@
     "primaryStat": "faith",
     "gains": {"sensitivity": 3, "morals": 5, "faith": 6},
     "fixedDeltas": {"reputation": 1},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["job", "service", "faith", "care", "safe"]
   },
   {
@@ -302,7 +302,7 @@
     "primaryStat": "housework",
     "gains": {"discipline": 3, "housework": 8},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 2},
     "tags": ["job", "service", "practical", "safe", "reward"]
   },
   {
@@ -319,7 +319,7 @@
     "primaryStat": "stamina",
     "gains": {"stamina": 8, "strength": 4, "cooking": 3},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["job", "outdoor", "physical", "practical", "reward"]
   },
   {
@@ -336,7 +336,7 @@
     "primaryStat": "strength",
     "gains": {"stamina": 7, "strength": 10, "discipline": 3},
     "fixedDeltas": {},
-    "requires": {"gte": {"stamina": 70}},
+    "requires": {"stage": 4, "gte": {"stamina": 70}},
     "tags": ["job", "outdoor", "physical", "risk", "reward"]
   },
   {
@@ -353,7 +353,7 @@
     "primaryStat": "cooking",
     "gains": {"communication": 3, "cooking": 9, "housework": 4},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 2},
     "tags": ["job", "service", "social", "craft", "reward"]
   },
   {
@@ -370,7 +370,7 @@
     "primaryStat": "art",
     "gains": {"style": 5, "communication": 4, "art": 8},
     "fixedDeltas": {"reputation": 1},
-    "requires": {"gte": {"art": 50}},
+    "requires": {"stage": 4, "gte": {"art": 50}},
     "tags": ["job", "service", "performance", "social", "reward"]
   },
   {
@@ -387,7 +387,7 @@
     "primaryStat": "etiquette",
     "gains": {"refinement": 6, "etiquette": 8, "communication": 8},
     "fixedDeltas": {"reputation": 2},
-    "requires": {"gte": {"etiquette": 70}},
+    "requires": {"stage": 4, "gte": {"etiquette": 70}},
     "tags": ["job", "service", "performance", "social", "high_stress", "reward"]
   },
   {
@@ -404,7 +404,7 @@
     "primaryStat": "communication",
     "gains": {"intelligence": 6, "refinement": 7, "etiquette": 8, "communication": 11},
     "fixedDeltas": {"reputation": 3},
-    "requires": {"gte": {"etiquette": 120, "communication": 110}},
+    "requires": {"stage": 4, "gte": {"etiquette": 120, "communication": 110}},
     "tags": ["job", "service", "social", "leadership", "high_stress", "reward"]
   },
   {
@@ -421,7 +421,7 @@
     "primaryStat": "combat",
     "gains": {"stamina": 9, "combat": 12, "communication": 4},
     "fixedDeltas": {"reputation": 2},
-    "requires": {"gte": {"stamina": 120, "combat": 90}},
+    "requires": {"stage": 4, "gte": {"stamina": 120, "combat": 90}},
     "tags": ["job", "outdoor", "service", "combat", "risk", "high_stress", "reward"]
   },
   {
@@ -438,7 +438,7 @@
     "primaryStat": "housework",
     "gains": {"refinement": 7, "discipline": 7, "etiquette": 8, "housework": 12},
     "fixedDeltas": {"reputation": 3},
-    "requires": {"gte": {"refinement": 140, "housework": 120}, "worldTier": 2},
+    "requires": {"stage": 4, "gte": {"refinement": 140, "housework": 120}, "worldTier": 2},
     "tags": ["job", "service", "social", "leadership", "high_stress", "reward"]
   },
   {
@@ -455,7 +455,7 @@
     "primaryStat": "stamina",
     "gains": {"stamina": 1, "housework": 1},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 1},
     "tags": ["rest", "recovery", "indoor", "safe"]
   },
   {
@@ -472,7 +472,7 @@
     "primaryStat": "sensitivity",
     "gains": {"stamina": 2, "sensitivity": 3},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 1},
     "tags": ["rest", "recovery", "outdoor", "safe"]
   },
   {
@@ -489,7 +489,7 @@
     "primaryStat": "sensitivity",
     "gains": {"sensitivity": 6, "style": 4, "communication": 3},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["rest", "recovery", "travel", "culture"]
   },
   {
@@ -506,7 +506,7 @@
     "primaryStat": "stamina",
     "gains": {"stamina": 5, "refinement": 3, "sensitivity": 5},
     "fixedDeltas": {},
-    "requires": {"worldTier": 2},
+    "requires": {"stage": 4, "worldTier": 2},
     "tags": ["rest", "recovery", "travel", "premium", "safe"]
   },
   {
@@ -523,7 +523,7 @@
     "primaryStat": "combat",
     "gains": {"stamina": 6, "sensitivity": 5, "combat": 9},
     "fixedDeltas": {"reputation": 2},
-    "requires": {"gte": {"stamina": 70}},
+    "requires": {"stage": 6, "gte": {"stamina": 70}},
     "tags": ["adventure", "exploration", "outdoor", "combat", "risk"],
     "nodes": 3,
     "enemyPool": [
@@ -551,7 +551,7 @@
     "primaryStat": "combat",
     "gains": {"strength": 7, "combat": 11, "magic": 5},
     "fixedDeltas": {"reputation": 3},
-    "requires": {"gte": {"combat": 70}},
+    "requires": {"stage": 6, "gte": {"combat": 70}},
     "tags": ["adventure", "exploration", "underground", "combat", "risk"],
     "nodes": 3,
     "enemyPool": [
@@ -579,7 +579,7 @@
     "primaryStat": "magic",
     "gains": {"intelligence": 10, "combat": 8, "magic": 14},
     "fixedDeltas": {"reputation": 4},
-    "requires": {"gte": {"intelligence": 120, "magic": 80}, "worldTier": 2},
+    "requires": {"stage": 6, "gte": {"intelligence": 120, "magic": 80}, "worldTier": 2},
     "tags": ["adventure", "exploration", "academic", "magic", "risk"],
     "nodes": 3,
     "enemyPool": [
@@ -607,7 +607,7 @@
     "primaryStat": "combat",
     "gains": {"stamina": 12, "strength": 12, "combat": 16, "magic": 6},
     "fixedDeltas": {"reputation": 6},
-    "requires": {"gte": {"stamina": 220, "combat": 180}, "worldTier": 3},
+    "requires": {"stage": 6, "gte": {"stamina": 220, "combat": 180}, "worldTier": 3},
     "tags": ["adventure", "exploration", "extreme", "combat", "risk", "high_stress"],
     "nodes": 3,
     "enemyPool": [
@@ -635,7 +635,7 @@
     "primaryStat": "magic",
     "gains": {"intelligence": 15, "discipline": 10, "combat": 14, "magic": 24},
     "fixedDeltas": {"reputation": 9},
-    "requires": {"gte": {"intelligence": 320, "combat": 260, "magic": 300}, "worldTier": 5},
+    "requires": {"stage": 6, "gte": {"intelligence": 320, "combat": 260, "magic": 300}, "worldTier": 5},
     "tags": ["adventure", "exploration", "extreme", "combat", "magic", "risk", "high_stress"],
     "nodes": 3,
     "enemyPool": [
@@ -663,7 +663,7 @@
     "primaryStat": "intelligence",
     "gains": {"intelligence": 7, "discipline": 4, "communication": 4},
     "fixedDeltas": {},
-    "requires": {},
+    "requires": {"stage": 4},
     "tags": ["challenge", "exam", "academic", "scheduled"],
     "challengeWeights": {"intelligence": 0.45, "discipline": 0.25, "communication": 0.2, "reputation": 0.1},
     "baseDifficulty": 125,
@@ -687,7 +687,7 @@
     "primaryStat": "magic",
     "gains": {"intelligence": 5, "discipline": 4, "magic": 10},
     "fixedDeltas": {},
-    "requires": {"gte": {"magic": 80}},
+    "requires": {"stage": 6, "gte": {"magic": 80}},
     "tags": ["challenge", "exam", "academic", "magic", "scheduled", "risk"],
     "challengeWeights": {"magic": 0.55, "intelligence": 0.25, "discipline": 0.15, "reputation": 0.05},
     "baseDifficulty": 165,
@@ -711,7 +711,7 @@
     "primaryStat": "combat",
     "gains": {"stamina": 6, "strength": 6, "combat": 10},
     "fixedDeltas": {},
-    "requires": {"gte": {"combat": 90}},
+    "requires": {"stage": 6, "gte": {"combat": 90}},
     "tags": ["challenge", "sport", "physical", "martial", "scheduled", "risk"],
     "challengeWeights": {"combat": 0.5, "strength": 0.25, "stamina": 0.2, "discipline": 0.05},
     "baseDifficulty": 175,
@@ -735,7 +735,7 @@
     "primaryStat": "dance",
     "gains": {"stamina": 5, "style": 5, "dance": 10},
     "fixedDeltas": {},
-    "requires": {"gte": {"dance": 80}},
+    "requires": {"stage": 6, "gte": {"dance": 80}},
     "tags": ["challenge", "sport", "physical", "performance", "scheduled"],
     "challengeWeights": {"dance": 0.5, "stamina": 0.2, "style": 0.2, "art": 0.1},
     "baseDifficulty": 160,
@@ -759,7 +759,7 @@
     "primaryStat": "art",
     "gains": {"sensitivity": 6, "style": 5, "art": 11},
     "fixedDeltas": {},
-    "requires": {"gte": {"art": 100}},
+    "requires": {"stage": 6, "gte": {"art": 100}},
     "tags": ["challenge", "contest", "art", "creative", "scheduled"],
     "challengeWeights": {"art": 0.5, "sensitivity": 0.25, "style": 0.15, "reputation": 0.1},
     "baseDifficulty": 185,
@@ -783,7 +783,7 @@
     "primaryStat": "communication",
     "gains": {"intelligence": 4, "etiquette": 5, "communication": 11},
     "fixedDeltas": {},
-    "requires": {"gte": {"communication": 100}},
+    "requires": {"stage": 6, "gte": {"communication": 100}},
     "tags": ["challenge", "contest", "social", "leadership", "scheduled", "high_stress"],
     "challengeWeights": {"communication": 0.48, "intelligence": 0.2, "etiquette": 0.17, "refinement": 0.15},
     "baseDifficulty": 190,
@@ -807,7 +807,7 @@
     "primaryStat": "cooking",
     "gains": {"discipline": 4, "sensitivity": 4, "cooking": 12},
     "fixedDeltas": {},
-    "requires": {"gte": {"cooking": 100}},
+    "requires": {"stage": 6, "gte": {"cooking": 100}},
     "tags": ["challenge", "contest", "craft", "care", "scheduled"],
     "challengeWeights": {"cooking": 0.52, "discipline": 0.2, "sensitivity": 0.15, "communication": 0.13},
     "baseDifficulty": 195,
@@ -831,7 +831,7 @@
     "primaryStat": "combat",
     "gains": {"stamina": 10, "intelligence": 6, "combat": 14, "magic": 8, "communication": 5},
     "fixedDeltas": {},
-    "requires": {"gte": {"stamina": 220, "combat": 180}, "worldTier": 3},
+    "requires": {"stage": 6, "gte": {"stamina": 220, "combat": 180}, "worldTier": 3},
     "tags": ["challenge", "league", "adventure", "combat", "scheduled", "risk", "high_stress"],
     "challengeWeights": {"combat": 0.34, "stamina": 0.22, "magic": 0.18, "intelligence": 0.14, "communication": 0.12},
     "baseDifficulty": 290,

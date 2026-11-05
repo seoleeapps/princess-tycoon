@@ -37,7 +37,7 @@ func _run() -> void:
 
 
 func _test_policy_boundary_and_ui_reasons(content_db: ContentDB) -> void:
-	var state := StateFactory.create(71001, "정책 경계", content_db.config)
+	var state := _open_unlocks(StateFactory.create(71001, "정책 경계", content_db.config))
 	_prevent_generated_contract_side_effects(state)
 	state["activeTask"] = {
 		"id": "EDU_LITERATURE",
@@ -86,7 +86,7 @@ func _test_policy_boundary_and_ui_reasons(content_db: ContentDB) -> void:
 	)
 
 	var ui: Control = MainScreen.new()
-	var ui_state := StateFactory.create(71002, "이유 표시", content_db.config)
+	var ui_state := _open_unlocks(StateFactory.create(71002, "이유 표시", content_db.config))
 	_prevent_generated_contract_side_effects(ui_state)
 	ui_state["activeTask"] = {
 		"activityId": "REST_WALK",
@@ -122,7 +122,7 @@ func _test_activity_economy_formula_and_history(content_db: ContentDB) -> void:
 	var planner := Planner.new()
 	planner.configure(content_db.config)
 	var literature: Dictionary = content_db.get_activity("EDU_LITERATURE")
-	var cost_state := StateFactory.create(72001, "비용", content_db.config)
+	var cost_state := _open_unlocks(StateFactory.create(72001, "비용", content_db.config))
 	_prevent_generated_contract_side_effects(cost_state)
 	cost_state["worldTier"] = 3
 	cost_state["growthPolicy"] = GrowthPolicy.create("scholar", {}, [], 0, 100.0, 1.0)
@@ -142,7 +142,7 @@ func _test_activity_economy_formula_and_history(content_db: ContentDB) -> void:
 		"AC-ACT-02 비용 공식과 활동 시작 시 1회 차감"
 	)
 
-	var poor_state := StateFactory.create(72002, "잔액 보호", content_db.config)
+	var poor_state := _open_unlocks(StateFactory.create(72002, "잔액 보호", content_db.config))
 	_prevent_generated_contract_side_effects(poor_state)
 	poor_state["growthPolicy"] = GrowthPolicy.create("scholar", {}, [], 0, 100.0, 1.0)
 	(poor_state["bigValues"] as Dictionary)["gold"] = BigValue.from_number(149)
@@ -163,7 +163,7 @@ func _test_activity_economy_formula_and_history(content_db: ContentDB) -> void:
 	)
 
 	var job: Dictionary = content_db.get_activity("JOB_FARM")
-	var formula_state := StateFactory.create(72003, "공식", content_db.config)
+	var formula_state := _open_unlocks(StateFactory.create(72003, "공식", content_db.config))
 	_prevent_generated_contract_side_effects(formula_state)
 	formula_state["worldTier"] = 4
 	formula_state["rngCounter"] = 17
@@ -235,7 +235,7 @@ func _test_activity_economy_formula_and_history(content_db: ContentDB) -> void:
 
 
 func _test_event_queue_and_default_timeout(content_db: ContentDB) -> void:
-	var queue_state := StateFactory.create(73001, "이벤트 큐", content_db.config)
+	var queue_state := _open_unlocks(StateFactory.create(73001, "이벤트 큐", content_db.config))
 	_prevent_generated_contract_side_effects(queue_state)
 	queue_state["activeTask"] = {
 		"id": "REST_HOME", "activityId": "REST_HOME", "name": "기숙사 휴식",
@@ -252,7 +252,7 @@ func _test_event_queue_and_default_timeout(content_db: ContentDB) -> void:
 		str(queued_events)
 	)
 
-	var cap_state := StateFactory.create(73002, "이벤트 상한", content_db.config)
+	var cap_state := _open_unlocks(StateFactory.create(73002, "이벤트 상한", content_db.config))
 	_prevent_generated_contract_side_effects(cap_state)
 	cap_state["eventInbox"] = _dummy_inbox(20, 200000, 500000)
 	cap_state["activeTask"] = {
@@ -269,7 +269,7 @@ func _test_event_queue_and_default_timeout(content_db: ContentDB) -> void:
 
 	var event: Dictionary = content_db.get_event("EV_GUARDIAN_LETTER")
 	var default_choice: String = str(event.get("defaultChoice", ""))
-	var direct_state := StateFactory.create(73003, "기본 선택", content_db.config)
+	var direct_state := _open_unlocks(StateFactory.create(73003, "기본 선택", content_db.config))
 	_prevent_generated_contract_side_effects(direct_state)
 	direct_state["eventInbox"] = [_event_instance(event, "DIRECT_DEFAULT", 1000, 87400)]
 	var direct_engine := GameEngine.new()
@@ -283,7 +283,7 @@ func _test_event_queue_and_default_timeout(content_db: ContentDB) -> void:
 		"AC-CONTENT-03 공개 API 기본 선택 해결"
 	)
 
-	var timeout_state := StateFactory.create(73004, "24시간 자동 선택", content_db.config)
+	var timeout_state := _open_unlocks(StateFactory.create(73004, "24시간 자동 선택", content_db.config))
 	_prevent_generated_contract_side_effects(timeout_state)
 	timeout_state["eventInbox"] = [_event_instance(event, "TIMEOUT_DEFAULT", 1000, 87400)]
 	var timeout_engine := GameEngine.new()
@@ -302,7 +302,7 @@ func _test_event_queue_and_default_timeout(content_db: ContentDB) -> void:
 
 func _test_recent_template_weight_and_rng_isolation(content_db: ContentDB) -> void:
 	var generator := ProceduralGenerator.new()
-	var state := StateFactory.create(74001, "생성 RNG", content_db.config)
+	var state := _open_unlocks(StateFactory.create(74001, "생성 RNG", content_db.config))
 	state["worldTier"] = 9
 	(state["time"] as Dictionary)["season"] = 3
 	state["rngCounter"] = 321
@@ -333,7 +333,7 @@ func _test_recent_template_weight_and_rng_isolation(content_db: ContentDB) -> vo
 		}
 		var expected_index: int = DeterministicRNG.weighted_index(local_rng, [0.20, 1.0], "contract_template_0")
 		var expected_id := "repeat" if expected_index == 0 else "fresh"
-		var sample_state: Dictionary = StateFactory.create(seed_value, "가중치 표본", content_db.config)
+		var sample_state: Dictionary = _open_unlocks(StateFactory.create(seed_value, "가중치 표본", content_db.config))
 		var contracts: Array = generator.call(
 			"_generate_contracts", seed_value, 1, 1, 1, unlocked, procedural_data, content_db.config, recent_templates, sample_state
 		) as Array
@@ -599,6 +599,13 @@ func _cleanup_save_path(path: String) -> void:
 	for candidate: String in [absolute_path, absolute_path + ".bak", absolute_path + ".tmp"]:
 		if FileAccess.file_exists(candidate):
 			DirAccess.remove_absolute(candidate)
+
+
+# 이 수용 테스트들은 해금 단계와 무관한 규칙을 본다. 모든 단계를 연 상태에서 시작한다.
+# 첫 화면 검사(AC-UI-06)만 새 게임과 같은 1단계로 둔다.
+func _open_unlocks(state: Dictionary) -> Dictionary:
+	state["unlocks"] = {"stage": 7, "announced": 7, "tipsSeen": []}
+	return state
 
 
 func _check(condition: bool, label: String, detail: String = "") -> void:

@@ -1,0 +1,71 @@
+{
+  "stages": [
+    {
+      "stage": 1,
+      "when": {},
+      "features": ["home", "activity"],
+      "label": "홈, 활동",
+      "tips": {}
+    },
+    {
+      "stage": 2,
+      "when": {"activities": 3},
+      "features": [],
+      "label": "아르바이트 3종",
+      "tips": {}
+    },
+    {
+      "stage": 3,
+      "when": {"activities": 8},
+      "features": ["plan", "growth"],
+      "label": "계획, 성장",
+      "tips": {
+        "plan": "성장 방향을 바꾸면 다음 활동부터 수련생이 고르는 활동이 달라져요.",
+        "growth": "능력치가 오를수록 더 어려운 활동이 열려요."
+      }
+    },
+    {
+      "stage": 4,
+      "when": {"slot": 14},
+      "features": ["challenge"],
+      "label": "학습과 아르바이트 추가, 시험",
+      "tips": {
+        "challenge": "시험은 정해진 날 자동으로 참가해요. 결과와 함께 다음 준비를 알려 줘요."
+      }
+    },
+    {
+      "stage": 5,
+      "when": {"seasonReviews": 1},
+      "features": ["record", "contracts"],
+      "label": "기록, 계약",
+      "tips": {
+        "record": "시즌 심사마다 명성과 진로 칭호를 받아요.",
+        "contracts": "계약을 고정하면 수련생이 그 목표를 먼저 챙겨요."
+      }
+    },
+    {
+      "stage": 6,
+      "when": {"seasonReviews": 2},
+      "features": ["world", "shop", "events", "relations"],
+      "label": "월드, 상점, 이벤트",
+      "tips": {
+        "world": "모험은 탐색, 조우, 보스 3단계로 자동 진행돼요. 지면 쉬고 다시 도전해요.",
+        "shop": "장비를 끼우면 수련생 모습과 도전 점수가 바뀌어요.",
+        "events": "이벤트는 자동 진행을 멈추지 않아요. 하루 안에 고르지 않으면 안전한 선택이 적용돼요.",
+        "relations": "선물과 계약으로 관계를 높이면 활동 성장이 조금 늘어요."
+      }
+    },
+    {
+      "stage": 7,
+      "when": {"seasonReviews": 3},
+      "features": ["rules", "bannedTags", "customWeights", "league"],
+      "label": "세부 규칙, 직접 설계",
+      "tips": {
+        "rules": "최소 보유금, 최대 스트레스, 위험 허용으로 수련생이 지킬 선을 정해요.",
+        "bannedTags": "금지한 태그의 활동은 자동으로 고르지 않아요.",
+        "customWeights": "능력치마다 비중을 직접 정해 나만의 성장 방향을 만들어요.",
+        "league": "라이벌 5명의 점수와 비교해 리그 단계가 정해져요."
+      }
+    }
+  ]
+}
