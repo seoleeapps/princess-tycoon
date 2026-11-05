@@ -166,15 +166,17 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 
 	var detail_count := 0
 	# 같은 순간에 열린 해금 단계("새로 열림 · …")는 결과 창의 첫 줄로 강조한다. 상세 줄 상한에 함께 센다.
+	# 여러 단계가 한 번에 열려도 잘리지 않게 2줄까지 쓰고, 그때는 첫 상세 줄을 1줄로 줄여 창 높이를 지킨다.
 	var notice := str(payload.get("notice", "")).strip_edges()
 	if not notice.is_empty():
 		var notice_label := _label(notice, 16, PixelTokens.ACCENT)
-		notice_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		notice_label.max_lines_visible = 2
 		notice_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		notice_label.tooltip_text = notice
+		_wrap_at_spaces(notice_label)
 		content.add_child(notice_label)
 		detail_count += 1
-	var first_detail := true
+	var first_detail := notice.is_empty()
 	for raw_line: Variant in payload.get("details", []) as Array:
 		if detail_count >= MAX_DETAIL_LINES:
 			break

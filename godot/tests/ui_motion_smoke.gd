@@ -304,6 +304,23 @@ func _run() -> void:
 	var explicit_lines := headline_label.text.split("\n").size() if headline_label != null else 0
 	_check(headline_label != null and explicit_lines >= 2 and headline_label.get_line_count() == explicit_lines, "긴 결과 제목은 띄어쓰기에서만 줄바꿈 [%s]" % ("" if headline_label == null else headline_label.text.replace("\n", " / ")))
 
+	# 한 번에 여러 단계가 열려도 새로 열림 줄이 잘리지 않는다. 대신 첫 상세 줄은 1줄로 줄여 창 높이를 지킨다.
+	var multi_notice := "새로 열림 · 계획, 성장, 학습과 아르바이트 추가, 시험"
+	layer.call("present", {"kind": "activity", "badge": "성장", "tone": "raised", "headline": "왕립 교양학 완료", "floatingStats": ["지력 +8.4"], "details": ["다음 준비 · 지력 유효 점수를 약 12.0 보강하면 다음 시험에서 이길 수 있어요.", "활동 보상 · 골드 +250"], "notice": multi_notice}, true)
+	await process_frame
+	await process_frame
+	var multi_label: Label = null
+	var hint_label: Label = null
+	var multi_panel := layer.get("_active_panel") as Control
+	if multi_panel != null:
+		for raw_label: Node in multi_panel.find_children("*", "Label", true, false):
+			if (raw_label as Label).text.replace("\n", " ") == multi_notice:
+				multi_label = raw_label as Label
+			elif (raw_label as Label).text.begins_with("다음 준비"):
+				hint_label = raw_label as Label
+	var multi_fits := multi_label != null and multi_label.get_line_count() <= 2 and multi_label.get_visible_line_count() == multi_label.get_line_count()
+	_check(multi_fits and hint_label != null and hint_label.autowrap_mode == TextServer.AUTOWRAP_OFF and (multi_panel as Control).size.y <= 240.0, "여러 단계 새로 열림 줄은 잘리지 않고 창 높이 유지 [%s] h=%s" % ["" if multi_label == null else multi_label.text.replace("\n", " / "), str((multi_panel as Control).size.y if multi_panel != null else 0.0)])
+
 	# 결과 창과 함께 단계가 열리면 결과 창의 첫 줄로 알리고 알림 띠에는 넣지 않는다(이슈 #11).
 	var notice_engine: Object = main.get("_engine") as Object
 	var review_state: Dictionary = notice_engine.call("get_state") as Dictionary

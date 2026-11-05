@@ -1537,6 +1537,11 @@ func _test_career_gate_display() -> void:
 	var tier_gate: Dictionary = engine.call("_career_gate_result", {"worldTier": 2}, 1.2) as Dictionary
 	var missing: Array = (gate.get("missing", []) as Array) + (tier_gate.get("missing", []) as Array)
 	_check(missing.has("지력 95/210") and missing.has("예술 209/210") and missing.has("세계 티어 2/3"), "가까운 진로 부족 조건 정수 표시 %s" % str(missing))
+	# 100×1.1처럼 부동소수 오차가 있는 필요 값도 110으로 보인다(111이 아니다).
+	(state["stats"] as Dictionary)["intelligence"] = 109.5
+	engine.initialize_from_state(state)
+	var float_gate: Dictionary = engine.call("_career_gate_result", {"stats": {"intelligence": 100}}, 1.1) as Dictionary
+	_check((float_gate.get("missing", []) as Array).has("지력 109/110"), "부동소수 오차가 있는 필요 값도 정수로 맞게 표시 %s" % str(float_gate.get("missing", [])))
 
 
 func _open_unlocks(state: Dictionary) -> Dictionary:

@@ -1925,13 +1925,14 @@ func _career_gate_result(gate: Dictionary, scale: float) -> Dictionary:
 			ratios.append(ratio)
 			if actual < required:
 				# 현재 값은 내림, 필요 값은 올림으로 보여 아직 못 채운 조건이 채운 것처럼 보이지 않게 한다.
-				missing.append("%s %d/%d" % [_career_metric_display_name(bucket_name, str(raw_key)), floori(actual), ceili(required)])
+				# 필요 값은 배율 곱셈의 부동소수 오차(100×1.1 = 110.00000000000001)를 먼저 정리한다.
+				missing.append("%s %d/%d" % [_career_metric_display_name(bucket_name, str(raw_key)), floori(actual), ceili(snappedf(required, 0.001))])
 	if gate.has("worldTier"):
 		var required_tier: float = float(gate.get("worldTier", 1)) * scale
 		var actual_tier: float = float(_state.get("worldTier", 1))
 		ratios.append(clampf(actual_tier / maxf(1.0, required_tier), 0.0, 1.0))
 		if actual_tier < required_tier:
-			missing.append("세계 티어 %d/%d" % [floori(actual_tier), ceili(required_tier)])
+			missing.append("세계 티어 %d/%d" % [floori(actual_tier), ceili(snappedf(required_tier, 0.001))])
 	var big_requirements: Dictionary = gate.get("bigValues", {}) as Dictionary
 	for raw_key: Variant in big_requirements.keys():
 		var required_big: Dictionary = BigValue.multiply_float(BigValue.from_number(big_requirements[raw_key]), scale)
