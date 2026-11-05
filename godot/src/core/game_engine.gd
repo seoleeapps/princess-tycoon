@@ -292,14 +292,17 @@ func _run_requested_activity(activity_id: String, now_unix: int) -> Dictionary:
 	return _with_state({"ok": false, "error": "요청 활동 실행 제한 초과", "activityId": activity_id, "slotsAdvanced": guard})
 
 
-# 직접 고른 원정이 덮어 빠지게 되는 시험 id. 원정이 아니면 빈 배열.
-func activity_schedule_conflicts(activity_id: String, state: Dictionary) -> Array[String]:
+# 직접 고른 원정이 덮어 빠지게 되는 시험(시작 순). 항목은 {"id", "slot"(시작 칸의 절대 번호)}. 원정이 아니면 빈 배열.
+func activity_schedule_conflicts(activity_id: String, state: Dictionary) -> Array[Dictionary]:
 	_ensure_initialized()
 	var activity: Dictionary = _content_db.get_activity(activity_id)
-	var none: Array[String] = []
+	var conflicts: Array[Dictionary] = []
 	if str(activity.get("kind", "")) != "adventure":
-		return none
-	return _planner.schedule_conflicts(state, activity)
+		return conflicts
+	var slots: Dictionary = _planner.schedule_conflict_slots(state, activity)
+	for challenge_id: String in _planner.schedule_conflicts(state, activity):
+		conflicts.append({"id": challenge_id, "slot": int(slots[challenge_id])})
+	return conflicts
 
 
 # 플레이어가 지금 직접 실행할 때의 거절 이유(원정은 시험 일정 예외를 적용). 실행할 수 있으면 빈 문자열.

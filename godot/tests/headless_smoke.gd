@@ -234,7 +234,9 @@ func _check_manual_expedition(main: Node) -> void:
 	ui_state["lastPlannerDecision"] = {"rejected": {"ADV_VOLCANO": "예정 도전 우선: 21번 슬롯", "REST_RESORT": "예정 도전 우선: 21번 슬롯"}}
 	_check(str(main.call("_activity_lock_reason", "ADV_VOLCANO")) == "", "시험과 겹친 원정은 잠금이 아님")
 	# 엔진은 상태를 불러올 때 다음 활동을 미리 고르므로, 빠지는 시험은 화면이 가진 상태로 계산한 값을 기준으로 본다.
-	var conflict_ids: Array = engine.call("activity_schedule_conflicts", "ADV_VOLCANO", ui_state) as Array
+	var conflict_ids: Array = []
+	for raw_conflict: Variant in engine.call("activity_schedule_conflicts", "ADV_VOLCANO", ui_state) as Array:
+		conflict_ids.append(str((raw_conflict as Dictionary).get("id", "")))
 	var schedule: Dictionary = (main.get("_runtime_config") as Dictionary).get("challengeScheduleSlots", {}) as Dictionary
 	var first_name := str(main.call("_activity_name_by_id", str(conflict_ids[0]))) if not conflict_ids.is_empty() else ""
 	var first_day := int(schedule.get(str(conflict_ids[0]), 0)) if not conflict_ids.is_empty() else 0
@@ -276,6 +278,25 @@ func _check_manual_expedition(main: Node) -> void:
 	var toast := (main.get("_toast_label") as Label).text.replace("\n", " ")
 	var mastery: Dictionary = (main.get("_state") as Dictionary).get("mastery", {}) as Dictionary
 	_check(int(mastery.get("ADV_VOLCANO", 0)) > 0 and toast.contains("%s에는 불참했어요" % ", ".join(names)), "원정 출발 뒤 불참한 시험을 알림 [%s]" % toast.replace("\n", " / "))
+	# 시즌 경계를 넘는 원정이 다음 시즌 시험과 겹치면 "다음 시즌"으로 구분해 알린다.
+	var boundary: Dictionary = (engine.call("get_state") as Dictionary).duplicate(true)
+	(boundary["time"] as Dictionary)["slot"] = 26
+	boundary["activeTask"] = null
+	boundary["activityQueue"] = []
+	(boundary["meters"] as Dictionary)["energy"] = 100.0
+	(boundary["meters"] as Dictionary)["stress"] = 0.0
+	main.call("_adopt_engine_result", engine.call("initialize_from_state", boundary))
+	var boundary_state: Dictionary = main.get("_state") as Dictionary
+	var rift_conflicts: Array = engine.call("activity_schedule_conflicts", "ADV_RIFT", boundary_state) as Array
+	var next_season := false
+	if not rift_conflicts.is_empty():
+		next_season = (int((rift_conflicts[0] as Dictionary).get("slot", 0)) - 1) / 28 > int((boundary_state["time"] as Dictionary).get("slot", 0)) / 28
+	main.set("_activity_filter", "adventure")
+	main.call("_show_tab", "activity")
+	await process_frame
+	await process_frame
+	var rift_row := _row_label(main, "ADV_RIFT", "다음 시즌")
+	_check(next_season and rift_row != null and _text_fits(rift_row) and str(main.call("_expedition_conflict_text", rift_conflicts, true)).begins_with("다음 시즌 "), "다음 시즌 시험과 겹치는 원정은 다음 시즌으로 구분 [%s]" % ("" if rift_row == null else rift_row.text))
 	# 알림 띠도 띄어쓰기에서만 줄을 바꾼다("불참했 / 어요" 방지).
 	var toast_label := main.get("_toast_label") as Label
 	var toast_lines := toast_label.text.split("\n").size()

@@ -1584,6 +1584,11 @@ func _test_manual_expedition(content_db: ContentDB) -> void:
 	var busy := state.duplicate(true)
 	busy["activeTask"] = _manual_task("EDU_LITERATURE", 2, 6)
 	_check(planner.schedule_conflicts(busy, volcano) == ["CH_LEAGUE_EXPEDITION"], "진행 중 활동이 끝난 뒤 시작하므로 빠지는 시험이 달라짐")
+	# 시즌 경계를 넘는 원정은 다음 시즌 시험과 겹친다. 화면이 시즌을 구분하도록 시험의 실제 칸 번호를 함께 준다.
+	var rift: Dictionary = content_db.get_activity("ADV_RIFT")
+	var boundary := _all_exams_state(880208, 26)
+	var boundary_slots := planner.schedule_conflict_slots(boundary, rift)
+	_check(boundary_slots == {"CH_EXAM_ACADEMY": 32} and planner.schedule_conflicts(boundary, rift) == ["CH_EXAM_ACADEMY"], "27일째 6칸 원정은 다음 시즌 4일째(32번 칸) 시험과 겹침 %s" % str(boundary_slots))
 	# AC-EXP-02: 자동 판단(플래너 기본값)은 여전히 원정이 시험을 덮지 않는다.
 	_check(planner.rejection_reason(state, volcano).begins_with("예정 도전") and planner.rejection_reason(state, volcano, true).is_empty(), "자동 판단은 시험 우선, 직접 실행 판단만 예외")
 

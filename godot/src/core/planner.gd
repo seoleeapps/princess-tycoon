@@ -280,6 +280,17 @@ func schedule_free_slot(state: Dictionary, activity: Dictionary, horizon: int = 
 
 # 직접 고른 원정이 덮어 빠지게 되는 시험 id(시작 순). 원정은 진행 중인 활동이 끝난 다음 칸에 시작한다.
 func schedule_conflicts(state: Dictionary, activity: Dictionary) -> Array[String]:
+	var slots: Dictionary = schedule_conflict_slots(state, activity)
+	var ordered: Array = slots.keys()
+	ordered.sort_custom(func(left: Variant, right: Variant) -> bool: return int(slots[left]) < int(slots[right]))
+	var result: Array[String] = []
+	for challenge_id: Variant in ordered:
+		result.append(str(challenge_id))
+	return result
+
+
+# 빠지게 되는 시험 id → 그 시험이 시작하는 칸의 절대 번호(다음에 진행할 칸 기준, 1부터). 화면이 이번·다음 시즌을 구분한다.
+func schedule_conflict_slots(state: Dictionary, activity: Dictionary) -> Dictionary:
 	var schedule: Dictionary = _config.get("challengeScheduleSlots", {}) as Dictionary
 	var slots_per_season: int = maxi(1, int(_config.get("slotsPerSeason", 28)))
 	var start: int = maxi(0, int((state.get("time", {}) as Dictionary).get("slot", 0))) + 1
@@ -288,7 +299,7 @@ func schedule_conflicts(state: Dictionary, activity: Dictionary) -> Array[String
 		start += maxi(0, int((active as Dictionary).get("remainingSlots", 0)))
 	var duration: int = maxi(1, int(activity.get("durationSlots", 1)))
 	var season_base: int = (start - 1) / slots_per_season * slots_per_season
-	var ids: Dictionary = {}
+	var slots: Dictionary = {}
 	for challenge: Dictionary in _activities:
 		var challenge_id: String = str(challenge.get("id", ""))
 		if str(challenge.get("kind", "")) != "challenge" or not schedule.has(challenge_id):
@@ -297,14 +308,9 @@ func schedule_conflicts(state: Dictionary, activity: Dictionary) -> Array[String
 			continue
 		for base: int in [season_base, season_base + slots_per_season]:
 			var exam_start: int = base + int(schedule[challenge_id])
-			if exam_start >= start and exam_start < start + duration and not ids.has(challenge_id):
-				ids[challenge_id] = exam_start
-	var ordered: Array = ids.keys()
-	ordered.sort_custom(func(left: Variant, right: Variant) -> bool: return int(ids[left]) < int(ids[right]))
-	var result: Array[String] = []
-	for challenge_id: Variant in ordered:
-		result.append(str(challenge_id))
-	return result
+			if exam_start >= start and exam_start < start + duration and not slots.has(challenge_id):
+				slots[challenge_id] = exam_start
+	return slots
 
 
 func _unlocked_scheduled_challenges(state: Dictionary) -> Array[Vector2i]:

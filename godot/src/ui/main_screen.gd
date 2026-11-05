@@ -3291,17 +3291,21 @@ func _expedition_conflicts(activity_id: String) -> Array:
 	return _engine.call("activity_schedule_conflicts", activity_id, _state) as Array
 
 
-# 겹치는 첫 시험의 시즌 날짜와 이름. long이면 "24일째 개척 원정 리그와 겹쳐요. 출발하면 그 시험에 빠져요", 아니면 "24일째 시험에 빠져요".
+# 겹치는 첫 시험의 날짜와 이름. 다음 시즌 시험이면 "다음 시즌"을 붙인다.
+# long이면 "24일째 개척 원정 리그와 겹쳐요. 출발하면 그 시험에 빠져요", 아니면 "24일째 시험에 빠져요"(다음 시즌이면 "다음 시즌 시험에 빠져요").
 func _expedition_conflict_text(conflicts: Array, long: bool) -> String:
 	if conflicts.is_empty():
 		return ""
-	var schedule: Dictionary = _runtime_config.get("challengeScheduleSlots", {}) as Dictionary
-	var day := int(schedule.get(str(conflicts[0]), 0))
+	var first: Dictionary = conflicts[0] as Dictionary
+	var per_season := maxi(1, int(_runtime_config.get("slotsPerSeason", 28)))
+	var exam_slot := int(first.get("slot", 1))
+	var day := (exam_slot - 1) % per_season + 1
+	var next_season := (exam_slot - 1) / per_season > int(_read(["time", "slot"], 0)) / per_season
 	if not long:
-		return "%d일째 시험에 빠져요" % day
-	var name := _activity_name_by_id(str(conflicts[0]))
+		return "다음 시즌 시험에 빠져요" if next_season else "%d일째 시험에 빠져요" % day
+	var name := _activity_name_by_id(str(first.get("id", "")))
 	var subject := name if conflicts.size() == 1 else "%s 외 %d개" % [name, conflicts.size() - 1]
-	return "%d일째 %s 겹쳐요. 출발하면 그 시험에 빠져요" % [day, _josa(subject, "과", "와")]
+	return "%s%d일째 %s 겹쳐요. 출발하면 그 시험에 빠져요" % ["다음 시즌 " if next_season else "", day, _josa(subject, "과", "와")]
 
 
 func _planner_rejection(activity_id: String) -> String:
