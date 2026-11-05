@@ -294,10 +294,15 @@ func schedule_conflict_slots(state: Dictionary, activity: Dictionary) -> Diction
 	var schedule: Dictionary = _config.get("challengeScheduleSlots", {}) as Dictionary
 	var slots_per_season: int = maxi(1, int(_config.get("slotsPerSeason", 28)))
 	var start: int = maxi(0, int((state.get("time", {}) as Dictionary).get("slot", 0))) + 1
-	var active: Variant = state.get("activeTask")
-	if active is Dictionary and str((active as Dictionary).get("activityId", (active as Dictionary).get("id", ""))) != str(activity.get("id", "")):
-		start += maxi(0, int((active as Dictionary).get("remainingSlots", 0)))
 	var duration: int = maxi(1, int(activity.get("durationSlots", 1)))
+	var active: Variant = state.get("activeTask")
+	if active is Dictionary:
+		var remaining: int = maxi(0, int((active as Dictionary).get("remainingSlots", 0)))
+		if str((active as Dictionary).get("activityId", (active as Dictionary).get("id", ""))) == str(activity.get("id", "")):
+			# 같은 원정이 이미 진행 중이면 이어 하는 것이라 남은 칸만 덮는다.
+			duration = maxi(1, remaining)
+		else:
+			start += remaining
 	var season_base: int = (start - 1) / slots_per_season * slots_per_season
 	var slots: Dictionary = {}
 	for challenge: Dictionary in _activities:

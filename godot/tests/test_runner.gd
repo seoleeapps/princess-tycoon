@@ -1589,6 +1589,12 @@ func _test_manual_expedition(content_db: ContentDB) -> void:
 	var boundary := _all_exams_state(880208, 26)
 	var boundary_slots := planner.schedule_conflict_slots(boundary, rift)
 	_check(boundary_slots == {"CH_EXAM_ACADEMY": 32} and planner.schedule_conflicts(boundary, rift) == ["CH_EXAM_ACADEMY"], "27일째 6칸 원정은 다음 시즌 4일째(32번 칸) 시험과 겹침 %s" % str(boundary_slots))
+	# 같은 원정이 이미 진행 중이면 그 원정을 이어 하는 것이라 남은 칸만 본다(자동 진행이 고른 원정에 거짓 불참 안내 방지).
+	var running := _all_exams_state(880209, 21)
+	running["activeTask"] = _manual_task("ADV_VOLCANO", 1, 6)
+	var running_long := running.duplicate(true)
+	running_long["activeTask"] = _manual_task("ADV_VOLCANO", 3, 6)
+	_check(planner.schedule_conflicts(running, volcano).is_empty() and planner.schedule_conflicts(running_long, volcano) == ["CH_LEAGUE_EXPEDITION"], "진행 중인 같은 원정은 남은 칸으로 겹침 계산 (남은 1칸 %s, 3칸 %s)" % [str(planner.schedule_conflicts(running, volcano)), str(planner.schedule_conflicts(running_long, volcano))])
 	# AC-EXP-02: 자동 판단(플래너 기본값)은 여전히 원정이 시험을 덮지 않는다.
 	_check(planner.rejection_reason(state, volcano).begins_with("예정 도전") and planner.rejection_reason(state, volcano, true).is_empty(), "자동 판단은 시험 우선, 직접 실행 판단만 예외")
 

@@ -234,14 +234,16 @@ func _check_manual_expedition(main: Node) -> void:
 	ui_state["lastPlannerDecision"] = {"rejected": {"ADV_VOLCANO": "예정 도전 우선: 21번 슬롯", "REST_RESORT": "예정 도전 우선: 21번 슬롯"}}
 	_check(str(main.call("_activity_lock_reason", "ADV_VOLCANO")) == "", "시험과 겹친 원정은 잠금이 아님")
 	# 엔진은 상태를 불러올 때 다음 활동을 미리 고르므로, 빠지는 시험은 화면이 가진 상태로 계산한 값을 기준으로 본다.
+	var conflicts: Array = engine.call("activity_schedule_conflicts", "ADV_VOLCANO", ui_state) as Array
 	var conflict_ids: Array = []
-	for raw_conflict: Variant in engine.call("activity_schedule_conflicts", "ADV_VOLCANO", ui_state) as Array:
+	for raw_conflict: Variant in conflicts:
 		conflict_ids.append(str((raw_conflict as Dictionary).get("id", "")))
-	var schedule: Dictionary = (main.get("_runtime_config") as Dictionary).get("challengeScheduleSlots", {}) as Dictionary
-	var first_name := str(main.call("_activity_name_by_id", str(conflict_ids[0]))) if not conflict_ids.is_empty() else ""
-	var first_day := int(schedule.get(str(conflict_ids[0]), 0)) if not conflict_ids.is_empty() else 0
-	var subject := first_name if conflict_ids.size() == 1 else "%s 외 %d개" % [first_name, conflict_ids.size() - 1]
-	var expected_warning := "%d일째 %s 겹쳐요" % [first_day, str(main.call("_josa", subject, "과", "와"))]
+	var first_day := (int((conflicts[0] as Dictionary).get("slot", 1)) - 1) % 28 + 1 if not conflicts.is_empty() else 0
+	var expected_warning := str(main.call("_expedition_conflict_text", conflicts, true))
+	# 겹치는 시험이 둘이면 날짜와 이름을 모두, 셋 이상이면 둘 뒤에 "외 N개".
+	var two := str(main.call("_expedition_conflict_text", [{"id": "CH_CONTEST_COOKING", "slot": 21}, {"id": "CH_LEAGUE_EXPEDITION", "slot": 24}], true))
+	var three := str(main.call("_expedition_conflict_text", [{"id": "CH_EXAM_ACADEMY", "slot": 4}, {"id": "CH_EXAM_MAGIC", "slot": 7}, {"id": "CH_SPORT_MARTIAL", "slot": 10}], true))
+	_check(two == "21일째 계절 요리 경연, 24일째 개척 원정 리그와 겹쳐요. 출발하면 그 시험에 빠져요" and three.begins_with("4일째 아카데미 종합 시험, 7일째 마법 안전 실기 외 1개와 겹쳐요"), "겹치는 시험 이름을 둘까지 날짜와 함께 [%s / %s]" % [two, three])
 	var names: Array[String] = []
 	for raw_id: Variant in conflict_ids:
 		names.append(str(main.call("_activity_name_by_id", str(raw_id))))
@@ -255,7 +257,7 @@ func _check_manual_expedition(main: Node) -> void:
 	var start_button: Button = null
 	if world_sheet != null:
 		for raw_node: Node in world_sheet.find_children("*", "", true, false):
-			if raw_node is Label and (raw_node as Label).text.replace("\n", " ").begins_with(expected_warning):
+			if raw_node is Label and (raw_node as Label).text.replace("\n", " ") == expected_warning:
 				warning = raw_node as Label
 			elif raw_node is Button and str(raw_node.get_meta("ui_id", "")) == "world_ADV_VOLCANO":
 				start_button = raw_node as Button
@@ -273,11 +275,47 @@ func _check_manual_expedition(main: Node) -> void:
 		if str(raw_node.get_meta("ui_id", "")) == "activity_run_ADV_VOLCANO" and (raw_node as Button).is_visible_in_tree():
 			row_button = raw_node as Button
 	_check(row_warning != null and _text_fits(row_warning) and row_button != null and not row_button.disabled, "활동 탭 원정 행은 시험에 빠진다고 알리고 1회를 누를 수 있음")
-	main.call("_run_activity", "ADV_VOLCANO")
+	# 누르는 순간 겹침이 화면에 보인 안내와 다르면(열어 둔 사이 자동 진행이 지남) 출발하지 않고 다시 보여 준다.
+	main.call("_run_activity", "ADV_VOLCANO", ["CH_NOT_SHOWN"])
+	await process_frame
+	var stale_toast := (main.get("_toast_label") as Label).text.replace("\n", " ")
+	var stale_mastery := int(((main.get("_state") as Dictionary).get("mastery", {}) as Dictionary).get("ADV_VOLCANO", 0))
+	_check(stale_mastery == 0 and stale_toast.contains("일정이 바뀌었어요"), "안내와 다른 겹침이면 출발하지 않고 다시 확인 [%s]" % stale_toast)
+	# 자동 진행으로는 고를 날이 없는 원정은 자동 큐에 넣을 수 없다(넣으면 끝내 실행되지 않는다). 짧은 원정은 넣을 수 있다.
+	main.call("_open_activity_detail", "ADV_VOLCANO")
+	await process_frame
+	await process_frame
+	var queue_button := _button_with_id(main, "detail_queue")
+	var volcano_queue_blocked := queue_button != null and queue_button.disabled
+	var volcano_reason := _first_label_with(main, "자동 진행은 시험을 지켜서") != null
+	# 상세 시트에서도 안내와 다른 겹침이면 출발하지 않고 같은 시트를 다시 보여 준다.
+	main.call("_run_activity_from_detail", "ADV_VOLCANO", ["CH_NOT_SHOWN"])
+	await process_frame
+	_check(_find_screen_node(main, "activity_detail") != null and int(((main.get("_state") as Dictionary).get("mastery", {}) as Dictionary).get("ADV_VOLCANO", 0)) == 0, "상세 시트에서 안내와 다른 겹침이면 시트를 다시 보여 줌")
+	main.call("_close_sheet")
+	await process_frame
+	main.call("_open_activity_detail", "ADV_FOREST")
+	await process_frame
+	await process_frame
+	var forest_queue := _button_with_id(main, "detail_queue")
+	var forest_queue_open := forest_queue != null and not forest_queue.disabled
+	_check(volcano_queue_blocked and volcano_reason and forest_queue_open, "고를 날이 없는 원정만 자동 큐 막음, 이유 표시")
+	main.call("_close_sheet")
+	await process_frame
+	main.call("_run_activity", "ADV_VOLCANO", conflict_ids)
 	await process_frame
 	var toast := (main.get("_toast_label") as Label).text.replace("\n", " ")
 	var mastery: Dictionary = (main.get("_state") as Dictionary).get("mastery", {}) as Dictionary
 	_check(int(mastery.get("ADV_VOLCANO", 0)) > 0 and toast.contains("%s에는 불참했어요" % ", ".join(names)), "원정 출발 뒤 불참한 시험을 알림 [%s]" % toast.replace("\n", " / "))
+	# 자동 진행이 고른 같은 원정이 진행 중이면 이어 하는 것이라 거짓 겹침 안내가 없다(남은 칸만 본다).
+	var running_state: Dictionary = main.get("_state") as Dictionary
+	var saved_task: Variant = running_state.get("activeTask")
+	var saved_slot := int((running_state["time"] as Dictionary).get("slot", 0))
+	(running_state["time"] as Dictionary)["slot"] = 21
+	running_state["activeTask"] = {"id": "ADV_VOLCANO", "activityId": "ADV_VOLCANO", "remainingSlots": 1, "durationSlots": 4, "worldTier": 6, "paidCost": BigValue.zero()}
+	_check((main.call("_expedition_conflicts", "ADV_VOLCANO") as Array).is_empty(), "진행 중인 같은 원정에는 겹침 안내 없음")
+	running_state["activeTask"] = saved_task
+	(running_state["time"] as Dictionary)["slot"] = saved_slot
 	# 시즌 경계를 넘는 원정이 다음 시즌 시험과 겹치면 "다음 시즌"으로 구분해 알린다.
 	var boundary: Dictionary = (engine.call("get_state") as Dictionary).duplicate(true)
 	(boundary["time"] as Dictionary)["slot"] = 26
@@ -302,6 +340,13 @@ func _check_manual_expedition(main: Node) -> void:
 	var toast_lines := toast_label.text.split("\n").size()
 	_check(toast_lines >= 2 and toast_label.get_line_count() == toast_lines, "알림 띠는 띄어쓰기에서만 줄바꿈 [%s]" % toast_label.text.replace("\n", " / "))
 	main.set("_activity_filter", "education")
+
+
+func _button_with_id(main: Node, ui_id: String) -> Button:
+	for raw_node: Node in main.find_children("*", "Button", true, false):
+		if str(raw_node.get_meta("ui_id", "")) == ui_id and (raw_node as Button).is_visible_in_tree() and not raw_node.is_queued_for_deletion():
+			return raw_node as Button
+	return null
 
 
 func _first_label_with(main: Node, prefix: String) -> Label:
