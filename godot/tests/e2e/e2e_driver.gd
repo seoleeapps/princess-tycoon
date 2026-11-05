@@ -18,6 +18,8 @@ var capture := false
 var scenarios: Array = []
 var _current: Dictionary = {}
 var _evidence_ok := true
+# 렌더링 모드의 실제 창이 포커스를 잃은 횟수. 누르는 사이 포커스를 잃으면 엔진이 누름을 취소한다.
+var _focus_losses := 0
 
 
 func _init(p_tree: SceneTree, view_size: Vector2i, p_out_dir: String, p_capture: bool) -> void:
@@ -29,8 +31,13 @@ func _init(p_tree: SceneTree, view_size: Vector2i, p_out_dir: String, p_capture:
 	viewport = SubViewport.new()
 	device_size = view_size
 	_apply_project_stretch(view_size)
+	# SubViewport는 루트 창의 렌더 설정을 물려받지 않으므로 프로젝트 값(픽셀 스냅, 기본 텍스처 필터)을 그대로 옮긴다.
+	viewport.snap_2d_transforms_to_pixel = bool(ProjectSettings.get_setting("rendering/2d/snap/snap_2d_transforms_to_pixel", false))
+	viewport.snap_2d_vertices_to_pixel = bool(ProjectSettings.get_setting("rendering/2d/snap/snap_2d_vertices_to_pixel", false))
+	viewport.canvas_item_default_texture_filter = int(ProjectSettings.get_setting("rendering/textures/canvas_textures/default_texture_filter", 1)) as Viewport.DefaultCanvasItemTextureFilter
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	tree.root.add_child(viewport)
+	tree.root.focus_exited.connect(func() -> void: _focus_losses += 1)
 	_write_report()
 
 
@@ -128,11 +135,21 @@ func tap(control: Control) -> bool:
 		return false
 	if not await scroll_into_view(control):
 		return false
-	var pos := control.get_global_rect().get_center()
-	_push_button(pos, true)
-	await frames()
-	_push_button(pos, false)
-	await frames()
+	# 렌더링 모드에는 실제 창이 있어, 누르고 떼는 사이 창 포커스가 바뀌면 엔진(Viewport)이 누름을 취소한다.
+	# 그때만 한 번 다시 누른다. headless에는 창 포커스 변화가 없다.
+	for attempt in 2:
+		if not is_instance_valid(control) or not control.is_visible_in_tree():
+			return false
+		var pos := control.get_global_rect().get_center()
+		var losses := _focus_losses
+		_push_button(pos, true)
+		await frames()
+		var cancelled := _focus_losses != losses
+		_push_button(pos, false)
+		await frames()
+		if not cancelled:
+			return true
+		print("[E2E] window focus changed during a tap on %s; tapping again" % control.name)
 	return true
 
 
@@ -173,9 +190,13 @@ func scroll_into_view(control: Control, max_drags := 30) -> bool:
 			return true
 		var before := Vector2(scroll.scroll_horizontal, scroll.scroll_vertical)
 		var center := view.get_center()
+		var losses := _focus_losses
 		await drag(center, center - move, 10, 0.25)
 		await _settle(scroll)
 		if Vector2(scroll.scroll_horizontal, scroll.scroll_vertical) == before:
+			# 끄는 사이 창 포커스가 바뀌어 엔진이 끌기를 취소했으면 다시 끈다.
+			if _focus_losses != losses:
+				continue
 			return false
 	var view_end := scroll.get_global_rect()
 	var rect_end := control.get_global_rect()

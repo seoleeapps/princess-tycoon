@@ -287,6 +287,13 @@ func activity_tier_values(activity_id: String, world_tier: int) -> Dictionary:
 	}
 
 
+# 시험 일정과 겹쳐 막힌 활동을 다시 고를 수 있는 첫 slot(다음 진행 slot의 절대 번호). 화면이 가진 상태로 계산한다.
+func activity_schedule_free_slot(activity_id: String, state: Dictionary) -> int:
+	_ensure_initialized()
+	var activity: Dictionary = _content_db.get_activity(activity_id)
+	return -1 if activity.is_empty() else _planner.schedule_free_slot(state, activity)
+
+
 func execute_activity(activity_id: String, now_unix: int = -1) -> Dictionary:
 	return run_activity(activity_id, now_unix)
 

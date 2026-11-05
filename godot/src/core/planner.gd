@@ -247,14 +247,52 @@ func _hard_rejection(state: Dictionary, policy: Dictionary, activity: Dictionary
 	return ""
 
 
+# 시험 일정 때문에 막힌 활동을 다시 고를 수 있는 첫 slot(다음에 진행할 slot의 절대 번호, 1부터).
+# 정해진 날의 시험이 진행되는 동안에는 새로 고르지 않고, 고를 때는 다음 시험까지 활동이 끝나야 한다.
+# horizon 안에 없으면 -1. 시험 조건(능력치 등)은 지금 상태로 판정한다.
+func schedule_free_slot(state: Dictionary, activity: Dictionary, horizon: int = -1) -> int:
+	var slots_per_season: int = maxi(1, int(_config.get("slotsPerSeason", 28)))
+	var span: int = horizon if horizon > 0 else slots_per_season * 2
+	var duration: int = maxi(1, int(activity.get("durationSlots", 1)))
+	var first: int = maxi(0, int((state.get("time", {}) as Dictionary).get("slot", 0))) + 1
+	for next_absolute_slot: int in range(first, first + span):
+		if _inside_scheduled_challenge(state, next_absolute_slot):
+			continue
+		var next_schedule: Dictionary = _next_unlocked_challenge_schedule_from(state, next_absolute_slot)
+		if next_schedule.is_empty() or int(next_schedule.get("distance", duration)) >= duration:
+			return next_absolute_slot
+	return -1
+
+
+func _inside_scheduled_challenge(state: Dictionary, next_absolute_slot: int) -> bool:
+	var schedule: Dictionary = _config.get("challengeScheduleSlots", {}) as Dictionary
+	var slots_per_season: int = maxi(1, int(_config.get("slotsPerSeason", 28)))
+	var season_base: int = (next_absolute_slot - 1) / slots_per_season * slots_per_season
+	for activity: Dictionary in _activities:
+		var activity_id: String = str(activity.get("id", ""))
+		if str(activity.get("kind", "")) != "challenge" or not schedule.has(activity_id):
+			continue
+		if not requirements_met(state, activity.get("requires", {}) as Dictionary):
+			continue
+		var length: int = maxi(1, int(activity.get("durationSlots", 1)))
+		for base: int in [season_base - slots_per_season, season_base]:
+			var start: int = base + int(schedule[activity_id])
+			if next_absolute_slot >= start and next_absolute_slot < start + length:
+				return true
+	return false
+
+
 func _next_unlocked_challenge_schedule(state: Dictionary) -> Dictionary:
+	var total_slot: int = maxi(0, int((state.get("time", {}) as Dictionary).get("slot", 0)))
+	return _next_unlocked_challenge_schedule_from(state, total_slot + 1)
+
+
+func _next_unlocked_challenge_schedule_from(state: Dictionary, next_absolute_slot: int) -> Dictionary:
 	if _activities.is_empty():
 		return {}
 	var schedule: Dictionary = _config.get("challengeScheduleSlots", {}) as Dictionary
 	var slots_per_season: int = maxi(1, int(_config.get("slotsPerSeason", 28)))
-	var total_slot: int = maxi(0, int((state.get("time", {}) as Dictionary).get("slot", 0)))
-	var next_absolute_slot: int = total_slot + 1
-	var current_season_base: int = total_slot / slots_per_season * slots_per_season
+	var current_season_base: int = (next_absolute_slot - 1) / slots_per_season * slots_per_season
 	var selected_distance: int = 2147483647
 	var selected_slot: int = -1
 	for activity: Dictionary in _activities:

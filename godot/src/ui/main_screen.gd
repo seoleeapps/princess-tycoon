@@ -2,6 +2,7 @@ extends Control
 
 const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
 const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
+const PixelText = preload("res://src/ui/pixel/pixel_text.gd")
 const PixelTraineeView = preload("res://src/ui/pixel/pixel_trainee_view.gd")
 const ResultFeedbackLayer = preload("res://src/ui/result_feedback_layer.gd")
 const ActivityProgressRing = preload("res://src/ui/activity_progress_ring.gd")
@@ -1184,7 +1185,9 @@ func _build_record_page() -> Control:
 				near_box.add_theme_constant_override("separation", 4)
 				near_box.add_child(_label("%s · %d%%" % [str(near.get("name", near.get("id", "진로"))), int(float(near.get("progress", 0.0)) * 100.0)], 16, PixelTokens.INK))
 				near_box.add_child(_gauge("stat", float(near.get("progress", 0.0))))
-				near_box.add_child(_label("부족 · %s" % ", ".join(near.get("missing", [])), 16, PixelTokens.INK_MUTED))
+				var missing_label := _label("부족 · %s" % ", ".join(near.get("missing", [])), 16, PixelTokens.INK_MUTED)
+				PixelText.wrap_at_spaces(missing_label)
+				near_box.add_child(missing_label)
 				near_card.add_child(near_box)
 				body.add_child(near_card)
 
@@ -2471,13 +2474,12 @@ func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary, au
 		return
 	# 평범한 근무("근무 결과 · 평온한 근무")도 띠로 알리고, 업무 사고가 있을 때만 결과 창을 띄운다.
 	var incident := bool((activity_result.get("outcome", {}) as Dictionary).get("incident", false))
-	var routine := automatic and str(payload.get("kind", "")) == "activity" and not incident
-	if not routine and not unlock_notice.is_empty():
+	# 새 단계가 열린 순간의 결과는 자동 진행이어도 결과 창으로 보여 그 첫 줄에서 알린다(한 줄 띠와 알림 띠가 겹치지 않게).
+	var routine := automatic and str(payload.get("kind", "")) == "activity" and not incident and unlock_notice.is_empty()
+	if not unlock_notice.is_empty():
 		payload["notice"] = unlock_notice
 	_raise_feedback_layer()
 	_result_feedback_layer.call("present", payload, bool(_read(["settings", "reducedMotion"], false)), routine)
-	if routine:
-		_show_unlock_notice(unlock_notice)
 
 
 func _build_result_feedback_payload(activity_result: Dictionary, season_review: Dictionary = {}) -> Dictionary:
@@ -2805,8 +2807,9 @@ func _world_action_card(title: String, detail: String, activity_id: String, acti
 	box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
 	var title_row := HBoxContainer.new()
 	title_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
-	title_row.add_child(_icon("lock" if not lock_reason.is_empty() else _kind_icon_name(kind)))
-	var title_label := _label(title, 16, PixelTokens.INK if lock_reason.is_empty() else PixelTokens.INK_MUTED)
+	var locked := not lock_reason.is_empty() and not _activity_in_progress(activity_id)
+	title_row.add_child(_icon("lock" if locked else _kind_icon_name(kind)))
+	var title_label := _label(title, 16, PixelTokens.INK_MUTED if locked else PixelTokens.INK)
 	title_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title_row.add_child(title_label)
 	box.add_child(title_row)
@@ -3183,16 +3186,21 @@ func _activity_in_progress(activity_id: String) -> bool:
 
 func _activity_lock_reason(activity_id: String) -> String:
 	if _activity_in_progress(activity_id):
-		return "진행 중 · 홈에서 즉시 실행"
+		var remaining := int(_read(["activeTask", "remainingSlots"], 0))
+		return "진행 중 · %d일 남음" % remaining if remaining > 0 else "진행 중"
 	var requirement := _activity_requirement_reason(activity_id)
 	var decision = _read(["lastPlannerDecision"], {})
 	if typeof(decision) == TYPE_DICTIONARY:
 		var rejected = decision.get("rejected", {})
 		if typeof(rejected) == TYPE_DICTIONARY and rejected.has(activity_id):
 			# 단계가 열리기 전에 내린 결정의 해금 잠금은 다음 결정 전까지 남아 있으므로, 이미 열린 활동에는 쓰지 않는다.
-			var stale_stage_lock := str(rejected[activity_id]).begins_with("해금 단계") and _activity_open(_activity_by_id(activity_id))
-			if not stale_stage_lock:
-				return _friendly_rejection(str(rejected[activity_id]), activity_id)
+			var raw := str(rejected[activity_id])
+			var stale_stage_lock := raw.begins_with("해금 단계") and _activity_open(_activity_by_id(activity_id))
+			# 결정 뒤 골드가 늘었거나 시험 일정이 지나 이미 풀린 거절도 다음 결정 전까지 남아 있으므로 쓰지 않는다.
+			var stale_gold := (raw.begins_with("비용 지불") or raw.begins_with("최소 보유금")) and _gold_shortfall(activity_id) <= 0.0
+			var stale_schedule := raw.begins_with("예정 도전") and _schedule_free_slot(activity_id) == int(_read(["time", "slot"], 0)) + 1
+			if not stale_stage_lock and not stale_gold and not stale_schedule:
+				return _friendly_rejection(raw, activity_id)
 	return requirement
 
 
@@ -3215,17 +3223,17 @@ func _friendly_rejection(raw: String, activity_id: String) -> String:
 	if raw.begins_with("시즌 일정"):
 		return "시즌 %s일째에 열려요" % slot
 	if raw.begins_with("예정 도전"):
-		# 시험 날까지 끝나지 않는 활동은 막히고, 시험이 끝나면 다시 고를 수 있다.
-		return "%s일째 시험 뒤에 열려요" % slot
+		# 다음 시험 전에 끝나지 않는 활동은 막힌다. 긴 활동은 뒤 시험에도 걸리므로 실제로 고를 수 있는 날을 계산해 알린다.
+		return _schedule_free_text(activity_id, slot)
 	if raw.begins_with("성장 정책에서 제외"):
 		return "금지 태그에 들어 있어요"
 	if raw.begins_with("회복 활동"):
 		return "지금은 회복이 먼저예요"
 	if raw.begins_with("비용 지불"):
-		return _gold_shortfall_text(activity_id, false)
+		# 비용을 내고도 최소 보유금이 남아야 실행되므로(7단계 전에는 보이지 않는 규칙) 둘을 합쳐 모자란 골드를 알린다.
+		return _gold_shortfall_text(activity_id)
 	if raw.begins_with("최소 보유금"):
-		# 최소 보유금 규칙은 7단계 전에는 보이지 않으므로 얼마를 더 모으면 되는지로 알린다.
-		return "최소 보유금 아래로 내려가요" if _feature_open("rules") else _gold_shortfall_text(activity_id, true)
+		return "최소 보유금 아래로 내려가요" if _feature_open("rules") else _gold_shortfall_text(activity_id)
 	if raw.begins_with("선행 활동 후"):
 		# 수동 1회는 진행 중이던 활동을 먼저 끝낸다. 그 사이 규칙이 바뀌어 밀리면 플래너가 남긴 이유를 보여 준다.
 		var pushed_back := _planner_rejection(activity_id)
@@ -3245,14 +3253,39 @@ func _planner_rejection(activity_id: String) -> String:
 	return str((rejected as Dictionary).get(activity_id, "")) if typeof(rejected) == TYPE_DICTIONARY else ""
 
 
-# 지금 비용(세계 티어 반영)과 최소 보유금을 뺀 뒤 모자란 골드. 계산할 수 없으면 일반 문구.
-func _gold_shortfall_text(activity_id: String, include_reserve: bool) -> String:
+# 실행하려면 더 모아야 하는 골드: 지금 비용(세계 티어 반영) + 최소 보유금 - 보유 골드.
+func _gold_shortfall(activity_id: String) -> float:
 	var cost := _big_to_number(_activity_tier_value(activity_id, "cost"))
 	var gold := _big_to_number(_read(["bigValues", "gold"], {"mantissa": 0, "exponent": 0}))
-	var shortfall := cost + (_reserve_gold_number() if include_reserve else 0.0) - gold
+	return cost + _reserve_gold_number() - gold
+
+
+func _gold_shortfall_text(activity_id: String) -> String:
+	var shortfall := _gold_shortfall(activity_id)
 	if shortfall <= 0.0:
 		return "골드가 부족해요"
 	return "골드 %sG 더 필요" % _format_number(ceilf(shortfall))
+
+
+func _schedule_free_slot(activity_id: String) -> int:
+	if _engine == null or not _engine.has_method("activity_schedule_free_slot"):
+		return -1
+	return int(_engine.call("activity_schedule_free_slot", activity_id, _state))
+
+
+# 고를 수 있게 되는 날. 이번 시즌이면 "N일째부터 열려요", 다음 시즌이면 "다음 시즌 N일째부터", 모르면 겹치는 시험 날.
+func _schedule_free_text(activity_id: String, exam_day: String) -> String:
+	var free_slot := _schedule_free_slot(activity_id)
+	var per_season := maxi(1, int(_runtime_config.get("slotsPerSeason", 28)))
+	var season_now := int(_read(["time", "slot"], 0)) / per_season
+	if free_slot > 0:
+		var free_season := (free_slot - 1) / per_season
+		var day := (free_slot - 1) % per_season + 1
+		if free_season == season_now:
+			return "%d일째부터 열려요" % day
+		if free_season == season_now + 1:
+			return "다음 시즌 %d일째부터" % day
+	return "시즌 %s일째 시험과 겹쳐요" % exam_day
 
 
 func _activity_requirement_reason(activity_id: String) -> String:

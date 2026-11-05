@@ -5,13 +5,16 @@ project="godot"
 godot_bin="${GODOT_BIN:-godot}"
 log_dir="${GODOT_QUALITY_GATE_LOG_DIR:-}"
 smoke_scripts=()
+compile_script=""
 
 usage() {
   cat <<'USAGE'
-Usage: godot_quality_gate.sh [--project PATH] [--godot-bin PATH] [--smoke-script PATH]...
+Usage: godot_quality_gate.sh [--project PATH] [--godot-bin PATH] [--compile-script PATH] [--smoke-script PATH]...
 
 Runs clean import, compile, and optional headless scripts. Fails on non-zero exit,
 SCRIPT ERROR, ERROR:, missing resources, or parse failures in Godot logs.
+--compile-script runs that script instead of the main scene for the compile step
+(use it to load the main scene with an isolated save path).
 USAGE
 }
 
@@ -20,6 +23,7 @@ while [ "$#" -gt 0 ]; do
     --project) project="${2:?missing project}"; shift 2 ;;
     --godot-bin) godot_bin="${2:?missing godot binary}"; shift 2 ;;
     --smoke-script) smoke_scripts+=("${2:?missing smoke script}"); shift 2 ;;
+    --compile-script) compile_script="${2:?missing compile script}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -52,7 +56,11 @@ run_check() {
 }
 
 run_check import "$godot_bin" --headless --path "$project" --import --quit
-run_check compile "$godot_bin" --headless --path "$project" --quit-after 2
+if [ -n "$compile_script" ]; then
+  run_check compile "$godot_bin" --headless --path "$project" --script "res://$compile_script"
+else
+  run_check compile "$godot_bin" --headless --path "$project" --quit-after 2
+fi
 
 index=0
 for smoke_script in "${smoke_scripts[@]}"; do

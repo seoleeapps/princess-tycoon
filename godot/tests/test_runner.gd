@@ -43,6 +43,7 @@ func _run() -> void:
 	_test_career_non_terminal()
 	_test_progressive_unlock(content_db)
 	_test_career_gate_display()
+	_test_schedule_free_slot(content_db)
 
 	_finish()
 
@@ -1542,6 +1543,33 @@ func _test_career_gate_display() -> void:
 	engine.initialize_from_state(state)
 	var float_gate: Dictionary = engine.call("_career_gate_result", {"stats": {"intelligence": 100}}, 1.1) as Dictionary
 	_check((float_gate.get("missing", []) as Array).has("지력 109/110"), "부동소수 오차가 있는 필요 값도 정수로 맞게 표시 %s" % str(float_gate.get("missing", [])))
+
+
+# 시험 일정과 겹친 활동이 다시 고를 수 있게 되는 slot은 플래너의 실제 거절과 같다. 긴 활동은 뒤 시험에도 걸린다.
+func _test_schedule_free_slot(content_db: ContentDB) -> void:
+	var engine := GameEngine.new()
+	_open_initialize(engine, 880102)
+	var state: Dictionary = engine.get_state()
+	for stat_key: String in ["stamina", "combat", "magic", "dance", "art", "communication", "cooking", "intelligence"]:
+		(state["stats"] as Dictionary)[stat_key] = 400.0
+	state["worldTier"] = 6
+	var planner := Planner.new()
+	planner.configure(content_db.config, content_db.profiles, content_db.activities)
+	var resort: Dictionary = content_db.get_activity("REST_RESORT")
+	var study: Dictionary = content_db.get_activity("EDU_LITERATURE")
+	(state["time"] as Dictionary)["slot"] = 5
+	var resort_free := planner.schedule_free_slot(state, resort)
+	(state["time"] as Dictionary)["slot"] = 3
+	var study_free := planner.schedule_free_slot(state, study)
+	_check(resort_free == 29 and study_free == 6, "시험 겹침이 풀리는 slot: 3칸 휴양 %d(다음 시즌 1일째), 1칸 학습 %d(시험 뒤 6일째)" % [resort_free, study_free])
+	var consistent := true
+	for next_slot: int in range(6, resort_free + 1):
+		(state["time"] as Dictionary)["slot"] = next_slot - 1
+		var blocked := planner.rejection_reason(state, resort).begins_with("예정 도전")
+		var during_exam := bool(planner.call("_inside_scheduled_challenge", state, next_slot))
+		if (next_slot == resort_free and blocked) or (next_slot < resort_free and not blocked and not during_exam):
+			consistent = false
+	_check(consistent, "풀리는 slot 계산이 플래너의 예정 도전 거절과 일치")
 
 
 func _open_unlocks(state: Dictionary) -> Dictionary:

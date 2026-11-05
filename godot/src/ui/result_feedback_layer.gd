@@ -2,6 +2,7 @@ extends Control
 
 const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
 const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
+const PixelText = preload("res://src/ui/pixel/pixel_text.gd")
 const ICON_DIR := "res://assets/pixel/icons/"
 const STEP := 2.0
 
@@ -132,7 +133,7 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	# 제목은 아이콘·배지 아래 한 줄을 통째로 써서 잘리지 않게 한다.
 	var headline := _label(str(payload.get("headline", "활동 완료")), 24, PixelTokens.INK)
 	headline.max_lines_visible = 2
-	_wrap_at_spaces(headline)
+	PixelText.wrap_at_spaces(headline)
 	content.add_child(headline)
 
 	var floating_stat_count := 0
@@ -166,17 +167,18 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 
 	var detail_count := 0
 	# 같은 순간에 열린 해금 단계("새로 열림 · …")는 결과 창의 첫 줄로 강조한다. 상세 줄 상한에 함께 센다.
-	# 여러 단계가 한 번에 열려도 잘리지 않게 2줄까지 쓰고, 그때는 첫 상세 줄을 1줄로 줄여 창 높이를 지킨다.
+	# 여러 단계가 한 번에 열려도 잘리지 않게 2줄까지 쓰고, 실제로 2줄로 접히면 첫 상세 줄을 1줄로 줄여 창 높이를 지킨다.
 	var notice := str(payload.get("notice", "")).strip_edges()
+	var notice_label: Label = null
 	if not notice.is_empty():
-		var notice_label := _label(notice, 16, PixelTokens.ACCENT)
+		notice_label = _label(notice, 16, PixelTokens.ACCENT)
 		notice_label.max_lines_visible = 2
 		notice_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		notice_label.tooltip_text = notice
-		_wrap_at_spaces(notice_label)
+		PixelText.wrap_at_spaces(notice_label)
 		content.add_child(notice_label)
 		detail_count += 1
-	var first_detail := notice.is_empty()
+	var first_detail := true
 	for raw_line: Variant in payload.get("details", []) as Array:
 		if detail_count >= MAX_DETAIL_LINES:
 			break
@@ -189,7 +191,9 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 		if first_detail:
 			detail.max_lines_visible = 2
 			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-			_wrap_at_spaces(detail)
+			PixelText.wrap_at_spaces(detail)
+			if notice_label != null:
+				notice_label.resized.connect(_fit_first_detail.bind(notice_label, detail))
 		else:
 			detail.autowrap_mode = TextServer.AUTOWRAP_OFF
 			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -201,33 +205,10 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	return panel
 
 
-# 한글은 음절 사이에서도 줄을 바꿀 수 있어 "은 / 잎 숲"처럼 낱말이 갈린다. 폭에 맞춰 띄어쓰기 자리에 줄바꿈을 넣는다.
-# 한 낱말이 폭보다 길 때만 엔진의 자동 줄바꿈이 그 낱말을 나눈다.
-func _wrap_at_spaces(label: Label) -> void:
-	label.set_meta("source_text", label.text)
-	label.resized.connect(_rewrap_at_spaces.bind(label))
-
-
-func _rewrap_at_spaces(label: Label) -> void:
-	var width := label.size.x
-	if width <= 0.0:
-		return
-	var font: Font = label.get_theme_font("font")
-	var font_size: int = label.get_theme_font_size("font_size")
-	var lines: Array[String] = []
-	var line := ""
-	for word: String in str(label.get_meta("source_text", label.text)).split(" ", false):
-		var candidate := word if line.is_empty() else "%s %s" % [line, word]
-		if line.is_empty() or font.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= width:
-			line = candidate
-		else:
-			lines.append(line)
-			line = word
-	if not line.is_empty():
-		lines.append(line)
-	var wrapped := "\n".join(lines)
-	if label.text != wrapped:
-		label.text = wrapped
+# 새로 열림 줄이 2줄로 접히면 첫 상세 줄을 1줄로, 1줄이면 2줄까지 보인다(창의 최대 줄 수 5줄 유지).
+func _fit_first_detail(notice_label: Label, detail: Label) -> void:
+	if is_instance_valid(notice_label) and is_instance_valid(detail):
+		detail.max_lines_visible = 1 if notice_label.text.contains("\n") else 2
 
 
 func _build_compact_panel(payload: Dictionary) -> PanelContainer:

@@ -46,13 +46,13 @@ func _run() -> void:
 	var saved_intelligence: Variant = reason_stats.get("intelligence", 0.0)
 	reason_stats["intelligence"] = 10.0
 	var magic_requirement := str(main.call("_activity_requirement_reason", "EDU_MAGIC"))
-	_check(str(main.call("_friendly_rejection", "예정 도전 우선: 4번 슬롯", "")) == "4일째 시험 뒤에 열려요" and magic_requirement.begins_with("지력 60") and str(main.call("_friendly_rejection", "잠금 조건 미충족", "EDU_MAGIC")) == magic_requirement and str(main.call("_friendly_rejection", "잠금 조건 미충족", "")) == "조건을 채우면 열려요", "잠금 이유를 플레이어 문구로 변환")
+	_check(str(main.call("_friendly_rejection", "예정 도전 우선: 4번 슬롯", "")) == "시즌 4일째 시험과 겹쳐요" and magic_requirement.begins_with("지력 60") and str(main.call("_friendly_rejection", "잠금 조건 미충족", "EDU_MAGIC")) == magic_requirement and str(main.call("_friendly_rejection", "잠금 조건 미충족", "")) == "조건을 채우면 열려요", "잠금 이유를 플레이어 문구로 변환")
 	reason_stats["intelligence"] = saved_intelligence
 	_check(str(main.call("_josa", "응용 마력학", "을", "를")) == "응용 마력학을" and str(main.call("_josa", "달빛 잎차", "을", "를")) == "달빛 잎차를", "받침에 맞는 조사 선택")
 	var lock_state: Dictionary = main.get("_state") as Dictionary
 	var saved_task: Variant = lock_state.get("activeTask")
 	lock_state["activeTask"] = {"activityId": "CH_EXAM_ACADEMY", "remainingSlots": 1}
-	_check(str(main.call("_activity_lock_reason", "CH_EXAM_ACADEMY")) == "진행 중 · 홈에서 즉시 실행", "진행 중인 시험은 다시 참가할 수 없음")
+	_check(str(main.call("_activity_lock_reason", "CH_EXAM_ACADEMY")) == "진행 중 · 1일 남음", "진행 중인 시험은 다시 참가할 수 없음")
 	lock_state["activeTask"] = saved_task
 	# 자동 진행으로 끝난 평범한 근무는 띠, 업무 사고는 결과 창(사고 배지)으로 보여 준다.
 	var calm_job := {"completedActivities": [{"activityId": "JOB_FARM", "kind": "job", "title": "학당 농장 완료", "gains": {"stamina": 3.0}, "outcome": {"event": "평온한 근무", "incident": false}}]}
@@ -318,8 +318,19 @@ func _run() -> void:
 				multi_label = raw_label as Label
 			elif (raw_label as Label).text.begins_with("다음 준비"):
 				hint_label = raw_label as Label
-	var multi_fits := multi_label != null and multi_label.get_line_count() <= 2 and multi_label.get_visible_line_count() == multi_label.get_line_count()
-	_check(multi_fits and hint_label != null and hint_label.autowrap_mode == TextServer.AUTOWRAP_OFF and (multi_panel as Control).size.y <= 240.0, "여러 단계 새로 열림 줄은 잘리지 않고 창 높이 유지 [%s] h=%s" % ["" if multi_label == null else multi_label.text.replace("\n", " / "), str((multi_panel as Control).size.y if multi_panel != null else 0.0)])
+	var multi_fits := multi_label != null and multi_label.get_line_count() == 2 and multi_label.get_visible_line_count() == 2
+	_check(multi_fits and hint_label != null and hint_label.max_lines_visible == 1 and (multi_panel as Control).size.y <= 240.0, "여러 단계 새로 열림 줄은 잘리지 않고 창 높이 유지 [%s] h=%s" % ["" if multi_label == null else multi_label.text.replace("\n", " / "), str((multi_panel as Control).size.y if multi_panel != null else 0.0)])
+	# 새로 열림이 한 줄이면 첫 상세 줄은 그대로 2줄까지 보인다.
+	layer.call("present", {"kind": "activity", "badge": "성장", "tone": "raised", "headline": "왕립 교양학 완료", "floatingStats": ["지력 +8.4"], "details": ["다음 준비 · 지력 유효 점수를 약 12.0 보강하면 다음 시험에서 이길 수 있어요.", "활동 보상 · 골드 +250"], "notice": "새로 열림 · 기록, 계약"}, true)
+	await process_frame
+	await process_frame
+	var single_hint: Label = null
+	var single_panel := layer.get("_active_panel") as Control
+	if single_panel != null:
+		for raw_label: Node in single_panel.find_children("*", "Label", true, false):
+			if (raw_label as Label).text.begins_with("다음 준비"):
+				single_hint = raw_label as Label
+	_check(single_hint != null and single_hint.max_lines_visible == 2 and single_hint.get_visible_line_count() == 2, "한 줄 새로 열림과 함께여도 첫 상세 줄은 2줄")
 
 	# 결과 창과 함께 단계가 열리면 결과 창의 첫 줄로 알리고 알림 띠에는 넣지 않는다(이슈 #11).
 	var notice_engine: Object = main.get("_engine") as Object
@@ -341,7 +352,7 @@ func _run() -> void:
 	var toast_text := (main.get("_toast_label") as Label).text
 	var review_unlocks: Dictionary = (main.get("_state") as Dictionary).get("unlocks", {}) as Dictionary
 	_check(not notice_line.is_empty() and not toast_text.contains("새로 열림") and int(review_unlocks.get("announced", 0)) == 5, "심사로 열린 단계는 심사 결과 창 안에 [%s] 알림 띠 [%s]" % [notice_line, toast_text.replace("\n", " / ")])
-	# 결과 창 없이(자동 진행의 한 줄 띠) 열리면 알림 띠로 알린다.
+	# 자동 진행 결과와 함께 열리면 한 줄 띠 대신 결과 창으로 보여 그 첫 줄에서 알린다(띠와 알림 띠가 겹치지 않게).
 	var banner_state: Dictionary = notice_engine.call("get_state") as Dictionary
 	(banner_state["time"] as Dictionary)["slot"] = 2
 	(banner_state["lifetimeStats"] as Dictionary)["activities"] = 2
@@ -350,10 +361,31 @@ func _run() -> void:
 	banner_state["activityQueue"] = []
 	banner_state["activeTask"] = {"activityId": "REST_WALK", "id": "REST_WALK", "durationSlots": 1, "remainingSlots": 1, "worldTier": 1, "paidCost": BigValue.zero()}
 	main.call("_adopt_engine_result", notice_engine.call("initialize_from_state", banner_state))
+	(main.get("_toast_label") as Label).text = ""
 	main.call("_advance_slots", 1, false)
 	await process_frame
-	var banner_toast := (main.get("_toast_label") as Label).text
-	_check(int(((main.get("_state") as Dictionary).get("unlocks", {}) as Dictionary).get("announced", 0)) == 2 and banner_toast.contains("새로 열림 · "), "결과 창 없이 열린 단계는 알림 띠로 [%s] 결과 %s" % [banner_toast.replace("\n", " / "), str(layer.call("active_motion_mode"))])
+	await process_frame
+	var auto_notice := ""
+	var auto_panel := layer.get("_active_panel") as Control
+	if auto_panel != null:
+		for raw_label: Node in auto_panel.find_children("*", "Label", true, false):
+			if (raw_label as Label).text.begins_with("새로 열림 · "):
+				auto_notice = (raw_label as Label).text
+	var auto_toast := (main.get("_toast_label") as Label).text
+	_check(int(((main.get("_state") as Dictionary).get("unlocks", {}) as Dictionary).get("announced", 0)) == 2 and str(layer.call("active_motion_mode")) != "compact" and not auto_notice.is_empty() and not auto_toast.contains("새로 열림"), "자동 진행 결과와 함께 열린 단계는 결과 창 첫 줄로 [%s] 띠 [%s]" % [auto_notice, auto_toast.replace("\n", " / ")])
+	# 끝난 활동 없이(진행 중) 날짜로 열리면 결과가 없으므로 알림 띠로 알린다.
+	layer.call("_clear_active")
+	var day_state: Dictionary = notice_engine.call("get_state") as Dictionary
+	(day_state["time"] as Dictionary)["slot"] = 13
+	(day_state["lifetimeStats"] as Dictionary)["activities"] = 9
+	day_state["unlocks"] = {"stage": 3, "announced": 3, "tipsSeen": []}
+	day_state["activityQueue"] = []
+	day_state["activeTask"] = {"activityId": "REST_HOME", "id": "REST_HOME", "durationSlots": 3, "remainingSlots": 3, "worldTier": 1, "paidCost": BigValue.zero()}
+	main.call("_adopt_engine_result", notice_engine.call("initialize_from_state", day_state))
+	main.call("_advance_slots", 1, false)
+	await process_frame
+	var day_toast := (main.get("_toast_label") as Label).text
+	_check(int(((main.get("_state") as Dictionary).get("unlocks", {}) as Dictionary).get("announced", 0)) == 4 and day_toast.contains("새로 열림 · ") and not bool(layer.call("has_active_feedback")), "결과 없이 날짜로 열린 단계는 알림 띠로 [%s]" % day_toast.replace("\n", " / "))
 
 	var trainee_script := load("res://src/ui/pixel/pixel_trainee_view.gd")
 	var trainee: Control = trainee_script.new()
