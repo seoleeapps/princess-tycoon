@@ -132,6 +132,7 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	# 제목은 아이콘·배지 아래 한 줄을 통째로 써서 잘리지 않게 한다.
 	var headline := _label(str(payload.get("headline", "활동 완료")), 24, PixelTokens.INK)
 	headline.max_lines_visible = 2
+	_wrap_at_spaces(headline)
 	content.add_child(headline)
 
 	var floating_stat_count := 0
@@ -164,6 +165,16 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	panel.set_meta("floating_stat_count", floating_stat_count)
 
 	var detail_count := 0
+	# 같은 순간에 열린 해금 단계("새로 열림 · …")는 결과 창의 첫 줄로 강조한다. 상세 줄 상한에 함께 센다.
+	var notice := str(payload.get("notice", "")).strip_edges()
+	if not notice.is_empty():
+		var notice_label := _label(notice, 16, PixelTokens.ACCENT)
+		notice_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		notice_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		notice_label.tooltip_text = notice
+		content.add_child(notice_label)
+		detail_count += 1
+	var first_detail := true
 	for raw_line: Variant in payload.get("details", []) as Array:
 		if detail_count >= MAX_DETAIL_LINES:
 			break
@@ -173,17 +184,48 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 		# 결과 창이 화면 위쪽을 오래 가리지 않게 첫 줄은 2줄, 나머지는 1줄로 줄인다.
 		# 전체 문장은 홈의 최근 결과와 기록 탭에 남는다.
 		var detail := _label(line, 16, PixelTokens.INK_MUTED)
-		if detail_count == 0:
+		if first_detail:
 			detail.max_lines_visible = 2
 			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			_wrap_at_spaces(detail)
 		else:
 			detail.autowrap_mode = TextServer.AUTOWRAP_OFF
 			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		detail.tooltip_text = line
 		content.add_child(detail)
 		detail_count += 1
+		first_detail = false
 	panel.set_meta("detail_count", detail_count)
 	return panel
+
+
+# 한글은 음절 사이에서도 줄을 바꿀 수 있어 "은 / 잎 숲"처럼 낱말이 갈린다. 폭에 맞춰 띄어쓰기 자리에 줄바꿈을 넣는다.
+# 한 낱말이 폭보다 길 때만 엔진의 자동 줄바꿈이 그 낱말을 나눈다.
+func _wrap_at_spaces(label: Label) -> void:
+	label.set_meta("source_text", label.text)
+	label.resized.connect(_rewrap_at_spaces.bind(label))
+
+
+func _rewrap_at_spaces(label: Label) -> void:
+	var width := label.size.x
+	if width <= 0.0:
+		return
+	var font: Font = label.get_theme_font("font")
+	var font_size: int = label.get_theme_font_size("font_size")
+	var lines: Array[String] = []
+	var line := ""
+	for word: String in str(label.get_meta("source_text", label.text)).split(" ", false):
+		var candidate := word if line.is_empty() else "%s %s" % [line, word]
+		if line.is_empty() or font.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= width:
+			line = candidate
+		else:
+			lines.append(line)
+			line = word
+	if not line.is_empty():
+		lines.append(line)
+	var wrapped := "\n".join(lines)
+	if label.text != wrapped:
+		label.text = wrapped
 
 
 func _build_compact_panel(payload: Dictionary) -> PanelContainer:

@@ -836,7 +836,8 @@ func _activity_card(activity: Dictionary) -> Control:
 	info_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
 	info.add_child(info_box)
-	var kind_icon := _icon("lock" if not lock_reason.is_empty() else _kind_icon_name(_activity_kind(activity)))
+	var locked := not lock_reason.is_empty() and not _activity_in_progress(activity_id)
+	var kind_icon := _icon("lock" if locked else _kind_icon_name(_activity_kind(activity)))
 	info_box.add_child(kind_icon)
 	var text_box := VBoxContainer.new()
 	text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -846,7 +847,7 @@ func _activity_card(activity: Dictionary) -> Control:
 	info_box.add_child(text_box)
 	var title_row := HBoxContainer.new()
 	title_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var title := _label(str(activity.get("name", activity_id)), 16, PixelTokens.INK_MUTED if not lock_reason.is_empty() else PixelTokens.INK)
+	var title := _label(str(activity.get("name", activity_id)), 16, PixelTokens.INK_MUTED if locked else PixelTokens.INK)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -860,7 +861,7 @@ func _activity_card(activity: Dictionary) -> Control:
 		title_row.add_child(mastery_label)
 	text_box.add_child(title_row)
 	if not lock_reason.is_empty():
-		var lock_label := _label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE)
+		var lock_label := _lock_reason_label(activity_id, lock_reason)
 		lock_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		lock_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		lock_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -881,12 +882,22 @@ func _activity_card(activity: Dictionary) -> Control:
 
 
 # 비용(또는 보수)·에너지·스트레스 변화를 아이콘과 숫자로 한 줄에 보여 준다.
+# 지금 세계 티어의 실제 비용·기본 보수(BigValue). 엔진이 없으면(대체 상태) 데이터의 기본값.
+func _activity_tier_value(activity_id: String, key: String) -> Dictionary:
+	if _engine != null and _engine.has_method("activity_tier_values"):
+		var values: Dictionary = _engine.call("activity_tier_values", activity_id, int(_state.get("worldTier", 1))) as Dictionary
+		return values.get(key, {"mantissa": 0, "exponent": 0}) as Dictionary
+	var base_key := "baseCost" if key == "cost" else "baseReward"
+	return {"mantissa": float(_activity_by_id(activity_id).get(base_key, 0.0)), "exponent": 0}
+
+
 func _activity_facts(activity: Dictionary) -> Control:
 	var facts := HBoxContainer.new()
 	facts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	facts.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
-	var cost := float(activity.get("baseCost", 0.0))
-	var reward := float(activity.get("baseReward", 0.0))
+	var activity_id := str(activity.get("id", ""))
+	var cost := _big_to_number(_activity_tier_value(activity_id, "cost")) if not activity_id.is_empty() else float(activity.get("baseCost", 0.0))
+	var reward := _big_to_number(_activity_tier_value(activity_id, "reward")) if not activity_id.is_empty() else float(activity.get("baseReward", 0.0))
 	var entries := [
 		["coin", ("-%s" % _format_number(cost)) if cost > 0.0 else (("+%s" % _format_number(reward)) if reward > 0.0 else "0"), PixelTokens.NEGATIVE if cost > 0.0 else PixelTokens.POSITIVE],
 		["energy", "%+d" % int(activity.get("energyDelta", 0)), PixelTokens.INK],
@@ -924,7 +935,7 @@ func _build_activity_detail_sheet(body: VBoxContainer) -> void:
 		box.add_child(_label("주 성장 · %s" % STAT_LABELS[primary_stat], 16, PixelTokens.POSITIVE))
 	box.add_child(_label("숙련 %d" % int(_read(["mastery", _detail_activity_id], 0)), 16, PixelTokens.INK_MUTED))
 	if not lock_reason.is_empty():
-		box.add_child(_label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE))
+		box.add_child(_lock_reason_label(_detail_activity_id, lock_reason))
 	card.add_child(box)
 	body.add_child(card)
 	var run := _button("이 활동 1회", _run_activity_from_detail.bind(_detail_activity_id), "primary", 52.0, "detail_run")
@@ -1795,13 +1806,15 @@ func _advance_slots(count: int, show_feedback: bool = true) -> void:
 		for index in range(max(0, count)):
 			_simulate_fallback_slot()
 	_activity_elapsed = 0.0
+	# 이번 진행으로 열린 단계는 결과 창이 뜨면 그 창에서, 아니면 알림 띠로 알린다.
+	var unlock_notice := _take_unlock_notice()
 	_refresh_chrome()
 	# 손가락으로 목록을 끄는 중이면 자동 진행의 화면 갱신을 손을 뗄 때까지 미룬다.
 	if not show_feedback and _list_in_motion():
 		_page_dirty = true
 	else:
 		_render_current_page()
-	_present_result_feedback(result, feedback_checkpoint, not show_feedback)
+	_present_result_feedback(result, feedback_checkpoint, not show_feedback, unlock_notice)
 	_track_event(&"slots_advanced", {"count": maxi(0, count), "manual": show_feedback})
 	if show_feedback:
 		_play_sfx(SynthAudioPort.CUE_REWARD)
@@ -1875,15 +1888,17 @@ func _run_activity(activity_id: String) -> void:
 	var succeeded := _result_ok(result)
 	_adopt_engine_result(result)
 	_persist_silently()
+	# 실행으로 열린 단계는 결과 창에서 알린다(실패하면 결과 창이 없으므로 아래 알림 띠로).
+	var unlock_notice := _take_unlock_notice() if succeeded else ""
 	_refresh_chrome()
 	_render_current_page()
 	_track_event(&"activity_run", {"activityId": activity_id, "ok": succeeded})
 	_play_sfx(SynthAudioPort.CUE_REWARD if succeeded else SynthAudioPort.CUE_FAILURE)
 	if succeeded:
-		_present_result_feedback(result, feedback_checkpoint)
+		_present_result_feedback(result, feedback_checkpoint, false, unlock_notice)
 		_show_toast("%s 1회를 해결했어요." % _activity_name_by_id(activity_id))
 	else:
-		_show_toast(_friendly_rejection(str((result as Dictionary).get("error", "활동을 실행하지 못했어요.")), _activity_requirement_reason(activity_id)) if result is Dictionary else "활동을 실행하지 못했어요.")
+		_show_toast(_friendly_rejection(str((result as Dictionary).get("error", "활동을 실행하지 못했어요.")), activity_id) if result is Dictionary else "활동을 실행하지 못했어요.")
 
 
 func _queue_activity(activity_id: String) -> void:
@@ -2417,8 +2432,10 @@ func _result_feedback_checkpoint() -> Dictionary:
 
 
 # automatic: 자동 진행으로 끝난 결과. 평범한 활동 결과는 작은 띠로만 알리고, 도전·모험·심사·칭호·업무 사고는 결과 창으로 보여 준다.
-func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary, automatic: bool = false) -> void:
+# unlock_notice: 같은 진행으로 열린 단계. 결과 창이 뜨면 그 창의 첫 줄로 보이고, 띠나 결과가 없으면 알림 띠로 알린다.
+func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary, automatic: bool = false, unlock_notice: String = "") -> void:
 	if _result_feedback_layer == null or not _result_feedback_layer.has_method("present"):
+		_show_unlock_notice(unlock_notice)
 		return
 	var completed: Array[Dictionary] = []
 	var reviews: Array[Dictionary] = []
@@ -2450,12 +2467,17 @@ func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary, au
 	var season_review: Dictionary = reviews.back() if not reviews.is_empty() else {}
 	var payload := _build_result_feedback_payload(activity_result, season_review)
 	if payload.is_empty():
+		_show_unlock_notice(unlock_notice)
 		return
 	# 평범한 근무("근무 결과 · 평온한 근무")도 띠로 알리고, 업무 사고가 있을 때만 결과 창을 띄운다.
 	var incident := bool((activity_result.get("outcome", {}) as Dictionary).get("incident", false))
 	var routine := automatic and str(payload.get("kind", "")) == "activity" and not incident
+	if not routine and not unlock_notice.is_empty():
+		payload["notice"] = unlock_notice
 	_raise_feedback_layer()
 	_result_feedback_layer.call("present", payload, bool(_read(["settings", "reducedMotion"], false)), routine)
+	if routine:
+		_show_unlock_notice(unlock_notice)
 
 
 func _build_result_feedback_payload(activity_result: Dictionary, season_review: Dictionary = {}) -> Dictionary:
@@ -2525,8 +2547,8 @@ func _build_challenge_feedback_payload(activity_result: Dictionary) -> Dictionar
 	if not rank_parts.is_empty():
 		details.append("판정 · %s" % " · ".join(rank_parts))
 	var hint := str(outcome.get("hint", "")).strip_edges()
-	if not hint.is_empty():
-		# 실패했을 때 가장 쓸모 있는 조언이 결과 창의 첫 줄(2줄 허용)에 오게 한다.
+	if not won and not hint.is_empty():
+		# 실패했을 때 가장 쓸모 있는 조언이 결과 창의 첫 줄(2줄 허용)에 오게 한다. 승리 때의 일반 문구는 보상·성장 줄에 자리를 내준다.
 		details.insert(0, "다음 준비 · %s" % hint)
 	var growth_line := _feedback_growth_line(activity_result.get("gains", {}) as Dictionary)
 	if not growth_line.is_empty():
@@ -2673,8 +2695,9 @@ func _build_review_feedback_payload(review: Dictionary, activity_result: Diction
 			has_star_up = has_star_up or stars > 1
 			if details.size() < 2:
 				details.append("칭호 %s · %s" % [str(title_data.get("name", title_data.get("id", "진로 칭호"))), str(title_data.get("rank", _career_rank(stars)))])
-		if awarded.size() > 2:
-			details.append("외 %d개 칭호가 함께 성장했습니다." % (awarded.size() - 2))
+		# 칭호는 두 줄까지만 쓰고 나머지 수는 둘째 줄 끝에 붙여 심사 보상 줄의 자리를 지킨다.
+		if awarded.size() > 2 and not details.is_empty():
+			details[details.size() - 1] = "%s 외 %d개" % [details.back(), awarded.size() - 2]
 		if has_new_title and has_star_up:
 			headline = "새 칭호와 별 상승"
 		elif has_star_up:
@@ -2703,6 +2726,10 @@ func _build_review_feedback_payload(review: Dictionary, activity_result: Diction
 		var hint := str(outcome.get("hint", "")).strip_edges()
 		if not bool(outcome.get("won", false)) and not hint.is_empty():
 			details.append("다음 준비 · %s" % hint)
+	# 심사와 함께 끝난 활동의 나머지 성장(칩 3개 밖)은 남는 자리에 보인다.
+	var growth_line := _feedback_growth_line(activity_result.get("gains", {}) as Dictionary)
+	if not growth_line.is_empty():
+		details.append(growth_line)
 	return {
 		"kind": kind,
 		"badge": badge,
@@ -2742,13 +2769,16 @@ func _feedback_stat_tokens(gains: Dictionary, limit: int = 3) -> Array[String]:
 
 func _feedback_reward_lines(activity_result: Dictionary) -> Array[String]:
 	var lines: Array[String] = []
+	var outcome: Dictionary = activity_result.get("outcome", {}) as Dictionary
+	var challenge_reward: Dictionary = outcome.get("rewardGold", {}) as Dictionary
+	# 도전의 활동 보상은 도전 보상 그 자체라(엔진이 같은 값을 준다) 한 번만 보인다.
+	if str(activity_result.get("kind", "")) == "challenge" or _feedback_big_is_positive(challenge_reward):
+		if _feedback_big_is_positive(challenge_reward):
+			lines.append("도전 보상 · 골드 +%s" % _format_big(challenge_reward))
+		return lines
 	var reward: Dictionary = activity_result.get("reward", {}) as Dictionary
 	if _feedback_big_is_positive(reward):
 		lines.append("활동 보상 · 골드 +%s" % _format_big(reward))
-	var outcome: Dictionary = activity_result.get("outcome", {}) as Dictionary
-	var challenge_reward: Dictionary = outcome.get("rewardGold", {}) as Dictionary
-	if _feedback_big_is_positive(challenge_reward):
-		lines.append("도전 보상 · 골드 +%s" % _format_big(challenge_reward))
 	return lines
 
 
@@ -2798,7 +2828,7 @@ func _world_action_card(title: String, detail: String, activity_id: String, acti
 				nodes.add_child(arrow)
 		box.add_child(nodes)
 	if not lock_reason.is_empty():
-		box.add_child(_label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE))
+		box.add_child(_lock_reason_label(activity_id, lock_reason))
 	var action := _button(action_label, _run_world_activity.bind(activity_id), "primary" if lock_reason.is_empty() else "secondary", 48.0, "world_%s" % activity_id)
 	action.icon = _icon_texture("play")
 	action.disabled = not lock_reason.is_empty()
@@ -3146,10 +3176,14 @@ func _activity_by_id(activity_id: String) -> Dictionary:
 	return {}
 
 
+# 진행 중인 시험은 다시 실행할 수 없지만 잠긴 것이 아니다. 행에는 진행 중으로 보이고 버튼만 막는다.
+func _activity_in_progress(activity_id: String) -> bool:
+	return str(_read(["activeTask", "activityId"], "")) == activity_id and _activity_kind(_activity_by_id(activity_id)) == "challenge"
+
+
 func _activity_lock_reason(activity_id: String) -> String:
-	var active_id := str(_read(["activeTask", "activityId"], ""))
-	if active_id == activity_id and _activity_kind(_activity_by_id(activity_id)) == "challenge":
-		return "진행 중 · 추천 카드로 실행"
+	if _activity_in_progress(activity_id):
+		return "진행 중 · 홈에서 즉시 실행"
 	var requirement := _activity_requirement_reason(activity_id)
 	var decision = _read(["lastPlannerDecision"], {})
 	if typeof(decision) == TYPE_DICTIONARY:
@@ -3158,32 +3192,67 @@ func _activity_lock_reason(activity_id: String) -> String:
 			# 단계가 열리기 전에 내린 결정의 해금 잠금은 다음 결정 전까지 남아 있으므로, 이미 열린 활동에는 쓰지 않는다.
 			var stale_stage_lock := str(rejected[activity_id]).begins_with("해금 단계") and _activity_open(_activity_by_id(activity_id))
 			if not stale_stage_lock:
-				return _friendly_rejection(str(rejected[activity_id]), requirement)
+				return _friendly_rejection(str(rejected[activity_id]), activity_id)
 	return requirement
 
 
-# 플래너의 거절 문구를 플레이어가 이해할 수 있는 말로 바꾼다. 구체적인 능력치·티어 조건이 있으면 그것을 먼저 보여 준다.
-func _friendly_rejection(raw: String, requirement: String) -> String:
+# 잠금 이유 한 줄. 진행 중은 잠금이 아니므로 "잠금" 표시와 경고색을 쓰지 않는다.
+func _lock_reason_label(activity_id: String, lock_reason: String) -> Label:
+	if _activity_in_progress(activity_id):
+		return _label(lock_reason, 16, PixelTokens.INK)
+	return _label("잠금 · %s" % lock_reason, 16, PixelTokens.NEGATIVE)
+
+
+# 플래너·엔진의 거절 문구를 플레이어가 이해할 수 있는 말로 바꾼다. 구체적인 능력치·티어 조건이 있으면 그것을 먼저 보여 준다.
+func _friendly_rejection(raw: String, activity_id: String) -> String:
 	var number := RegEx.create_from_string("(\\d+)").search(raw)
 	var slot := number.get_string(1) if number != null else ""
 	if raw.begins_with("해금 단계"):
 		return "아직 열리지 않았어요"
 	if raw.begins_with("잠금 조건"):
+		var requirement := _activity_requirement_reason(activity_id)
 		return requirement if not requirement.is_empty() else "조건을 채우면 열려요"
 	if raw.begins_with("시즌 일정"):
 		return "시즌 %s일째에 열려요" % slot
 	if raw.begins_with("예정 도전"):
-		return "시즌 %s일째 시험과 겹쳐요" % slot
+		# 시험 날까지 끝나지 않는 활동은 막히고, 시험이 끝나면 다시 고를 수 있다.
+		return "%s일째 시험 뒤에 열려요" % slot
 	if raw.begins_with("성장 정책에서 제외"):
 		return "금지 태그에 들어 있어요"
 	if raw.begins_with("회복 활동"):
 		return "지금은 회복이 먼저예요"
 	if raw.begins_with("비용 지불"):
-		return "골드가 부족해요"
+		return _gold_shortfall_text(activity_id, false)
 	if raw.begins_with("최소 보유금"):
-		# 최소 보유금 규칙은 7단계 전에는 보이지 않으므로 골드 부족으로 알린다.
-		return "최소 보유금 아래로 내려가요" if _feature_open("rules") else "골드가 부족해요"
+		# 최소 보유금 규칙은 7단계 전에는 보이지 않으므로 얼마를 더 모으면 되는지로 알린다.
+		return "최소 보유금 아래로 내려가요" if _feature_open("rules") else _gold_shortfall_text(activity_id, true)
+	if raw.begins_with("선행 활동 후"):
+		# 수동 1회는 진행 중이던 활동을 먼저 끝낸다. 그 사이 규칙이 바뀌어 밀리면 플래너가 남긴 이유를 보여 준다.
+		var pushed_back := _planner_rejection(activity_id)
+		if not pushed_back.is_empty() and not pushed_back.begins_with("선행 활동 후"):
+			return _friendly_rejection(pushed_back, activity_id)
+		return "앞 활동을 마치는 사이 조건이 바뀌었어요"
+	if raw.begins_with("요청 활동 실행 제한"):
+		return "지금은 실행할 수 없어요"
 	return raw
+
+
+func _planner_rejection(activity_id: String) -> String:
+	var decision = _read(["lastPlannerDecision"], {})
+	if typeof(decision) != TYPE_DICTIONARY:
+		return ""
+	var rejected = (decision as Dictionary).get("rejected", {})
+	return str((rejected as Dictionary).get(activity_id, "")) if typeof(rejected) == TYPE_DICTIONARY else ""
+
+
+# 지금 비용(세계 티어 반영)과 최소 보유금을 뺀 뒤 모자란 골드. 계산할 수 없으면 일반 문구.
+func _gold_shortfall_text(activity_id: String, include_reserve: bool) -> String:
+	var cost := _big_to_number(_activity_tier_value(activity_id, "cost"))
+	var gold := _big_to_number(_read(["bigValues", "gold"], {"mantissa": 0, "exponent": 0}))
+	var shortfall := cost + (_reserve_gold_number() if include_reserve else 0.0) - gold
+	if shortfall <= 0.0:
+		return "골드가 부족해요"
+	return "골드 %sG 더 필요" % _format_number(ceilf(shortfall))
 
 
 func _activity_requirement_reason(activity_id: String) -> String:
@@ -3369,13 +3438,18 @@ func _fit_grid_columns(grid: GridContainer) -> void:
 
 # 새 단계가 열리면 알림 띠를 한 번 띄우고 확인 상태를 저장한다. 오프라인 정산은 정산 시트가 대신 보여 준다.
 func _announce_unlocks() -> void:
+	_show_unlock_notice(_take_unlock_notice())
+
+
+# 접속 중에 새로 열린 단계를 확인 처리하고 알릴 문구("새로 열림 · …")를 돌려준다. 없으면 빈 문자열.
+func _take_unlock_notice() -> String:
 	var status := _unlock_status()
 	if status.is_empty():
-		return
+		return ""
 	var stage_number := int(status.get("stage", 1))
 	var announced := int(status.get("announced", stage_number))
 	if stage_number <= announced:
-		return
+		return ""
 	var labels: Array[String] = []
 	for opened in range(announced + 1, stage_number + 1):
 		var label := _unlock_label(opened)
@@ -3383,9 +3457,13 @@ func _announce_unlocks() -> void:
 			labels.append(label)
 	_acknowledge_unlocks("online")
 	_page_dirty = true
-	if labels.is_empty():
+	return "새로 열림 · %s" % ", ".join(labels) if not labels.is_empty() else ""
+
+
+func _show_unlock_notice(notice: String) -> void:
+	if notice.is_empty():
 		return
-	_unlock_notice_text = "새로 열림 · %s" % ", ".join(labels)
+	_unlock_notice_text = notice
 	_unlock_notice_until = Time.get_ticks_msec() + 2200
 	_show_toast(_unlock_notice_text)
 

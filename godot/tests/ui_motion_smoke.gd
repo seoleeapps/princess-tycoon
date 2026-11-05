@@ -42,12 +42,17 @@ func _run() -> void:
 	_check(toast_panel != null and toast_blocks == 0, "토스트와 글자가 입력을 가로채지 않음")
 	# 이유·잠금 문구는 내부 점수나 슬롯 용어 없이 보여 준다.
 	_check(str(main.call("_reason_label_text", "성장 방향 +1.450")) == "성장 방향" and str(main.call("_reason_label_text", "위험 부담 -0.039")) == "위험 부담", "다음 선택 이유에서 내부 점수 제거")
-	_check(str(main.call("_friendly_rejection", "예정 도전 우선: 4번 슬롯", "")) == "시즌 4일째 시험과 겹쳐요" and str(main.call("_friendly_rejection", "잠금 조건 미충족", "지력 40 필요")) == "지력 40 필요" and str(main.call("_friendly_rejection", "잠금 조건 미충족", "")) == "조건을 채우면 열려요", "잠금 이유를 플레이어 문구로 변환")
+	var reason_stats: Dictionary = (main.get("_state") as Dictionary).get("stats", {}) as Dictionary
+	var saved_intelligence: Variant = reason_stats.get("intelligence", 0.0)
+	reason_stats["intelligence"] = 10.0
+	var magic_requirement := str(main.call("_activity_requirement_reason", "EDU_MAGIC"))
+	_check(str(main.call("_friendly_rejection", "예정 도전 우선: 4번 슬롯", "")) == "4일째 시험 뒤에 열려요" and magic_requirement.begins_with("지력 60") and str(main.call("_friendly_rejection", "잠금 조건 미충족", "EDU_MAGIC")) == magic_requirement and str(main.call("_friendly_rejection", "잠금 조건 미충족", "")) == "조건을 채우면 열려요", "잠금 이유를 플레이어 문구로 변환")
+	reason_stats["intelligence"] = saved_intelligence
 	_check(str(main.call("_josa", "응용 마력학", "을", "를")) == "응용 마력학을" and str(main.call("_josa", "달빛 잎차", "을", "를")) == "달빛 잎차를", "받침에 맞는 조사 선택")
 	var lock_state: Dictionary = main.get("_state") as Dictionary
 	var saved_task: Variant = lock_state.get("activeTask")
 	lock_state["activeTask"] = {"activityId": "CH_EXAM_ACADEMY", "remainingSlots": 1}
-	_check(str(main.call("_activity_lock_reason", "CH_EXAM_ACADEMY")) == "진행 중 · 추천 카드로 실행", "진행 중인 시험은 다시 참가할 수 없음")
+	_check(str(main.call("_activity_lock_reason", "CH_EXAM_ACADEMY")) == "진행 중 · 홈에서 즉시 실행", "진행 중인 시험은 다시 참가할 수 없음")
 	lock_state["activeTask"] = saved_task
 	# 자동 진행으로 끝난 평범한 근무는 띠, 업무 사고는 결과 창(사고 배지)으로 보여 준다.
 	var calm_job := {"completedActivities": [{"activityId": "JOB_FARM", "kind": "job", "title": "학당 농장 완료", "gains": {"stamina": 3.0}, "outcome": {"event": "평온한 근무", "incident": false}}]}
@@ -255,6 +260,84 @@ func _run() -> void:
 	var banner: Control = layer.get("_active_panel") as Control
 	_check(layer.call("active_motion_mode") == "compact" and banner != null and banner.mouse_filter == Control.MOUSE_FILTER_IGNORE and banner.anchor_top == 1.0 and banner.get_rect().size.y <= 60.0, "자동 진행 결과는 하단 한 줄 띠로 장면을 가리지 않음")
 
+	# 결과 창에 실제로 보이는 줄(상세 4줄 상한) 안에 나머지 성장과 보상이 빠지지 않는다(이슈 #9).
+	var five_gains := {"intelligence": 6.0, "communication": 4.0, "refinement": 3.0, "art": 2.0, "etiquette": 1.5}
+	var won_challenge: Dictionary = challenge_result.duplicate(true)
+	won_challenge["gains"] = five_gains
+	won_challenge["reward"] = {"mantissa": 3.0, "exponent": 2}
+	var won_outcome: Dictionary = won_challenge["outcome"] as Dictionary
+	won_outcome["won"] = true
+	won_outcome["rank"] = "honors"
+	won_outcome["nextLeagueTier"] = 3
+	won_outcome["hint"] = "현재 구성으로 다음 리그를 준비할 수 있습니다."
+	won_outcome["rewardGold"] = {"mantissa": 3.0, "exponent": 2}
+	var won_lines := await _shown_lines(layer, main.call("_build_result_feedback_payload", won_challenge, {}) as Dictionary)
+	_check(won_lines.contains("그 외 성장") and won_lines.count("골드 +300") == 1 and not won_lines.contains("현재 구성으로"), "도전 승리 결과 창에 나머지 성장과 보상 한 번 [%s]" % won_lines.replace("\n", " / "))
+	var lost_challenge: Dictionary = challenge_result.duplicate(true)
+	lost_challenge["gains"] = five_gains
+	var lost_lines := await _shown_lines(layer, main.call("_build_result_feedback_payload", lost_challenge, {}) as Dictionary)
+	_check(lost_lines.contains("다음 준비") and lost_lines.contains("그 외 성장"), "도전 실패 결과 창에 조언과 나머지 성장 [%s]" % lost_lines.replace("\n", " / "))
+	var plain_review := {"year": 1, "season": 1, "renownGained": 12, "policyFit": 0.7, "challengeWins": 0, "completedContracts": 0}
+	var review_lines := await _shown_lines(layer, main.call("_build_result_feedback_payload", {"activityId": "EDU_LITERATURE", "kind": "education", "title": "왕립 교양학 완료", "gains": five_gains}, plain_review) as Dictionary)
+	_check(review_lines.contains("그 외 성장") and review_lines.contains("심사 보상"), "심사 결과 창에 나머지 성장 [%s]" % review_lines.replace("\n", " / "))
+	var many_titles: Dictionary = title_review.duplicate(true)
+	many_titles["titles"] = [
+		{"id": "END_SCHOLAR", "name": "왕립 연구자", "stars": 2, "rank": "2성"},
+		{"id": "END_GUARD", "name": "검의 수호자", "stars": 1, "rank": "1성"},
+		{"id": "END_C", "name": "별빛 화가", "stars": 1, "rank": "1성"},
+		{"id": "END_D", "name": "도시의 목소리", "stars": 1, "rank": "1성"},
+	]
+	var title_lines := await _shown_lines(layer, main.call("_build_result_feedback_payload", {}, many_titles) as Dictionary)
+	_check(title_lines.contains("외 2개") and title_lines.contains("심사 보상") and title_lines.contains("3 > 4"), "칭호가 많아도 심사 보상과 티어 줄 표시 [%s]" % title_lines.replace("\n", " / "))
+
+	# 긴 결과 제목은 띄어쓰기에서만 줄을 바꾼다. 한글은 음절 사이에서도 줄을 바꿀 수 있어 "은 / 잎"처럼 낱말이 갈렸다(이슈 #9).
+	var long_title := "원정 성공 · 미지로 향하는 은잎 숲"
+	layer.call("present", {"kind": "challenge", "badge": "원정", "tone": "gold", "headline": long_title, "floatingStats": [], "details": []}, true)
+	await process_frame
+	await process_frame
+	var headline_label: Label = null
+	var long_panel := layer.get("_active_panel") as Control
+	if long_panel != null:
+		for raw_label: Node in long_panel.find_children("*", "Label", true, false):
+			if (raw_label as Label).text.replace("\n", " ") == long_title:
+				headline_label = raw_label as Label
+	var explicit_lines := headline_label.text.split("\n").size() if headline_label != null else 0
+	_check(headline_label != null and explicit_lines >= 2 and headline_label.get_line_count() == explicit_lines, "긴 결과 제목은 띄어쓰기에서만 줄바꿈 [%s]" % ("" if headline_label == null else headline_label.text.replace("\n", " / ")))
+
+	# 결과 창과 함께 단계가 열리면 결과 창의 첫 줄로 알리고 알림 띠에는 넣지 않는다(이슈 #11).
+	var notice_engine: Object = main.get("_engine") as Object
+	var review_state: Dictionary = notice_engine.call("get_state") as Dictionary
+	(review_state["time"] as Dictionary)["slot"] = 27
+	(review_state["lifetimeStats"] as Dictionary)["activities"] = 30
+	review_state["unlocks"] = {"stage": 4, "announced": 4, "tipsSeen": []}
+	main.call("_adopt_engine_result", notice_engine.call("initialize_from_state", review_state))
+	(main.get("_toast_label") as Label).text = ""
+	main.call("_advance_slots", 1, true)
+	await process_frame
+	await process_frame
+	var review_panel := layer.get("_active_panel") as Control
+	var notice_line := ""
+	if review_panel != null:
+		for raw_label: Node in review_panel.find_children("*", "Label", true, false):
+			if (raw_label as Label).text.begins_with("새로 열림 · "):
+				notice_line = (raw_label as Label).text
+	var toast_text := (main.get("_toast_label") as Label).text
+	var review_unlocks: Dictionary = (main.get("_state") as Dictionary).get("unlocks", {}) as Dictionary
+	_check(not notice_line.is_empty() and not toast_text.contains("새로 열림") and int(review_unlocks.get("announced", 0)) == 5, "심사로 열린 단계는 심사 결과 창 안에 [%s] 알림 띠 [%s]" % [notice_line, toast_text.replace("\n", " / ")])
+	# 결과 창 없이(자동 진행의 한 줄 띠) 열리면 알림 띠로 알린다.
+	var banner_state: Dictionary = notice_engine.call("get_state") as Dictionary
+	(banner_state["time"] as Dictionary)["slot"] = 2
+	(banner_state["lifetimeStats"] as Dictionary)["activities"] = 2
+	banner_state["unlocks"] = {"stage": 1, "announced": 1, "tipsSeen": []}
+	banner_state["seasonHistory"] = []
+	banner_state["activityQueue"] = []
+	banner_state["activeTask"] = {"activityId": "REST_WALK", "id": "REST_WALK", "durationSlots": 1, "remainingSlots": 1, "worldTier": 1, "paidCost": BigValue.zero()}
+	main.call("_adopt_engine_result", notice_engine.call("initialize_from_state", banner_state))
+	main.call("_advance_slots", 1, false)
+	await process_frame
+	var banner_toast := (main.get("_toast_label") as Label).text
+	_check(int(((main.get("_state") as Dictionary).get("unlocks", {}) as Dictionary).get("announced", 0)) == 2 and banner_toast.contains("새로 열림 · "), "결과 창 없이 열린 단계는 알림 띠로 [%s] 결과 %s" % [banner_toast.replace("\n", " / "), str(layer.call("active_motion_mode"))])
+
 	var trainee_script := load("res://src/ui/pixel/pixel_trainee_view.gd")
 	var trainee: Control = trainee_script.new()
 	trainee.size = Vector2(390, 388)
@@ -353,6 +436,19 @@ func _run() -> void:
 	cold_main.queue_free()
 	await process_frame
 	_finish()
+
+
+# 결과 창을 실제로 띄워 보이는 글자를 모은다(상세 줄 상한과 말줄임이 적용된 뒤).
+func _shown_lines(layer: Control, payload: Dictionary) -> String:
+	layer.call("present", payload, true)
+	await process_frame
+	await process_frame
+	var lines: Array[String] = []
+	var panel := layer.get("_active_panel") as Control
+	if panel != null:
+		for raw_label: Node in panel.find_children("*", "Label", true, false):
+			lines.append((raw_label as Label).text)
+	return "\n".join(lines)
 
 
 func _joined_details(payload: Dictionary) -> String:

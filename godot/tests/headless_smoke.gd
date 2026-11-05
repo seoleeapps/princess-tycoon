@@ -4,6 +4,7 @@ const EXPECTED_SCREENS: Array[String] = [
 	"home", "plan", "activity", "growth", "record",
 	"world", "shop", "settings", "offline", "event", "profile", "continue",
 ]
+const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
 const SAVE_PATH := "user://qa_headless_smoke_save.json"
 
 var _failures: Array[String] = []
@@ -110,9 +111,77 @@ func _run() -> void:
 		main.call("_close_sheet")
 		await process_frame
 
+	await _check_copy_and_rows(main)
 	main.queue_free()
 	await process_frame
 	_finish()
+
+
+# 잠금 이유·거절 문구와 활동 행 표시(이슈 #9·#11). 모든 단계를 연 상태에서 시작한다.
+func _check_copy_and_rows(main: Node) -> void:
+	var state: Dictionary = main.get("_state") as Dictionary
+	var unlocks: Dictionary = state["unlocks"] as Dictionary
+	var big: Dictionary = state["bigValues"] as Dictionary
+	var reserve := float(main.call("_reserve_gold_number"))
+	state["worldTier"] = 1
+	# 최소 보유금은 7단계 전에는 보이지 않으므로 얼마를 더 모으면 되는지로 알린다.
+	unlocks["stage"] = 6
+	big["gold"] = BigValue.from_number(368)
+	state["lastPlannerDecision"] = {"rejected": {"EDU_LITERATURE": "최소 보유금 위반"}}
+	var hidden_reserve := str(main.call("_activity_lock_reason", "EDU_LITERATURE"))
+	_check(hidden_reserve == "골드 %dG 더 필요" % int(150.0 + reserve - 368.0), "숨은 최소 보유금은 더 모을 골드로 안내 [%s]" % hidden_reserve)
+	unlocks["stage"] = 7
+	_check(str(main.call("_activity_lock_reason", "EDU_LITERATURE")) == "최소 보유금 아래로 내려가요", "7단계부터는 최소 보유금 규칙으로 안내")
+	big["gold"] = BigValue.from_number(50)
+	state["lastPlannerDecision"] = {"rejected": {"EDU_LITERATURE": "비용 지불 불가"}}
+	_check(str(main.call("_activity_lock_reason", "EDU_LITERATURE")) == "골드 100G 더 필요", "비용 부족은 모자란 골드로 안내")
+	# 수동 1회가 앞 활동 뒤 규칙에 밀리면 엔진 원문 대신 밀린 이유를 보여 준다.
+	state["lastPlannerDecision"] = {"rejected": {"EDU_LITERATURE": "회복 활동 강제"}}
+	var pushed_back := str(main.call("_friendly_rejection", "선행 활동 후 실행 조건을 충족하지 못함", "EDU_LITERATURE"))
+	_check(pushed_back == "지금은 회복이 먼저예요", "앞 활동 뒤 밀린 수동 1회는 밀린 이유로 안내 [%s]" % pushed_back)
+	state["lastPlannerDecision"] = {"rejected": {}}
+	var pushed_generic := str(main.call("_friendly_rejection", "선행 활동 후 실행 조건을 충족하지 못함", "EDU_LITERATURE"))
+	_check(not pushed_generic.is_empty() and not pushed_generic.contains("선행 활동 후"), "밀린 이유가 없어도 엔진 원문을 쓰지 않음 [%s]" % pushed_generic)
+	# 시험과 겹쳐 잠긴 활동은 언제 풀리는지 알려 주고, 행 안에서 잘리지 않는다.
+	big["gold"] = BigValue.from_number(5000)
+	state["lastPlannerDecision"] = {"rejected": {"EDU_LITERATURE": "예정 도전 우선: 20번 슬롯"}}
+	_check(str(main.call("_activity_lock_reason", "EDU_LITERATURE")) == "20일째 시험 뒤에 열려요", "시험과 겹친 활동은 풀리는 때를 안내")
+	# 진행 중인 시험 행은 잠금이 아니라 진행 중으로 보인다. 행의 비용은 세계 티어를 반영한 실제 비용이다.
+	state["worldTier"] = 3
+	state["activeTask"] = {"id": "CH_EXAM_ACADEMY", "activityId": "CH_EXAM_ACADEMY", "remainingSlots": 2, "durationSlots": 2, "worldTier": 3, "paidCost": BigValue.zero()}
+	main.set("_activity_filter", "education")
+	main.call("_show_tab", "activity")
+	await process_frame
+	await process_frame
+	var overlap_line := _row_label(main, "EDU_LITERATURE", "잠금 · ")
+	_check(overlap_line != null and _text_fits(overlap_line), "시험 겹침 잠금 줄이 활동 행 안에 들어감 [%s]" % ("" if overlap_line == null else overlap_line.text))
+	var cost_line := _row_label(main, "EDU_ETIQUETTE", "-")
+	var expected_cost := "-%s" % str(main.call("_format_number", 110.0 * pow(1.11, 2.0)))
+	_check(cost_line != null and cost_line.text == expected_cost, "활동 행 비용은 세계 티어 비용 [%s / %s]" % ["" if cost_line == null else cost_line.text, expected_cost])
+	main.call("_select_activity_filter", "challenge")
+	await process_frame
+	await process_frame
+	var busy_line := _row_label(main, "CH_EXAM_ACADEMY", "진행 중")
+	var busy_locked := _row_label(main, "CH_EXAM_ACADEMY", "잠금")
+	_check(busy_line != null and busy_locked == null and _text_fits(busy_line) and busy_line.get_theme_color("font_color") != PixelTokens.NEGATIVE, "진행 중인 시험 행은 잠금 대신 진행 중 [%s]" % ("" if busy_line == null else busy_line.text))
+	main.set("_activity_filter", "education")
+
+
+# 활동 행(meta activity_id) 안에서 prefix로 시작하는 글자를 찾는다.
+func _row_label(main: Node, activity_id: String, prefix: String) -> Label:
+	for raw_node: Node in main.find_children("*", "PanelContainer", true, false):
+		if not (raw_node as Control).is_visible_in_tree() or str(raw_node.get_meta("activity_id", "")) != activity_id:
+			continue
+		for raw_label: Node in raw_node.find_children("*", "Label", true, false):
+			if (raw_label as Label).text.begins_with(prefix):
+				return raw_label as Label
+	return null
+
+
+func _text_fits(label: Label) -> bool:
+	var font: Font = label.get_theme_font("font")
+	var width := font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x
+	return width <= label.size.x + 0.5
 
 
 func _descendant_group_nodes(ancestor: Node, group_name: StringName) -> Array[Node]:

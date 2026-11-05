@@ -42,6 +42,7 @@ func _run() -> void:
 	_test_shop_non_terminal()
 	_test_career_non_terminal()
 	_test_progressive_unlock(content_db)
+	_test_career_gate_display()
 
 	_finish()
 
@@ -1523,6 +1524,21 @@ func _test_progressive_unlock(content_db: ContentDB) -> void:
 
 # 기존 시스템 테스트는 해금 단계와 무관한 규칙을 본다. 모든 단계를 연 상태에서 시작해
 # 단계적 해금 이전과 같은 시작 조건을 유지한다. 해금 자체는 _test_progressive_unlock이 검사한다.
+# 가까운 진로의 부족 조건은 정수로 보인다. 현재 값은 내림, 필요 값은 올림이라 아직 못 채운 조건이 채운 것처럼 보이지 않는다.
+func _test_career_gate_display() -> void:
+	var engine := GameEngine.new()
+	_open_initialize(engine, 880101)
+	var state: Dictionary = engine.get_state()
+	(state["stats"] as Dictionary)["intelligence"] = 95.3
+	(state["stats"] as Dictionary)["art"] = 209.7
+	state["worldTier"] = 2
+	engine.initialize_from_state(state)
+	var gate: Dictionary = engine.call("_career_gate_result", {"stats": {"intelligence": 140, "art": 140}}, 1.5) as Dictionary
+	var tier_gate: Dictionary = engine.call("_career_gate_result", {"worldTier": 2}, 1.2) as Dictionary
+	var missing: Array = (gate.get("missing", []) as Array) + (tier_gate.get("missing", []) as Array)
+	_check(missing.has("지력 95/210") and missing.has("예술 209/210") and missing.has("세계 티어 2/3"), "가까운 진로 부족 조건 정수 표시 %s" % str(missing))
+
+
 func _open_unlocks(state: Dictionary) -> Dictionary:
 	state["unlocks"] = {"stage": 7, "announced": 7, "tipsSeen": []}
 	return state
