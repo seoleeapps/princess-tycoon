@@ -62,8 +62,17 @@ var _state: Dictionary = {}
 var _seed := 1729
 var _current_tab := "home"
 var _activity_filter := "education"
+# 플래너 이유 이름 중 개발 용어처럼 들리는 것을 쉬운 말로 바꿔 보여 준다.
+const REASON_DISPLAY := {"프리셋 선호": "방향 선호"}
+# 첫 진입 안내가 붙는 화면. 한 화면 방문에는 안내를 하나만 보여 준다.
+const TIP_SCREEN := {
+	"plan": "plan", "customWeights": "plan", "rules": "plan", "bannedTags": "plan",
+	"growth": "growth", "relations": "growth", "challenge": "activity",
+	"record": "record", "contracts": "record", "world": "world", "league": "world",
+	"shop": "shop", "events": "event",
+}
 # 이번 화면 방문에서 보여 주는 첫 진입 안내(다른 탭으로 가면 비운다).
-var _tips_showing: Array[String] = []
+var _tips_showing: Dictionary = {}
 var _unlock_notice_text := ""
 var _unlock_notice_until := 0
 var _unlock_teaser_tab: Button
@@ -460,7 +469,8 @@ func _show_tab(tab_id: String) -> void:
 	if not _feature_open(tab_id):
 		tab_id = "home"
 	if tab_id != _current_tab:
-		_tips_showing.clear()
+		for screen in ["plan", "growth", "activity", "record", "home"]:
+			_tips_showing.erase(screen)
 	_current_tab = tab_id
 	for key in _nav_buttons:
 		var tab_button: Button = _nav_buttons[key]
@@ -1185,6 +1195,9 @@ func _build_record_page() -> Control:
 
 
 func _open_sheet(kind: String) -> void:
+	# 시트를 새로 열 때(같은 시트 다시 그리기가 아닐 때) 그 시트의 안내 차례를 새로 시작한다.
+	if not _find_open_sheet(kind):
+		_tips_showing.erase(kind)
 	# 아직 열리지 않은 기능의 시트는 열지 않는다(버튼은 숨겨져 있어 평소에는 오지 않는다).
 	var sheet_feature := str({"world": "world", "shop": "shop", "event": "events"}.get(kind, ""))
 	if not sheet_feature.is_empty() and not _feature_open(sheet_feature):
@@ -3140,7 +3153,10 @@ func _activity_lock_reason(activity_id: String) -> String:
 	if typeof(decision) == TYPE_DICTIONARY:
 		var rejected = decision.get("rejected", {})
 		if typeof(rejected) == TYPE_DICTIONARY and rejected.has(activity_id):
-			return _friendly_rejection(str(rejected[activity_id]), requirement)
+			# 단계가 열리기 전에 내린 결정의 해금 잠금은 다음 결정 전까지 남아 있으므로, 이미 열린 활동에는 쓰지 않는다.
+			var stale_stage_lock := str(rejected[activity_id]).begins_with("해금 단계") and _activity_open(_activity_by_id(activity_id))
+			if not stale_stage_lock:
+				return _friendly_rejection(str(rejected[activity_id]), requirement)
 	return requirement
 
 
@@ -3163,7 +3179,8 @@ func _friendly_rejection(raw: String, requirement: String) -> String:
 	if raw.begins_with("비용 지불"):
 		return "골드가 부족해요"
 	if raw.begins_with("최소 보유금"):
-		return "최소 보유금 아래로 내려가요"
+		# 최소 보유금 규칙은 7단계 전에는 보이지 않으므로 골드 부족으로 알린다.
+		return "최소 보유금 아래로 내려가요" if _feature_open("rules") else "골드가 부족해요"
 	return raw
 
 
@@ -3259,8 +3276,11 @@ func _unlock_remaining_text() -> String:
 	if remaining.has("slot"):
 		return "%d일 뒤" % maxi(1, int(remaining["slot"]))
 	if remaining.has("seasonReviews"):
-		var reviews := maxi(1, int(remaining["seasonReviews"]))
-		return "다음 시즌 심사 때" if reviews == 1 else "시즌 심사 %d번 뒤" % reviews
+		# 시즌 심사까지 남은 날로 보여 준다(심사는 시즌의 마지막 날).
+		var per_season := maxi(1, _config_int("slotsPerSeason", 28))
+		var slot := int(_read(["time", "slot"], 0))
+		var target := (int(slot / per_season) + maxi(1, int(remaining["seasonReviews"]))) * per_season
+		return "%d일 뒤" % maxi(1, target - slot)
 	return ""
 
 
@@ -3307,7 +3327,7 @@ func _refresh_navigation() -> void:
 			for definition in TABS:
 				if tab_name.is_empty() and (next.get("features", []) as Array).has(str(definition["id"])):
 					tab_name = str(definition["label"])
-			_unlock_teaser_tab.text = "%s\n%s" % [tab_name, _unlock_remaining_text().replace("활동 ", "").replace("다음 시즌 심사 때", "다음 심사")]
+			_unlock_teaser_tab.text = "%s\n%s" % [tab_name, _unlock_remaining_text()]
 			_unlock_teaser_tab.tooltip_text = _unlock_teaser_sentence()
 	_layout_navigation()
 	if _current_tab != "" and not _feature_open(_current_tab):
@@ -3409,11 +3429,13 @@ func _add_tip(body: VBoxContainer, feature_id: String) -> void:
 	var text := str(_engine.call("unlock_tip", feature_id))
 	if text.is_empty():
 		return
+	var screen := str(TIP_SCREEN.get(feature_id, feature_id))
+	var showing := str(_tips_showing.get(screen, ""))
 	var seen: Array = status.get("tipsSeen", []) as Array
-	if seen.has(feature_id) and not _tips_showing.has(feature_id):
+	if showing != feature_id and (seen.has(feature_id) or not showing.is_empty()):
 		return
-	if not _tips_showing.has(feature_id):
-		_tips_showing.append(feature_id)
+	if showing.is_empty():
+		_tips_showing[screen] = feature_id
 		_engine.call("mark_unlock_tip_seen", feature_id)
 		var unlocks = _state.get("unlocks")
 		if typeof(unlocks) == TYPE_DICTIONARY:
@@ -3441,7 +3463,8 @@ func _add_tip(body: VBoxContainer, feature_id: String) -> void:
 
 
 func _dismiss_tip(feature_id: String) -> void:
-	_tips_showing.erase(feature_id)
+	# 같은 화면에서 기다리던 다음 안내는 닫은 뒤 바로 보인다.
+	_tips_showing.erase(str(TIP_SCREEN.get(feature_id, feature_id)))
 	var sheet_kind := str({"world": "world", "league": "world", "shop": "shop", "events": "event"}.get(feature_id, ""))
 	if not sheet_kind.is_empty() and _find_open_sheet(sheet_kind):
 		_open_sheet(sheet_kind)
@@ -3481,6 +3504,7 @@ func _planner_reason() -> String:
 				var text := _reason_label_text(str(reason.get("text", reason)) if typeof(reason) == TYPE_DICTIONARY else str(reason))
 				if not _reason_concept_open(text):
 					continue
+				text = str(REASON_DISPLAY.get(text, text))
 				if not text.is_empty() and not result.has(text):
 					result.append(text)
 				if result.size() == 3:

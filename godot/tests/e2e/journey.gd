@@ -78,7 +78,7 @@ func _first_session(main: Control) -> void:
 	e2e.expect_equal("new trainee starts at unlock stage 1", _unlock_stage(main), 1)
 	# AC-UNLOCK-01: 홈·활동 탭과 다음 단계 예고 하나만 보인다.
 	e2e.step("stage 1 shows home and activity tabs only", _find_id(main, "tab_home") != null and _find_id(main, "tab_activity") != null and _find_id(main, "tab_plan") == null and _find_id(main, "tab_record") == null)
-	e2e.step("stage 1 teases the next tab", _find_id(main, "tab_teaser") == null, "next stage opens jobs, not a tab")
+	e2e.step("stage 1 has no tab teaser because stage 2 opens jobs", _find_id(main, "tab_teaser") == null)
 	e2e.step("stage 1 home hides world and events", _find_id(main, "open_world") == null and _find_id(main, "open_event") == null)
 	await e2e.shot("04-home-new-trainee")
 
@@ -230,7 +230,9 @@ func _return_offline(main: Control) -> void:
 
 	await _tap_id(again, "tab_plan", "open plan tab")
 	e2e.step("seen plan tip stays hidden after restart", _find_id(again, "tip_plan") == null)
-	e2e.step("stage 7 rules show their first-visit tip", _find_id(again, "tip_rules") != null)
+	e2e.expect_equal("stage 7 plan shows one tip at a time", _count_ids(again, "tip_ok_"), 1)
+	await _tap_id(again, "tip_ok_customWeights", "dismiss the custom weights tip")
+	e2e.step("next plan tip appears after dismissing", _find_id(again, "tip_rules") != null and _count_ids(again, "tip_ok_") == 1)
 	var stress_before := float(_read(again, ["growthPolicy", "maxStress"], 0.0))
 	await _tap_id(again, "step_maxStress_plus", "raise max stress one step")
 	e2e.expect_equal("max stress stepped", float(_read(again, ["growthPolicy", "maxStress"], 0.0)), minf(95.0, stress_before + 1.0))

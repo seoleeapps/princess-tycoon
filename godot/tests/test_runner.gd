@@ -1403,6 +1403,8 @@ func _test_progressive_unlock(content_db: ContentDB) -> void:
 	var locked_run: Dictionary = engine.run_activity("JOB_CARE")
 	_check(not bool(locked_run.get("ok", true)) and str(locked_run.get("error", "")) == "해금 단계 잠금", "AC-UNLOCK-03 열리지 않은 활동 즉시 실행 거절")
 	_check(not engine.is_feature_unlocked("plan") and engine.is_feature_unlocked("activity"), "1단계 기능 판정")
+	var locked_queue: Dictionary = engine.queue_activity("ADV_FOREST")
+	_check(not bool(locked_queue.get("ok", true)) and str(locked_queue.get("error", "")) == "해금 단계 잠금" and (engine.get_state().get("activityQueue", []) as Array).is_empty(), "AC-UNLOCK-03 열리지 않은 활동은 자동 큐에도 넣지 않음")
 
 	var reached: Dictionary = {}
 	var reported: Array[int] = []
@@ -1488,9 +1490,16 @@ func _test_progressive_unlock(content_db: ContentDB) -> void:
 	legacy_early.erase("unlocks")
 	(legacy_early["time"] as Dictionary)["slot"] = 10
 	(legacy_early["lifetimeStats"] as Dictionary)["activities"] = 9
+	legacy_early["activityQueue"] = ["EDU_PAINTING", "EDU_MUSIC"]
 	var early_engine := GameEngine.new()
 	early_engine.initialize_from_state(legacy_early)
 	_check(int(early_engine.unlock_status().get("stage", 0)) == 3, "AC-UNLOCK-07 기존 저장은 진행값으로 단계 계산(9회·10일은 3단계)")
+	early_engine.advance_slots(2)
+	var early_queue: Array = early_engine.get_state().get("activityQueue", []) as Array
+	_check(early_queue.has("EDU_PAINTING") and early_queue.has("EDU_MUSIC"), "기존 저장 자동 큐의 미해금 활동은 열릴 때까지 유지")
+	early_engine.advance_slots(6)
+	var opened_queue: Array = early_engine.get_state().get("activityQueue", []) as Array
+	_check(UnlockProgress.stage_of(early_engine.get_state()) >= 4 and opened_queue.size() < 2, "4단계가 열리면 큐에 남은 활동을 실행")
 
 	var invalid := engine.get_state()
 	(invalid["unlocks"] as Dictionary)["stage"] = 2

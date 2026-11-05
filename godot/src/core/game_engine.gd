@@ -197,6 +197,9 @@ func queue_activity(activity_id: String) -> Dictionary:
 	var activity: Dictionary = _content_db.get_activity(activity_id)
 	if activity.is_empty():
 		return {"ok": false, "error": "존재하지 않는 활동"}
+	# 열리지 않은 활동은 자동 큐에도 넣지 않는다(AC-UNLOCK-03).
+	if not _planner.stage_met(_state, activity.get("requires", {}) as Dictionary):
+		return {"ok": false, "error": "해금 단계 잠금", "activityId": activity_id}
 	var queue: Array = _state.get("activityQueue", []) as Array
 	queue.append(activity_id)
 	return {"ok": true, "queued": activity_id, "queueSize": queue.size()}
@@ -476,7 +479,8 @@ func _ensure_active_task() -> void:
 				"reasons": ["플레이어가 자동 큐에 지정"],
 				"ranked": [],
 			}
-		elif queued_rejection.begins_with("예정 도전 우선") or queued_rejection.begins_with("시즌 일정 잠금"):
+		# 기존 저장의 자동 큐에 남은 미해금 활동은 지우지 않고 열릴 때까지 큐에 둔다.
+		elif queued_rejection.begins_with("예정 도전 우선") or queued_rejection.begins_with("시즌 일정 잠금") or queued_rejection == "해금 단계 잠금":
 			queue.append(queued_id)
 	if selected_activity.is_empty():
 		decision = _planner.choose(_state, _content_db.activities)

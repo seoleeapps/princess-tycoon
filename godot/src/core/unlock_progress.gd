@@ -61,6 +61,9 @@ func refresh(state: Dictionary) -> Array[int]:
 	var opened: Array[int] = []
 	var unlocks: Dictionary = ensure_unlocks(state)
 	var current: int = int(unlocks.get("stage", 1))
+	# 마지막 단계에 닿으면 더 계산하지 않는다(오프라인 480 slot 정산 비용).
+	if current >= max_stage():
+		return opened
 	var target: int = computed_stage(state)
 	for stage_number: int in range(current + 1, target + 1):
 		opened.append(stage_number)

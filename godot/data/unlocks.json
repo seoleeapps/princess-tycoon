@@ -28,7 +28,7 @@
       "stage": 4,
       "when": {"slot": 14},
       "features": ["challenge"],
-      "label": "기본 활동, 시험",
+      "label": "학습과 아르바이트 추가, 시험",
       "tips": {
         "challenge": "시험은 정해진 날 자동으로 참가해요. 결과와 함께 다음 준비를 알려 줘요."
       }

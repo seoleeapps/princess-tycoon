@@ -73,6 +73,13 @@ func _run() -> void:
 	# AC-UNLOCK-12: 아직 열리지 않은 개념(위험, 계약, 프리셋)은 이유 줄에 쓰지 않는다.
 	_check(not bool(main.call("_reason_concept_open", "위험 부담")) and not bool(main.call("_reason_concept_open", "고정 계약")) and bool(main.call("_reason_concept_open", "성장 방향")), "1단계 이유 줄은 열린 개념만")
 	_check(not str(main.call("_planner_reason")).contains("위험") and not str(main.call("_planner_reason")).contains("계약"), "1단계 현재 활동 이유에 잠긴 개념 없음")
+	# 단계가 열리기 전 결정에 남은 해금 잠금은 이미 열린 활동의 잠금 이유로 보이지 않는다.
+	var stale_state: Dictionary = main.get("_state") as Dictionary
+	stale_state["lastPlannerDecision"] = {"rejected": {"EDU_PAINTING": "해금 단계 잠금"}}
+	(stale_state["unlocks"] as Dictionary)["stage"] = 4
+	_check(str(main.call("_activity_lock_reason", "EDU_PAINTING")) == "", "열린 활동에 지난 결정의 해금 잠금 문구 없음")
+	(stale_state["unlocks"] as Dictionary)["stage"] = 1
+	_check(str(main.call("_activity_lock_reason", "EDU_PAINTING")) == "아직 열리지 않았어요", "열리지 않은 활동은 쉬운 잠금 문구")
 	# 기능 경로 도달(AC-UI-02)은 모든 단계를 연 뒤 확인한다.
 	if engine != null and engine.has_method("initialize_from_state"):
 		var opened: Dictionary = engine.call("get_state") as Dictionary
