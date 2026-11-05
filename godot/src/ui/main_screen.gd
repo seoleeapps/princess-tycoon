@@ -74,7 +74,7 @@ const TIP_SCREEN := {
 }
 # 이번 화면 방문에서 보여 주는 첫 진입 안내(다른 탭으로 가면 비운다).
 var _tips_showing: Dictionary = {}
-const EXPEDITION_SCHEDULE_CHANGED := "일정이 바뀌었어요. 겹치는 시험을 다시 확인해 주세요."
+const EXPEDITION_SCHEDULE_CHANGED := "일정이 바뀌었어요. 안내를 다시 확인해 주세요."
 var _unlock_notice_text := ""
 var _unlock_notice_until := 0
 # 시험 겹침이 풀리는 slot은 행마다 잠금 판단과 문구에 함께 쓰므로 같은 프레임·같은 상태에서는 한 번만 계산한다.
