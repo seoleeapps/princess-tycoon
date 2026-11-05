@@ -62,6 +62,12 @@ var _state: Dictionary = {}
 var _seed := 1729
 var _current_tab := "home"
 var _activity_filter := "education"
+# 이번 화면 방문에서 보여 주는 첫 진입 안내(다른 탭으로 가면 비운다).
+var _tips_showing: Array[String] = []
+var _unlock_notice_text := ""
+var _unlock_notice_until := 0
+var _unlock_teaser_tab: Button
+var _nav_row: HBoxContainer
 var _gift_target := "citizens"
 var _activity_elapsed := 0.0
 var _auto_running := true
@@ -420,6 +426,8 @@ func _build_navigation() -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 	strip.add_child(row)
+	_nav_row = row
+	row.resized.connect(_layout_navigation)
 	for definition in TABS:
 		var tab_id := str(definition["id"])
 		var tab_button := _button(str(definition["label"]), _show_tab.bind(tab_id), "secondary", 74.0, "tab_%s" % tab_id)
@@ -432,10 +440,23 @@ func _build_navigation() -> Control:
 		row.add_child(tab_button)
 		tab_button.add_to_group("critical_cta")
 		_nav_buttons[tab_id] = tab_button
+	# 다음 단계가 탭을 열면 그 탭 하나만 자물쇠와 조건으로 예고한다(GDD §2.2).
+	_unlock_teaser_tab = _button("", _show_unlock_teaser, "secondary", 74.0, "tab_teaser")
+	_unlock_teaser_tab.theme_type_variation = "PixelTab"
+	_unlock_teaser_tab.icon = _icon_texture("lock")
+	_unlock_teaser_tab.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_unlock_teaser_tab.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	_unlock_teaser_tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_unlock_teaser_tab.visible = false
+	row.add_child(_unlock_teaser_tab)
 	return strip
 
 
 func _show_tab(tab_id: String) -> void:
+	if not _feature_open(tab_id):
+		tab_id = "home"
+	if tab_id != _current_tab:
+		_tips_showing.clear()
 	_current_tab = tab_id
 	for key in _nav_buttons:
 		var tab_button: Button = _nav_buttons[key]
@@ -558,14 +579,20 @@ func _build_home_page() -> Control:
 	var run_once := _button("자동 1회 실행", _complete_current_activity, "primary", 52.0, "run_auto_once")
 	run_once.icon = _icon_texture("play")
 	quick_grid.add_child(run_once)
-	var world := _button("월드 출정", _open_sheet.bind("world"), "gold", 52.0, "open_world")
-	world.icon = _icon_texture("world")
-	quick_grid.add_child(world)
-	quick_grid.add_child(_button("성장 방향", _show_tab.bind("plan"), "secondary", 48.0, "open_plan"))
-	var event_count := _event_inbox().size()
-	var events := _button("이벤트 %d" % event_count if event_count > 0 else "이벤트 확인", _open_sheet.bind("event"), "secondary", 48.0, "open_event")
-	events.icon = _icon_texture("event")
-	quick_grid.add_child(events)
+	if _feature_open("world"):
+		var world := _button("월드 출정", _open_sheet.bind("world"), "gold", 52.0, "open_world")
+		world.icon = _icon_texture("world")
+		quick_grid.add_child(world)
+	elif _unlock_teaser_place() == "home":
+		quick_grid.add_child(_unlock_teaser_button(52.0, "월드 출정"))
+	if _feature_open("plan"):
+		quick_grid.add_child(_button("성장 방향", _show_tab.bind("plan"), "secondary", 48.0, "open_plan"))
+	if _feature_open("events"):
+		var event_count := _event_inbox().size()
+		var events := _button("이벤트 %d" % event_count if event_count > 0 else "이벤트 확인", _open_sheet.bind("event"), "secondary", 48.0, "open_event")
+		events.icon = _icon_texture("event")
+		quick_grid.add_child(events)
+	_fit_grid_columns(quick_grid)
 	body.add_child(quick_grid)
 	# 최근 결과
 	var result = _read(["lastResult"], {})
@@ -588,6 +615,7 @@ func _build_plan_page() -> Control:
 	var page := _page_scroll()
 	var body: VBoxContainer = page["body"]
 	body.add_child(_section_heading("성장 방향", "다음 자동 선택부터 반영돼요."))
+	_add_tip(body, "plan")
 
 	var preset_grid := GridContainer.new()
 	preset_grid.columns = 2
@@ -595,14 +623,17 @@ func _build_plan_page() -> Control:
 	preset_grid.add_theme_constant_override("v_separation", PixelTokens.GAP)
 	for preset in PRESETS:
 		var preset_id := str(preset["id"])
+		if preset_id == "custom" and not _feature_open("customWeights"):
+			continue
 		var selected := preset_id == _policy_preset()
 		var preset_button := _button("%s\n%s" % [preset["name"], "선택됨" if selected else preset["hint"]], _apply_preset.bind(preset_id), "gold" if selected else "secondary", 60.0, "preset_%s" % preset_id)
 		preset_button.icon = _icon_texture(_preset_icon(preset_id))
 		preset_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		preset_grid.add_child(preset_button)
 	body.add_child(preset_grid)
+	_add_tip(body, "customWeights")
 
-	if _policy_preset() == "custom":
+	if _policy_preset() == "custom" and _feature_open("customWeights"):
 		body.add_child(_section_heading("직접 설계 가중치", "합계는 늘 100%로 맞춰져요."))
 		var custom_weights: Dictionary = _read(["growthPolicy", "weights"], {})
 		var weight_card := _card("window")
@@ -618,7 +649,17 @@ func _build_plan_page() -> Control:
 		weight_card.add_child(weight_box)
 		body.add_child(weight_card)
 
+	if not _feature_open("rules"):
+		if _unlock_teaser_place() == "plan":
+			var teaser_card := _card("transparent")
+			teaser_card.add_child(_unlock_teaser_row())
+			body.add_child(teaser_card)
+		var early_note := _card("transparent")
+		early_note.add_child(_label("바꾼 방향은 진행 중인 활동을 멈추지 않고 다음 선택부터 적용돼요.", 16, PixelTokens.INK_MUTED))
+		body.add_child(early_note)
+		return page["scroll"]
 	body.add_child(_section_heading("안전 규칙", "활동 점수보다 먼저 지켜요."))
+	_add_tip(body, "rules")
 	var policy: Dictionary = _read(["growthPolicy"], {})
 	var rules := _card("window")
 	var rules_box := VBoxContainer.new()
@@ -630,6 +671,7 @@ func _build_plan_page() -> Control:
 	body.add_child(rules)
 
 	body.add_child(_section_heading("금지 태그", "자동 후보에서 빼요."))
+	_add_tip(body, "bannedTags")
 	var tags := [
 		{"id": "risk", "name": "고위험"}, {"id": "combat", "name": "전투"},
 		{"id": "social", "name": "사교"}, {"id": "costly", "name": "고비용"},
@@ -664,12 +706,18 @@ func _build_activity_page() -> Control:
 	]
 	var category_row := HBoxContainer.new()
 	category_row.add_theme_constant_override("separation", PixelTokens.GAP)
+	# 열린 활동이 있는 분류만 보인다. 고른 분류가 아직 없으면 첫 분류로 돌아간다.
+	var open_counts := {}
+	for activity in _activities:
+		if typeof(activity) == TYPE_DICTIONARY and _activity_open(activity):
+			open_counts[_activity_kind(activity)] = int(open_counts.get(_activity_kind(activity), 0)) + 1
+	if not open_counts.has(_activity_filter):
+		_activity_filter = "education"
 	for category in categories:
 		var category_id := str(category["id"])
-		var count := 0
-		for activity in _activities:
-			if typeof(activity) == TYPE_DICTIONARY and _activity_kind(activity) == category_id:
-				count += 1
+		var count := int(open_counts.get(category_id, 0))
+		if count == 0:
+			continue
 		var tab := _button("%s %d" % [category["name"], count], _select_activity_filter.bind(category_id), "gold" if category_id == _activity_filter else "secondary", 48.0, "filter_%s" % category_id)
 		tab.theme_type_variation = "PixelButtonCompactGold" if category_id == _activity_filter else "PixelButtonCompactSecondary"
 		# 선택한 분류는 색과 함께 눌린(들어간) 모양으로도 구분한다.
@@ -677,6 +725,8 @@ func _build_activity_page() -> Control:
 		tab.button_pressed = category_id == _activity_filter
 		category_row.add_child(tab)
 	body.add_child(category_row)
+	category_row.resized.connect(_layout_even_row.bind(category_row))
+	_add_tip(body, "challenge")
 
 	var automatic := _card("gold")
 	var automatic_box := VBoxContainer.new()
@@ -736,7 +786,7 @@ func _build_activity_page() -> Control:
 	list_box.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
 	var visible_count := 0
 	for activity in _activities:
-		if _activity_kind(activity) != _activity_filter:
+		if _activity_kind(activity) != _activity_filter or not _activity_open(activity):
 			continue
 		list_box.add_child(_activity_card(activity))
 		visible_count += 1
@@ -744,6 +794,8 @@ func _build_activity_page() -> Control:
 			break
 	if visible_count == 0:
 		list_box.add_child(_label("세계 티어나 시즌 조건을 달성하면 열려요.", 16, PixelTokens.INK_MUTED))
+	if _unlock_teaser_place() == "activity":
+		list_box.add_child(_unlock_teaser_row())
 	list.add_child(list_box)
 	body.add_child(list)
 	return page["scroll"]
@@ -889,6 +941,7 @@ func _build_growth_page() -> Control:
 	body.add_child(summary)
 
 	body.add_child(_section_heading("능력치", "막대는 다음 100까지의 진행도예요."))
+	_add_tip(body, "growth")
 	var stats_grid := GridContainer.new()
 	stats_grid.columns = 2
 	stats_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
@@ -897,6 +950,9 @@ func _build_growth_page() -> Control:
 		stats_grid.add_child(_stat_card(str(STAT_LABELS[stat_id]), float(_read(["stats", stat_id], 0.0))))
 	body.add_child(stats_grid)
 
+	if not _feature_open("shop"):
+		_add_growth_mastery(body)
+		return page["scroll"]
 	body.add_child(_section_heading("장비", "누르면 상점에서 바꿀 수 있어요."))
 	var equipment_grid := GridContainer.new()
 	equipment_grid.columns = 2
@@ -915,6 +971,7 @@ func _build_growth_page() -> Control:
 	body.add_child(equipment_grid)
 
 	body.add_child(_section_heading("관계", "선물로 관계를 높일 수 있어요."))
+	_add_tip(body, "relations")
 	var relations := _card("window")
 	var relation_box := VBoxContainer.new()
 	relation_box.add_theme_constant_override("separation", PixelTokens.GAP)
@@ -939,6 +996,11 @@ func _build_growth_page() -> Control:
 	relations.add_child(relation_box)
 	body.add_child(relations)
 
+	_add_growth_mastery(body)
+	return page["scroll"]
+
+
+func _add_growth_mastery(body: VBoxContainer) -> void:
 	body.add_child(_section_heading("활동 숙련", "10·25·50·100 뒤로는 100마다 효율이 올라요."))
 	var mastery: Dictionary = _read(["mastery"], {})
 	var mastery_card := _card("transparent")
@@ -955,13 +1017,13 @@ func _build_growth_page() -> Control:
 		mastery_box.add_child(mastery_row)
 	mastery_card.add_child(mastery_box)
 	body.add_child(mastery_card)
-	return page["scroll"]
 
 
 func _build_record_page() -> Control:
 	var page := _page_scroll()
 	var body: VBoxContainer = page["body"]
 	body.add_child(_section_heading("시즌 기록", "끝나지 않는 성장. 시즌마다 칭호와 새 세계가 열려요."))
+	_add_tip(body, "record")
 
 	var season_card := _card("gold")
 	var season_box := VBoxContainer.new()
@@ -997,12 +1059,16 @@ func _build_record_page() -> Control:
 		["상점", "shop", "secondary", "record_shop", "coin"],
 		["설정", "settings", "secondary", "record_settings", "preset_custom"],
 	]:
+		if str(action[1]) != "settings" and not _feature_open(str(action[1]) if str(action[1]) != "event" else "events"):
+			continue
 		var record_button := _button(str(action[0]), _open_sheet.bind(str(action[1])), str(action[2]), 48.0, str(action[3]))
 		record_button.icon = _icon_texture(str(action[4]))
 		record_actions.add_child(record_button)
+	_fit_grid_columns(record_actions)
 	body.add_child(record_actions)
 
 	body.add_child(_section_heading("주간 계약", "지금 열린 활동으로 달성할 수 있는 목표예요."))
+	_add_tip(body, "contracts")
 	var contracts: Array = _read(["generatedContent", "contracts"], [])
 	var pinned_contract_id := str(_read(["generatedContent", "pinnedContractId"], ""))
 	for contract in contracts:
@@ -1115,6 +1181,11 @@ func _build_record_page() -> Control:
 
 
 func _open_sheet(kind: String) -> void:
+	# 아직 열리지 않은 기능의 시트는 열지 않는다(버튼은 숨겨져 있어 평소에는 오지 않는다).
+	var sheet_feature := str({"world": "world", "shop": "shop", "event": "events"}.get(kind, ""))
+	if not sheet_feature.is_empty() and not _feature_open(sheet_feature):
+		_show_toast("아직 열리지 않았어요. %s" % _unlock_teaser_sentence())
+		return
 	# 같은 시트를 다시 그리면(구매·장착·도전 뒤) 스크롤 위치를 지킨다.
 	var keep: Node = null
 	var keep_scroll := 0
@@ -1293,13 +1364,16 @@ func _build_menu_sheet(body: VBoxContainer) -> void:
 		["설정", _replace_sheet.bind("settings"), "secondary", "menu_settings", "preset_custom"],
 		["지금 저장", _save_game, "secondary", "menu_save", "record"],
 	]:
+		var menu_feature := str({"menu_world": "world", "menu_shop": "shop", "menu_event": "events"}.get(str(entry[3]), ""))
+		if not menu_feature.is_empty() and not _feature_open(menu_feature):
+			continue
 		var menu_button := _button(str(entry[0]), entry[1], str(entry[2]), 48.0, str(entry[3]))
 		menu_button.icon = _icon_texture(str(entry[4]))
 		grid.add_child(menu_button)
 	body.add_child(grid)
 
 	var guide := _card("transparent")
-	guide.add_child(_label("일상 성장은 아래 5탭에서, 월드와 상점은 여기서 열어요.", 16, PixelTokens.INK_MUTED))
+	guide.add_child(_label("일상 성장은 아래 탭에서, 월드와 상점은 여기서 열어요." if _feature_open("world") else "새 기능은 수련생이 성장하면서 하나씩 열려요.", 16, PixelTokens.INK_MUTED))
 	body.add_child(guide)
 
 
@@ -1313,12 +1387,14 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 	world_title.add_child(_label("세계 티어 %d · 새벽빛 왕국" % int(_state.get("worldTier", 1)), 16, PixelTokens.INK))
 	world_box.add_child(world_title)
 	var league: Dictionary = _read(["challengeLeague"], {})
-	world_box.add_child(_label("리그 %d단계 · 이번 시즌 %d승 %d패 · 최고 %.1f" % [
-		int(league.get("leagueTier", 1)), int(league.get("seasonWins", 0)), int(league.get("seasonLosses", 0)), float(league.get("bestScore", 0.0))
-	], 16, PixelTokens.INK_MUTED))
+	if _feature_open("league"):
+		world_box.add_child(_label("리그 %d단계 · 이번 시즌 %d승 %d패 · 최고 %.1f" % [
+			int(league.get("leagueTier", 1)), int(league.get("seasonWins", 0)), int(league.get("seasonLosses", 0)), float(league.get("bestScore", 0.0))
+		], 16, PixelTokens.INK_MUTED))
 	world_box.add_child(_label("실패해도 경험과 다음 시도 힌트를 얻어요.", 16, PixelTokens.INK_MUTED))
 	world_card.add_child(world_box)
 	body.add_child(world_card)
+	_add_tip(body, "world")
 	var region: Dictionary = _read(["generatedContent", "region"], {})
 	if not region.is_empty():
 		var region_card := _card("coral")
@@ -1357,7 +1433,10 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 			challenge_id, "참가하기", _activity_lock_reason(challenge_id)
 		))
 
+	if not _feature_open("league"):
+		return
 	body.add_child(_section_heading("라이벌 리그", "비슷한 점수의 라이벌 다섯 명과 겨뤄요."))
+	_add_tip(body, "league")
 	var rivals: Array = _read(["generatedContent", "rivals"], [])
 	for rival in rivals:
 		if typeof(rival) != TYPE_DICTIONARY:
@@ -1378,6 +1457,7 @@ func _build_world_sheet(body: VBoxContainer) -> void:
 
 
 func _build_shop_sheet(body: VBoxContainer) -> void:
+	_add_tip(body, "shop")
 	var wallet := _card("gold")
 	var wallet_row := HBoxContainer.new()
 	var wallet_label := _label("보유 골드", 17, PixelTokens.INK)
@@ -1517,6 +1597,12 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 				change_row.add_child(_icon("up"))
 			change_row.add_child(_label(change, 16, PixelTokens.NEGATIVE if decreased else PixelTokens.POSITIVE))
 			summary_box.add_child(change_row)
+		for unlock_label: String in last_summary.get("unlockLabels", []) as Array:
+			var unlock_row := HBoxContainer.new()
+			unlock_row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+			unlock_row.add_child(_icon("plus"))
+			unlock_row.add_child(_label("새로 열림 · %s" % unlock_label, 16, PixelTokens.ACCENT))
+			summary_box.add_child(unlock_row)
 		summary_box.add_child(_label("활동 %d건 · 시즌 심사 %d건%s" % [
 			(last_summary.get("completedActivities", []) as Array).size(),
 			(last_summary.get("seasonReviews", []) as Array).size(),
@@ -1547,6 +1633,7 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 
 
 func _build_event_sheet(body: VBoxContainer) -> void:
+	_add_tip(body, "events")
 	var events := _event_inbox()
 	if events.is_empty():
 		var empty := _card("transparent")
@@ -1611,6 +1698,9 @@ func _build_profile_sheet(body: VBoxContainer) -> void:
 	preset_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	preset_grid.add_theme_constant_override("v_separation", 8)
 	for preset in PRESETS:
+		# 새 수련생은 1단계부터 시작하므로 직접 설계는 보이지 않는다.
+		if str(preset["id"]) == "custom":
+			continue
 		var create_button := _button("%s\n%s" % [preset["name"], preset["hint"]], _create_trainee.bind(str(preset["id"])), "secondary", 60.0, "create_%s" % preset["id"])
 		create_button.icon = _icon_texture(_preset_icon(str(preset["id"])))
 		create_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -2015,6 +2105,13 @@ func _collect_offline() -> void:
 		_advance_slots(pending, false)
 	_state["pendingOfflineSlots"] = 0
 	offline_summary["changes"] = _progress_changes(before, _progress_snapshot())
+	# 오프라인 동안 열린 단계는 알림 띠 대신 정산 시트에 목록으로 보여 준다.
+	var offline_unlocks: Array[String] = []
+	for opened: Variant in offline_summary.get("newUnlocks", []) as Array:
+		offline_unlocks.append(_unlock_label(int(opened)))
+	offline_summary["unlockLabels"] = offline_unlocks
+	if not offline_unlocks.is_empty():
+		_acknowledge_unlocks("offline")
 	_state["lastOfflineSummary"] = offline_summary
 	_persist_silently()
 	_refresh_chrome()
@@ -2237,6 +2334,8 @@ func _reset_game() -> void:
 
 
 func _refresh_chrome() -> void:
+	_announce_unlocks()
+	_refresh_navigation()
 	if _header_gold_label != null:
 		_header_gold_label.text = "%s G" % _format_big(_read(["bigValues", "gold"], {"mantissa": 0, "exponent": 0}))
 	if _header_time_label != null:
@@ -2284,6 +2383,9 @@ func _show_toast(message: String) -> void:
 		return
 	_toast_serial += 1
 	var serial := _toast_serial
+	# 방금 띄운 새로 열림 알림은 다른 알림에 덮이지 않고 함께 보인다.
+	if message != _unlock_notice_text and Time.get_ticks_msec() < _unlock_notice_until:
+		message = "%s\n%s" % [_unlock_notice_text, message]
 	_toast_label.text = message
 	_toast_panel.visible = true
 	_toast_panel.modulate = Color.WHITE
@@ -3098,6 +3200,254 @@ func _current_activity_name() -> String:
 	return "다음 활동 준비"
 
 
+# ── 단계적 해금(GDD §2.2) ─────────────────────────────────────────
+# 엔진 없이 그리는 시연 상태(unlocks 없음)는 모든 기능을 연 화면으로 본다.
+func _unlock_stage() -> int:
+	var unlocks = _state.get("unlocks")
+	if typeof(unlocks) != TYPE_DICTIONARY:
+		return 99
+	return int((unlocks as Dictionary).get("stage", 1))
+
+
+func _feature_stage(feature_id: String) -> int:
+	if _engine != null and _engine.has_method("get_content_db"):
+		var db = _engine.call("get_content_db")
+		if db is ContentDB:
+			return (db as ContentDB).feature_stage(feature_id)
+	return 1
+
+
+func _feature_open(feature_id: String) -> bool:
+	return _unlock_stage() >= _feature_stage(feature_id)
+
+
+func _activity_open(activity: Dictionary) -> bool:
+	return _unlock_stage() >= int((activity.get("requires", {}) as Dictionary).get("stage", 1))
+
+
+func _unlock_status() -> Dictionary:
+	if _engine != null and _engine.has_method("unlock_status") and typeof(_state.get("unlocks")) == TYPE_DICTIONARY:
+		return _engine.call("unlock_status") as Dictionary
+	return {}
+
+
+func _unlock_label(stage_number: int) -> String:
+	if _engine != null and _engine.has_method("unlock_stage_entry"):
+		return str((_engine.call("unlock_stage_entry", stage_number) as Dictionary).get("label", ""))
+	return ""
+
+
+# 다음 단계 예고를 둘 자리: 탭을 열면 탭, 월드를 열면 홈, 세부 규칙을 열면 계획, 그 밖에는 활동 목록.
+func _unlock_teaser_place() -> String:
+	var next: Dictionary = _unlock_status().get("next", {}) as Dictionary
+	if next.is_empty():
+		return ""
+	var features: Array = next.get("features", []) as Array
+	for tab_id in ["plan", "growth", "record"]:
+		if features.has(tab_id):
+			return "tab"
+	if features.has("world"):
+		return "home"
+	if features.has("rules"):
+		return "plan"
+	return "activity"
+
+
+func _unlock_remaining_text() -> String:
+	var next: Dictionary = _unlock_status().get("next", {}) as Dictionary
+	var remaining: Dictionary = next.get("remaining", {}) as Dictionary
+	if remaining.has("activities"):
+		return "활동 %d회 더" % maxi(1, int(remaining["activities"]))
+	if remaining.has("slot"):
+		return "%d일 뒤" % maxi(1, int(remaining["slot"]))
+	if remaining.has("seasonReviews"):
+		var reviews := maxi(1, int(remaining["seasonReviews"]))
+		return "다음 시즌 심사 때" if reviews == 1 else "시즌 심사 %d번 뒤" % reviews
+	return ""
+
+
+func _unlock_teaser_sentence() -> String:
+	var next: Dictionary = _unlock_status().get("next", {}) as Dictionary
+	if next.is_empty():
+		return ""
+	return "곧 열림 · %s · %s" % [str(next.get("label", "")), _unlock_remaining_text()]
+
+
+func _show_unlock_teaser() -> void:
+	_show_toast(_unlock_teaser_sentence())
+
+
+func _unlock_teaser_button(height: float, title: String) -> Button:
+	var teaser := _button("%s\n%s" % [title, _unlock_remaining_text()], _show_unlock_teaser, "secondary", height, "unlock_teaser")
+	teaser.icon = _icon_texture("lock")
+	teaser.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	teaser.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	teaser.tooltip_text = _unlock_teaser_sentence()
+	return teaser
+
+
+func _unlock_teaser_row() -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", PixelTokens.GAP_SMALL)
+	row.set_meta("ui_id", "unlock_teaser_row")
+	row.add_child(_icon("lock"))
+	var text := _label(_unlock_teaser_sentence(), 16, PixelTokens.INK_MUTED)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(text)
+	return row
+
+
+func _refresh_navigation() -> void:
+	for tab_id in _nav_buttons:
+		(_nav_buttons[tab_id] as Button).visible = _feature_open(str(tab_id))
+	if _unlock_teaser_tab != null:
+		var show_teaser := _unlock_teaser_place() == "tab"
+		_unlock_teaser_tab.visible = show_teaser
+		if show_teaser:
+			var next: Dictionary = _unlock_status().get("next", {}) as Dictionary
+			var tab_name := ""
+			for definition in TABS:
+				if tab_name.is_empty() and (next.get("features", []) as Array).has(str(definition["id"])):
+					tab_name = str(definition["label"])
+			_unlock_teaser_tab.text = "%s\n%s" % [tab_name, _unlock_remaining_text().replace("활동 ", "").replace("다음 시즌 심사 때", "다음 심사")]
+			_unlock_teaser_tab.tooltip_text = _unlock_teaser_sentence()
+	_layout_navigation()
+	if _current_tab != "" and not _feature_open(_current_tab):
+		_show_tab("home")
+
+
+# 보이는 탭 수가 2~6개로 바뀌어도 탭 너비와 위치를 짝수 픽셀로 맞춘다(PX-05).
+func _layout_navigation() -> void:
+	_layout_even_row(_nav_row)
+
+
+# 가로 줄의 보이는 버튼을 짝수 너비로 나눈다. 마지막 버튼이 남는 짝수 픽셀을 가진다.
+func _layout_even_row(row: HBoxContainer) -> void:
+	if row == null or not is_instance_valid(row):
+		return
+	var visible_buttons: Array[Control] = []
+	for child in row.get_children():
+		if child is Control and (child as Control).visible:
+			visible_buttons.append(child as Control)
+	if visible_buttons.is_empty() or row.size.x <= 0.0:
+		return
+	var separation := row.get_theme_constant("separation")
+	var available := int(row.size.x) - separation * (visible_buttons.size() - 1)
+	var width := int(floor(float(available) / visible_buttons.size() / 2.0)) * 2
+	var last_width := available - width * (visible_buttons.size() - 1)
+	for index in visible_buttons.size():
+		var button := visible_buttons[index]
+		button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		button.custom_minimum_size.x = width if index < visible_buttons.size() - 1 else last_width - last_width % 2
+
+
+# 2열 격자에 버튼이 하나만 남으면 한 열로 바꿔 짝수 너비를 지킨다.
+func _fit_grid_columns(grid: GridContainer) -> void:
+	if grid.get_child_count() == 1:
+		grid.columns = 1
+
+
+# 새 단계가 열리면 알림 띠를 한 번 띄우고 확인 상태를 저장한다. 오프라인 정산은 정산 시트가 대신 보여 준다.
+func _announce_unlocks() -> void:
+	var status := _unlock_status()
+	if status.is_empty():
+		return
+	var stage_number := int(status.get("stage", 1))
+	var announced := int(status.get("announced", stage_number))
+	if stage_number <= announced:
+		return
+	var labels: Array[String] = []
+	for opened in range(announced + 1, stage_number + 1):
+		var label := _unlock_label(opened)
+		if not label.is_empty():
+			labels.append(label)
+	_acknowledge_unlocks("online")
+	_page_dirty = true
+	if labels.is_empty():
+		return
+	_unlock_notice_text = "새로 열림 · %s" % ", ".join(labels)
+	_unlock_notice_until = Time.get_ticks_msec() + 2200
+	_show_toast(_unlock_notice_text)
+
+
+func _acknowledge_unlocks(source: String) -> void:
+	if _engine == null or not _engine.has_method("acknowledge_unlocks"):
+		return
+	var unlocks = _state.get("unlocks")
+	var before := int((unlocks as Dictionary).get("announced", 1)) if typeof(unlocks) == TYPE_DICTIONARY else 1
+	_engine.call("acknowledge_unlocks")
+	var stage_number := int((unlocks as Dictionary).get("stage", 1)) if typeof(unlocks) == TYPE_DICTIONARY else 1
+	if typeof(unlocks) == TYPE_DICTIONARY:
+		(unlocks as Dictionary)["announced"] = stage_number
+	_track_event(&"feature_unlocked", {"stage": stage_number, "fromStage": before, "slot": int(_read(["time", "slot"], 0)), "source": source})
+	_persist_silently()
+
+
+# 화면 첫 진입 안내: 기능이 열려 있고 아직 보지 않았으면 구획 아래에 한 번 보여 준다.
+func _add_tip(body: VBoxContainer, feature_id: String) -> void:
+	var status := _unlock_status()
+	if status.is_empty() or not _feature_open(feature_id) or not _engine.has_method("unlock_tip"):
+		return
+	var text := str(_engine.call("unlock_tip", feature_id))
+	if text.is_empty():
+		return
+	var seen: Array = status.get("tipsSeen", []) as Array
+	if seen.has(feature_id) and not _tips_showing.has(feature_id):
+		return
+	if not _tips_showing.has(feature_id):
+		_tips_showing.append(feature_id)
+		_engine.call("mark_unlock_tip_seen", feature_id)
+		var unlocks = _state.get("unlocks")
+		if typeof(unlocks) == TYPE_DICTIONARY:
+			var state_seen = (unlocks as Dictionary).get("tipsSeen", [])
+			if typeof(state_seen) == TYPE_ARRAY and not (state_seen as Array).has(feature_id):
+				(state_seen as Array).append(feature_id)
+		_persist_silently()
+	var tip := PanelContainer.new()
+	tip.theme_type_variation = PixelTheme.panel_variation("inset")
+	tip.mouse_filter = Control.MOUSE_FILTER_PASS
+	tip.set_meta("ui_id", "tip_%s" % feature_id)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", PixelTokens.GAP)
+	var tip_text := _label(text, 16, PixelTokens.INK)
+	tip_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(tip_text)
+	var ok := _button("알겠어요", _dismiss_tip.bind(feature_id), "secondary", 44.0, "tip_ok_%s" % feature_id)
+	ok.theme_type_variation = "PixelButtonCompactSecondary"
+	ok.custom_minimum_size.x = 96.0
+	ok.size_flags_horizontal = Control.SIZE_SHRINK_END
+	ok.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(ok)
+	tip.add_child(row)
+	body.add_child(tip)
+
+
+func _dismiss_tip(feature_id: String) -> void:
+	_tips_showing.erase(feature_id)
+	var sheet_kind := str({"world": "world", "league": "world", "shop": "shop", "events": "event"}.get(feature_id, ""))
+	if not sheet_kind.is_empty() and _find_open_sheet(sheet_kind):
+		_open_sheet(sheet_kind)
+	else:
+		_render_current_page()
+
+
+func _find_open_sheet(kind: String) -> bool:
+	if _modal_layer == null:
+		return false
+	for child in _modal_layer.get_children():
+		if not child.is_queued_for_deletion() and str(child.get_meta("screen_id", "")) == kind:
+			return true
+	return false
+
+
+# 현재 활동 이유 줄에 아직 열리지 않은 개념을 쓰지 않는다(AC-UNLOCK-12).
+func _reason_concept_open(text: String) -> bool:
+	for pair in [["고정 계약", "contracts"], ["위험 부담", "rules"], ["프리셋 선호", "plan"]]:
+		if text.begins_with(str(pair[0])) and not _feature_open(str(pair[1])):
+			return false
+	return true
+
+
 # 플래너 이유는 "성장 방향 +1.450"처럼 점수가 붙어 온다. 화면에는 이유 이름만 보여 준다.
 func _reason_label_text(raw: String) -> String:
 	return RegEx.create_from_string("\\s*[+-]\\d+(\\.\\d+)?$").sub(raw.strip_edges(), "").strip_edges()
@@ -3111,6 +3461,8 @@ func _planner_reason() -> String:
 		if typeof(decision_reasons) == TYPE_ARRAY:
 			for reason in decision_reasons:
 				var text := _reason_label_text(str(reason.get("text", reason)) if typeof(reason) == TYPE_DICTIONARY else str(reason))
+				if not _reason_concept_open(text):
+					continue
 				if not text.is_empty() and not result.has(text):
 					result.append(text)
 				if result.size() == 3:

@@ -9,6 +9,8 @@ const MAIN_TABS: Array[String] = ["home", "plan", "activity", "growth", "record"
 const PIXEL_GRID_TABS: Array[String] = ["home", "plan", "activity", "growth", "record"]
 const SHEETS: Array[String] = ["world", "shop", "settings", "offline", "event", "profile", "continue"]
 const EDGE_TOLERANCE: float = 1.5
+# AC-UNLOCK-11: 단계마다 보이는 탭·예고·안내가 다르므로 대표 단계의 열린 화면도 확인한다.
+const UNLOCK_STAGES: Array[int] = [1, 3, 5, 6]
 const SAVE_PATH := "user://qa_layout_probe_save.json"
 
 var _failures: Array[String] = []
@@ -43,6 +45,21 @@ func _probe_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	var main_rect: Rect2 = main.get_global_rect()
 	_check(main_rect.size.x > 0.0 and main_rect.size.y > 0.0, "%s root bounds" % _size_label(viewport_size))
 
+	for stage: int in UNLOCK_STAGES:
+		await _set_unlock_stage(main, stage)
+		for tab_id: String in MAIN_TABS:
+			if not bool(main.call("_feature_open", tab_id)):
+				continue
+			main.call("_show_tab", tab_id)
+			await process_frame
+			await process_frame
+			var context := "%s/stage%d/%s" % [_size_label(viewport_size), stage, tab_id]
+			_check_current_ctas(main, main_rect, context, 1)
+			if viewport_size == Vector2i(390, 844):
+				_check_pixel_grid(main, context)
+				_check_label_contrast(main, context)
+	await _set_unlock_stage(main, 7)
+
 	var total_checked: int = 0
 	for tab_id: String in MAIN_TABS:
 		main.call("_show_tab", tab_id)
@@ -73,7 +90,21 @@ func _probe_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	await process_frame
 
 
-func _check_current_ctas(main: Control, viewport_rect: Rect2, context: String) -> int:
+# 엔진 상태의 해금 단계를 바꾸고 화면을 다시 그린다. 안내는 다시 보이도록 비운다.
+func _set_unlock_stage(main: Control, stage: int) -> void:
+	var engine: Object = main.get("_engine") as Object
+	if engine == null:
+		return
+	var state: Dictionary = engine.call("get_state") as Dictionary
+	state["unlocks"] = {"stage": stage, "announced": stage, "tipsSeen": []}
+	main.call("_adopt_engine_result", engine.call("initialize_from_state", state))
+	main.call("_refresh_chrome")
+	main.call("_show_tab", "home")
+	await process_frame
+	await process_frame
+
+
+func _check_current_ctas(main: Control, viewport_rect: Rect2, context: String, minimum: int = 5) -> int:
 	var checked: int = 0
 	var all_valid: bool = true
 	for candidate: Node in get_nodes_in_group("critical_cta"):
@@ -110,7 +141,7 @@ func _check_current_ctas(main: Control, viewport_rect: Rect2, context: String) -
 		if not within or not touch_size or not finite:
 			all_valid = false
 			print("[LAYOUT] invalid context=%s node=%s rect=%s viewport=%s" % [context, str(cta.get_path()), str(rect), str(viewport_rect)])
-	_check(checked >= 5, "%s visible critical_cta >= 5" % context)
+	_check(checked >= minimum, "%s visible critical_cta >= %d" % [context, minimum])
 	_check(all_valid, "AC-UI-03 %s critical_cta bounds" % context)
 	return checked
 

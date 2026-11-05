@@ -23,6 +23,14 @@ func _run() -> void:
 	root.add_child(main)
 	await process_frame
 	await process_frame
+	# 이 테스트는 결과 연출과 목록 동작을 본다. 단계적 해금과 무관하게 모든 단계를 연 상태에서 시작한다.
+	var unlock_engine: Object = main.get("_engine") as Object
+	if unlock_engine != null:
+		var opened_state: Dictionary = unlock_engine.call("get_state") as Dictionary
+		opened_state["unlocks"] = {"stage": 7, "announced": 7, "tipsSeen": []}
+		main.call("_adopt_engine_result", unlock_engine.call("initialize_from_state", opened_state))
+		main.call("_refresh_chrome")
+		await process_frame
 
 	# 토스트는 아래 버튼을 가리지만 입력을 막으면 안 된다(토스트 글자가 탭을 가로채던 회귀 방지).
 	var toast_panel: Control = main.get("_toast_panel") as Control

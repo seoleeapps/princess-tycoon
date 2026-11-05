@@ -1468,6 +1468,22 @@ func _test_progressive_unlock(content_db: ContentDB) -> void:
 	var tip_reference := UnlockProgress.new()
 	tip_reference.configure(content_db.unlocks, int(content_db.config.get("slotsPerSeason", 28)))
 	_check(int(legacy_status.get("stage", 0)) == 7 and int(legacy_status.get("announced", 0)) == 7 and (legacy_status.get("tipsSeen", []) as Array).size() == tip_reference.all_tip_features().size() and tip_reference.all_tip_features().size() == 13, "AC-UNLOCK-07 기존 저장 84일 이상은 7단계, 알림·안내 생략")
+	# 실제 파일 로드 경로(SaveCodec 마이그레이션 포함)로도 기존 저장의 단계를 계산해야 한다.
+	var legacy_path := "user://test_unlock_legacy.json"
+	online.save(legacy_path)
+	var legacy_file := FileAccess.open(legacy_path, FileAccess.READ)
+	var legacy_json: Dictionary = JSON.parse_string(legacy_file.get_as_text()) as Dictionary
+	legacy_file.close()
+	legacy_json.erase("unlocks")
+	legacy_file = FileAccess.open(legacy_path, FileAccess.WRITE)
+	legacy_file.store_string(JSON.stringify(legacy_json))
+	legacy_file.close()
+	var file_engine := GameEngine.new()
+	var file_load: Dictionary = file_engine.load_save(legacy_path)
+	var file_status: Dictionary = file_engine.unlock_status()
+	var after_load: Dictionary = file_engine.advance_slots(1)
+	_check(bool(file_load.get("ok", false)) and int(file_status.get("stage", 0)) == 7 and int(file_status.get("announced", 0)) == 7 and (after_load.get("newUnlocks", []) as Array).is_empty() and bool(file_engine.validate_state().get("ok", false)), "AC-UNLOCK-07 파일에서 불러온 기존 저장도 7단계, 새 알림 없음")
+	_cleanup_save_path(legacy_path)
 	var legacy_early: Dictionary = StateFactory.create(880003, "초반 기존 저장", content_db.config)
 	legacy_early.erase("unlocks")
 	(legacy_early["time"] as Dictionary)["slot"] = 10

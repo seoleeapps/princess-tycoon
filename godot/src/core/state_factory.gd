@@ -107,6 +107,9 @@ static func ensure_v2_shape(input_state: Dictionary) -> Dictionary:
 		str(input_state.get("playerName", input_state.get("name", "수련생")))
 	)
 	var merged: Dictionary = _deep_fill(input_state.duplicate(true), defaults)
+	# 해금 단계가 없던 저장은 기본값(1단계)을 채우지 않는다. 엔진이 진행값으로 단계를 계산한다.
+	if input_state.get("unlocks") is not Dictionary:
+		merged.erase("unlocks")
 	merged["schemaVersion"] = SCHEMA_VERSION
 	merged["growthPolicy"] = GrowthPolicy.sanitize(merged.get("growthPolicy", {}) as Dictionary)
 	var big_values: Dictionary = merged["bigValues"] as Dictionary

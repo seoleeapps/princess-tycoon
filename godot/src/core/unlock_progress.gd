@@ -59,7 +59,7 @@ func computed_stage(state: Dictionary) -> int:
 # 단계를 진행값에 맞춰 올리고 이번에 새로 열린 단계를 돌려준다. 단계는 내려가지 않는다.
 func refresh(state: Dictionary) -> Array[int]:
 	var opened: Array[int] = []
-	var unlocks: Dictionary = _ensure_unlocks(state)
+	var unlocks: Dictionary = ensure_unlocks(state)
 	var current: int = int(unlocks.get("stage", 1))
 	var target: int = computed_stage(state)
 	for stage_number: int in range(current + 1, target + 1):
@@ -76,7 +76,7 @@ func legacy_unlocks(state: Dictionary) -> Dictionary:
 
 
 func sanitize(state: Dictionary) -> void:
-	var unlocks: Dictionary = _ensure_unlocks(state)
+	var unlocks: Dictionary = ensure_unlocks(state)
 	var stage_number: int = clampi(int(unlocks.get("stage", 1)), 1, maxi(1, max_stage()))
 	unlocks["stage"] = stage_number
 	unlocks["announced"] = clampi(int(unlocks.get("announced", 1)), 1, stage_number)
@@ -110,7 +110,7 @@ func tip(feature_id: String) -> String:
 
 # 화면이 쓰는 현재 단계와 다음 단계까지 남은 양.
 func status(state: Dictionary) -> Dictionary:
-	var unlocks: Dictionary = _ensure_unlocks(state)
+	var unlocks: Dictionary = ensure_unlocks(state)
 	var stage_number: int = int(unlocks.get("stage", 1))
 	var next: Dictionary = {}
 	var next_entry: Dictionary = stage_entry(stage_number + 1)
@@ -195,7 +195,7 @@ func _metric(state: Dictionary, key: String) -> int:
 	return 0
 
 
-func _ensure_unlocks(state: Dictionary) -> Dictionary:
+static func ensure_unlocks(state: Dictionary) -> Dictionary:
 	if state.get("unlocks") is not Dictionary:
 		state["unlocks"] = {"stage": 1, "announced": 1, "tipsSeen": []}
 	return state["unlocks"] as Dictionary

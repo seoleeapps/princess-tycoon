@@ -89,13 +89,16 @@ func unlock_tip(feature_id: String) -> String:
 # 화면이 새로 열림 알림을 띄웠거나 정산 시트에 보여 준 뒤 호출한다.
 func acknowledge_unlocks() -> void:
 	_ensure_initialized()
-	var unlocks: Dictionary = _state.get("unlocks", {}) as Dictionary
+	var unlocks: Dictionary = UnlockProgress.ensure_unlocks(_state)
 	unlocks["announced"] = int(unlocks.get("stage", 1))
 
 
 func mark_unlock_tip_seen(feature_id: String) -> void:
 	_ensure_initialized()
-	var seen: Array = (_state.get("unlocks", {}) as Dictionary).get("tipsSeen", []) as Array
+	var unlocks: Dictionary = UnlockProgress.ensure_unlocks(_state)
+	if unlocks.get("tipsSeen") is not Array:
+		unlocks["tipsSeen"] = []
+	var seen: Array = unlocks["tipsSeen"] as Array
 	if not seen.has(feature_id):
 		seen.append(feature_id)
 

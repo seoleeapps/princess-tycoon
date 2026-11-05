@@ -76,6 +76,10 @@ func _first_session(main: Control) -> void:
 	e2e.expect_equal("new trainee has no unearned titles", (_read(main, ["careerTitles"], {}) as Dictionary).size(), 0)
 	e2e.expect_equal("new trainee has no unearned mastery", (_read(main, ["mastery"], {}) as Dictionary).size(), 0)
 	e2e.expect_equal("new trainee starts at unlock stage 1", _unlock_stage(main), 1)
+	# AC-UNLOCK-01: 홈·활동 탭과 다음 단계 예고 하나만 보인다.
+	e2e.step("stage 1 shows home and activity tabs only", _find_id(main, "tab_home") != null and _find_id(main, "tab_activity") != null and _find_id(main, "tab_plan") == null and _find_id(main, "tab_record") == null)
+	e2e.step("stage 1 teases the next tab", _find_id(main, "tab_teaser") == null, "next stage opens jobs, not a tab")
+	e2e.step("stage 1 home hides world and events", _find_id(main, "open_world") == null and _find_id(main, "open_event") == null)
 	await e2e.shot("04-home-new-trainee")
 
 	# 설정·접근성은 1단계부터 쓸 수 있어야 한다(AC-UNLOCK-08).
@@ -97,6 +101,8 @@ func _first_session(main: Control) -> void:
 
 	await _tap_id(main, "tab_activity", "open activity tab")
 	e2e.step("activity tab visible", _screen(main) == "activity")
+	e2e.expect_equal("stage 1 lists three study activities", _count_ids(main, "activity_run_"), 3)
+	e2e.step("stage 1 teases the next activities", _find_id(main, "unlock_teaser_row") != null)
 	await e2e.shot("06-activity-stage1")
 	# 1단계 활동을 직접 실행해 2단계(활동 3회)와 3단계(활동 8회)를 연다.
 	var first_run_checked := false
@@ -120,6 +126,9 @@ func _first_session(main: Control) -> void:
 		if _unlock_stage(main) == 2 and not stage2_shot:
 			stage2_shot = true
 			await e2e.frames(4)
+			var notice := main.get("_toast_label") as Label
+			e2e.step("stage 2 shows an unlock notice", notice != null and notice.is_visible_in_tree() and notice.text.contains("새로 열림 · 아르바이트"), "" if notice == null else notice.text)
+			e2e.step("stage 2 teases the plan tab", _find_id(main, "tab_teaser") != null)
 			await e2e.shot("08-activity-stage2")
 	e2e.step("eight activities open stage 3", int(_read(main, ["lifetimeStats", "activities"], 0)) >= 8 and _unlock_stage(main) >= 3, "activities=%d stage=%d" % [int(_read(main, ["lifetimeStats", "activities"], 0)), _unlock_stage(main)])
 	await _tap_id(main, "filter_job", "show job activities")
@@ -137,11 +146,16 @@ func _first_session(main: Control) -> void:
 		e2e.expect_equal("activity queued", (_read(main, ["activityQueue"], []) as Array).size(), queue_before + 1)
 		await _close_sheet(main)
 
+	e2e.step("stage 3 opens plan and growth tabs", _find_id(main, "tab_plan") != null and _find_id(main, "tab_growth") != null)
 	await _tap_id(main, "tab_plan", "open plan tab")
 	e2e.step("plan tab visible", _screen(main) == "plan")
+	e2e.step("plan shows its first-visit tip", _find_id(main, "tip_plan") != null)
+	e2e.step("stage 3 plan hides detailed rules", _find_id(main, "step_maxStress_plus") == null and _find_id(main, "preset_custom") == null)
 	await _tap_id(main, "preset_scholar", "pick scholar direction")
 	e2e.expect_equal("direction changed", str(_read(main, ["growthPolicy", "preset"], "")), "scholar")
 	await e2e.shot("10-plan-stage3")
+	await _tap_id(main, "tip_ok_plan", "dismiss the plan tip")
+	e2e.step("plan tip closes", _find_id(main, "tip_plan") == null)
 	await _tap_id(main, "tab_growth", "open growth tab")
 	e2e.step("growth tab visible", _screen(main) == "growth")
 	await e2e.shot("11-growth")
@@ -177,6 +191,9 @@ func _return_offline(main: Control) -> void:
 	await _tap_id(again, "offline_collect", "collect offline result")
 	e2e.expect_equal("offline slots settled", int(_state(again).get("pendingOfflineSlots", -1)), 0)
 	e2e.step("offline sheet lists what changed", _find_label_prefix(again, "능력치 합 +") != null)
+	e2e.step("offline sheet lists new unlocks", _find_label_prefix(again, "새로 열림 · 세부 규칙") != null and _find_label_prefix(again, "새로 열림 · 월드") != null)
+	var offline_toast := again.get("_toast_label") as Label
+	e2e.step("offline unlocks show no notice banner", offline_toast == null or not offline_toast.text.contains("새로 열림"), "" if offline_toast == null else offline_toast.text)
 	e2e.step("home redrawn with settled values", _content_page(again) != home_before)
 	e2e.step("time advanced offline", int(_read(again, ["time", "slot"], 0)) > slot_saved)
 	e2e.expect_equal("offline progress opened every stage", _unlock_stage(again), 7)
@@ -212,6 +229,8 @@ func _return_offline(main: Control) -> void:
 	await _close_sheet(again)
 
 	await _tap_id(again, "tab_plan", "open plan tab")
+	e2e.step("seen plan tip stays hidden after restart", _find_id(again, "tip_plan") == null)
+	e2e.step("stage 7 rules show their first-visit tip", _find_id(again, "tip_rules") != null)
 	var stress_before := float(_read(again, ["growthPolicy", "maxStress"], 0.0))
 	await _tap_id(again, "step_maxStress_plus", "raise max stress one step")
 	e2e.expect_equal("max stress stepped", float(_read(again, ["growthPolicy", "maxStress"], 0.0)), minf(95.0, stress_before + 1.0))
@@ -272,6 +291,21 @@ func _return_offline(main: Control) -> void:
 	e2e.expect_equal("continued trainee", str(_state(again).get("traineeName", "")), TRAINEE_NAME)
 	e2e.end()
 	await e2e.unmount(again)
+
+
+# 지금 보이는(숨김·삭제 예정 아님) 버튼 중 ui_id가 prefix로 시작하는 수.
+func _count_ids(main: Control, prefix: String) -> int:
+	var sheet := _top_sheet(main)
+	return _count_visible(sheet if sheet != null else main, prefix)
+
+
+func _count_visible(node: Node, prefix: String) -> int:
+	if node.is_queued_for_deletion() or (node is CanvasItem and not (node as CanvasItem).is_visible_in_tree()):
+		return 0
+	var count := 1 if node is BaseButton and str(node.get_meta("ui_id", "")).begins_with(prefix) else 0
+	for child in node.get_children():
+		count += _count_visible(child, prefix)
+	return count
 
 
 func _unlock_stage(main: Control) -> int:
