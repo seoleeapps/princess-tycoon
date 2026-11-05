@@ -2123,6 +2123,8 @@ func _collect_offline() -> void:
 	_state["pendingOfflineSlots"] = 0
 	offline_summary["changes"] = _progress_changes(before, _progress_snapshot())
 	offline_summary["unlockLabels"] = _absorb_offline_unlocks(offline_summary)
+	# 정산 알림에는 직전 온라인 새로 열림 문구를 붙이지 않는다(새로 열린 단계가 없을 때도).
+	_unlock_notice_until = 0
 	_state["lastOfflineSummary"] = offline_summary
 	_persist_silently()
 	_refresh_chrome()

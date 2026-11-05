@@ -80,6 +80,15 @@ func _run() -> void:
 	_check(str(main.call("_activity_lock_reason", "EDU_PAINTING")) == "", "열린 활동에 지난 결정의 해금 잠금 문구 없음")
 	(stale_state["unlocks"] as Dictionary)["stage"] = 1
 	_check(str(main.call("_activity_lock_reason", "EDU_PAINTING")) == "아직 열리지 않았어요", "열리지 않은 활동은 쉬운 잠금 문구")
+	# 직전 온라인 새로 열림 알림이 남아 있어도 오프라인 정산 알림에는 붙지 않는다.
+	main.set("_unlock_notice_text", "새로 열림 · 아르바이트 3종")
+	main.set("_unlock_notice_until", Time.get_ticks_msec() + 5000)
+	main.call("_collect_offline")
+	await process_frame
+	var settle_toast: Label = main.get("_toast_label") as Label
+	_check(settle_toast != null and not settle_toast.text.contains("새로 열림"), "오프라인 정산 알림에 직전 새로 열림 문구 없음")
+	main.call("_close_sheet")
+	await process_frame
 	# 기능 경로 도달(AC-UI-02)은 모든 단계를 연 뒤 확인한다.
 	if engine != null and engine.has_method("initialize_from_state"):
 		var opened: Dictionary = engine.call("get_state") as Dictionary
