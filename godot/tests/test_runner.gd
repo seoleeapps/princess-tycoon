@@ -42,6 +42,8 @@ func _run() -> void:
 	_test_shop_non_terminal()
 	_test_career_non_terminal()
 	_test_progressive_unlock(content_db)
+	_test_career_gate_display()
+	_test_schedule_free_slot(content_db)
 
 	_finish()
 
@@ -1523,6 +1525,53 @@ func _test_progressive_unlock(content_db: ContentDB) -> void:
 
 # 기존 시스템 테스트는 해금 단계와 무관한 규칙을 본다. 모든 단계를 연 상태에서 시작해
 # 단계적 해금 이전과 같은 시작 조건을 유지한다. 해금 자체는 _test_progressive_unlock이 검사한다.
+# 가까운 진로의 부족 조건은 정수로 보인다. 현재 값은 내림, 필요 값은 올림이라 아직 못 채운 조건이 채운 것처럼 보이지 않는다.
+func _test_career_gate_display() -> void:
+	var engine := GameEngine.new()
+	_open_initialize(engine, 880101)
+	var state: Dictionary = engine.get_state()
+	(state["stats"] as Dictionary)["intelligence"] = 95.3
+	(state["stats"] as Dictionary)["art"] = 209.7
+	state["worldTier"] = 2
+	engine.initialize_from_state(state)
+	var gate: Dictionary = engine.call("_career_gate_result", {"stats": {"intelligence": 140, "art": 140}}, 1.5) as Dictionary
+	var tier_gate: Dictionary = engine.call("_career_gate_result", {"worldTier": 2}, 1.2) as Dictionary
+	var missing: Array = (gate.get("missing", []) as Array) + (tier_gate.get("missing", []) as Array)
+	_check(missing.has("지력 95/210") and missing.has("예술 209/210") and missing.has("세계 티어 2/3"), "가까운 진로 부족 조건 정수 표시 %s" % str(missing))
+	# 100×1.1처럼 부동소수 오차가 있는 필요 값도 110으로 보인다(111이 아니다).
+	(state["stats"] as Dictionary)["intelligence"] = 109.5
+	engine.initialize_from_state(state)
+	var float_gate: Dictionary = engine.call("_career_gate_result", {"stats": {"intelligence": 100}}, 1.1) as Dictionary
+	_check((float_gate.get("missing", []) as Array).has("지력 109/110"), "부동소수 오차가 있는 필요 값도 정수로 맞게 표시 %s" % str(float_gate.get("missing", [])))
+
+
+# 시험 일정과 겹친 활동이 다시 고를 수 있게 되는 slot은 플래너의 실제 거절과 같다. 긴 활동은 뒤 시험에도 걸린다.
+func _test_schedule_free_slot(content_db: ContentDB) -> void:
+	var engine := GameEngine.new()
+	_open_initialize(engine, 880102)
+	var state: Dictionary = engine.get_state()
+	for stat_key: String in ["stamina", "combat", "magic", "dance", "art", "communication", "cooking", "intelligence"]:
+		(state["stats"] as Dictionary)[stat_key] = 400.0
+	state["worldTier"] = 6
+	var planner := Planner.new()
+	planner.configure(content_db.config, content_db.profiles, content_db.activities)
+	var resort: Dictionary = content_db.get_activity("REST_RESORT")
+	var study: Dictionary = content_db.get_activity("EDU_LITERATURE")
+	(state["time"] as Dictionary)["slot"] = 5
+	var resort_free := planner.schedule_free_slot(state, resort)
+	(state["time"] as Dictionary)["slot"] = 3
+	var study_free := planner.schedule_free_slot(state, study)
+	_check(resort_free == 29 and study_free == 6, "시험 겹침이 풀리는 slot: 3칸 휴양 %d(다음 시즌 1일째), 1칸 학습 %d(시험 뒤 6일째)" % [resort_free, study_free])
+	var consistent := true
+	for next_slot: int in range(6, resort_free + 1):
+		(state["time"] as Dictionary)["slot"] = next_slot - 1
+		var blocked := planner.rejection_reason(state, resort).begins_with("예정 도전")
+		var during_exam := bool(planner.call("_inside_scheduled_challenge", state, next_slot))
+		if (next_slot == resort_free and blocked) or (next_slot < resort_free and not blocked and not during_exam):
+			consistent = false
+	_check(consistent, "풀리는 slot 계산이 플래너의 예정 도전 거절과 일치")
+
+
 func _open_unlocks(state: Dictionary) -> Dictionary:
 	state["unlocks"] = {"stage": 7, "announced": 7, "tipsSeen": []}
 	return state

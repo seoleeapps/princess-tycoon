@@ -276,6 +276,24 @@ func run_activity(activity_id: String, now_unix: int = -1) -> Dictionary:
 	return _with_state({"ok": false, "error": "요청 활동 실행 제한 초과", "activityId": activity_id, "slotsAdvanced": guard})
 
 
+# 세계 티어에서 활동 1회의 실제 비용과 기본 보수(성과 보정 전). 화면의 활동 행이 플래너와 같은 값을 보이게 한다.
+func activity_tier_values(activity_id: String, world_tier: int) -> Dictionary:
+	_ensure_initialized()
+	var activity: Dictionary = _content_db.get_activity(activity_id)
+	var tier: int = maxi(1, world_tier)
+	return {
+		"cost": _planner.tier_cost(activity, tier),
+		"reward": _planner.tier_reward(activity, tier),
+	}
+
+
+# 시험 일정과 겹쳐 막힌 활동을 다시 고를 수 있는 첫 slot(다음 진행 slot의 절대 번호). 화면이 가진 상태로 계산한다.
+func activity_schedule_free_slot(activity_id: String, state: Dictionary) -> int:
+	_ensure_initialized()
+	var activity: Dictionary = _content_db.get_activity(activity_id)
+	return -1 if activity.is_empty() else _planner.schedule_free_slot(state, activity)
+
+
 func execute_activity(activity_id: String, now_unix: int = -1) -> Dictionary:
 	return run_activity(activity_id, now_unix)
 
@@ -1913,13 +1931,15 @@ func _career_gate_result(gate: Dictionary, scale: float) -> Dictionary:
 			var ratio: float = 1.0 if required <= 0.0 else clampf(actual / required, 0.0, 1.0)
 			ratios.append(ratio)
 			if actual < required:
-				missing.append("%s %.1f/%.1f" % [_career_metric_display_name(bucket_name, str(raw_key)), actual, required])
+				# 현재 값은 내림, 필요 값은 올림으로 보여 아직 못 채운 조건이 채운 것처럼 보이지 않게 한다.
+				# 필요 값은 배율 곱셈의 부동소수 오차(100×1.1 = 110.00000000000001)를 먼저 정리한다.
+				missing.append("%s %d/%d" % [_career_metric_display_name(bucket_name, str(raw_key)), floori(actual), ceili(snappedf(required, 0.001))])
 	if gate.has("worldTier"):
 		var required_tier: float = float(gate.get("worldTier", 1)) * scale
 		var actual_tier: float = float(_state.get("worldTier", 1))
 		ratios.append(clampf(actual_tier / maxf(1.0, required_tier), 0.0, 1.0))
 		if actual_tier < required_tier:
-			missing.append("세계 티어 %.0f/%.0f" % [actual_tier, required_tier])
+			missing.append("세계 티어 %d/%d" % [floori(actual_tier), ceili(snappedf(required_tier, 0.001))])
 	var big_requirements: Dictionary = gate.get("bigValues", {}) as Dictionary
 	for raw_key: Variant in big_requirements.keys():
 		var required_big: Dictionary = BigValue.multiply_float(BigValue.from_number(big_requirements[raw_key]), scale)

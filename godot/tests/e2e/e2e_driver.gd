@@ -1,18 +1,25 @@
 extends RefCounted
 
 # Godot headless E2E 여정 도우미. godot-game 스킬 원본을 tests/e2e/로 복사해 preload해서 쓴다.
+# 이 사본은 원본에 화면 늘림(canvas_items + keep) 적용과 기기 좌표 입력을 더했다(2026-11-05, 이슈 #11).
 #   const E2EDriver := preload("res://tests/e2e/e2e_driver.gd")
 # 입력은 SubViewport.push_input으로 화면 좌표에 넣는다. headless에서 목록 드래그 스크롤이 실제 기기처럼
 # 동작하도록 Input.emulate_touch_from_mouse를 켠다(꺼져 있으면 ScrollContainer가 드래그로 움직이지 않는다).
 # 화면 저장(shot)은 렌더링 모드에서만 한다. headless에서 RenderingServer.frame_post_draw를 기다리면 멈춘다.
+# 기기 화면 크기(view_size)에는 프로젝트의 화면 늘림(canvas_items + keep)을 실제 루트 창처럼 적용한다.
+# 장면은 기준 좌표계(예: 390×844)를 보고, 입력은 기기 화면 좌표로 넣어 엔진이 기준 좌표로 바꾸게 한다.
 
 var tree: SceneTree
 var viewport: SubViewport
+var device_size := Vector2i.ZERO
+var logical_size := Vector2i.ZERO
 var out_dir := ""
 var capture := false
 var scenarios: Array = []
 var _current: Dictionary = {}
 var _evidence_ok := true
+# 렌더링 모드의 실제 창이 포커스를 잃은 횟수. 누르는 사이 포커스를 잃으면 엔진이 누름을 취소한다.
+var _focus_losses := 0
 
 
 func _init(p_tree: SceneTree, view_size: Vector2i, p_out_dir: String, p_capture: bool) -> void:
@@ -22,10 +29,40 @@ func _init(p_tree: SceneTree, view_size: Vector2i, p_out_dir: String, p_capture:
 	Input.emulate_touch_from_mouse = true
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	viewport = SubViewport.new()
-	viewport.size = view_size
+	device_size = view_size
+	_apply_project_stretch(view_size)
+	# SubViewport는 루트 창의 렌더 설정을 물려받지 않으므로 프로젝트 값(픽셀 스냅, 기본 텍스처 필터)을 그대로 옮긴다.
+	viewport.snap_2d_transforms_to_pixel = bool(ProjectSettings.get_setting("rendering/2d/snap/snap_2d_transforms_to_pixel", false))
+	viewport.snap_2d_vertices_to_pixel = bool(ProjectSettings.get_setting("rendering/2d/snap/snap_2d_vertices_to_pixel", false))
+	viewport.canvas_item_default_texture_filter = int(ProjectSettings.get_setting("rendering/textures/canvas_textures/default_texture_filter", 1)) as Viewport.DefaultCanvasItemTextureFilter
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	tree.root.add_child(viewport)
+	tree.root.focus_exited.connect(func() -> void: _focus_losses += 1)
 	_write_report()
+
+
+# 루트 창의 canvas_items + keep과 같게 기준 좌표계를 비율을 지켜 키운다. 남는 가장자리는 캡처에서 검은 띠가 된다.
+# 다른 늘림 설정이면 기기 화면 크기를 그대로 좌표계로 쓴다.
+func _apply_project_stretch(view_size: Vector2i) -> void:
+	var base := Vector2i(
+		int(ProjectSettings.get_setting("display/window/size/viewport_width", view_size.x)),
+		int(ProjectSettings.get_setting("display/window/size/viewport_height", view_size.y)))
+	var mode := str(ProjectSettings.get_setting("display/window/stretch/mode", "disabled"))
+	var aspect := str(ProjectSettings.get_setting("display/window/stretch/aspect", "keep"))
+	if mode != "canvas_items" or aspect != "keep" or base.x <= 0 or base.y <= 0:
+		logical_size = view_size
+		viewport.size = view_size
+		return
+	var scale := minf(float(view_size.x) / base.x, float(view_size.y) / base.y)
+	logical_size = base
+	viewport.size = Vector2i(roundi(base.x * scale), roundi(base.y * scale))
+	viewport.size_2d_override = base
+	viewport.size_2d_override_stretch = true
+
+
+# 장면 좌표(기준 좌표계)를 기기 화면 좌표로 바꾼다. push_input이 다시 장면 좌표로 바꾼다.
+func _to_device(point: Vector2) -> Vector2:
+	return point * Vector2(viewport.size) / Vector2(logical_size)
 
 
 # 실제 시작 장면을 viewport 안에 띄운다. 대체 구현 주입은 호출하는 쪽이 장면을 넣기 전에 한다.
@@ -98,12 +135,22 @@ func tap(control: Control) -> bool:
 		return false
 	if not await scroll_into_view(control):
 		return false
-	var pos := control.get_global_rect().get_center()
-	_push_button(pos, true)
-	await frames()
-	_push_button(pos, false)
-	await frames()
-	return true
+	# 렌더링 모드에는 실제 창이 있어, 누르고 떼는 사이 창 포커스가 바뀌면 엔진(Viewport)이 누름을 취소한다.
+	# 그때만 한 번 다시 누른다. headless에는 창 포커스 변화가 없다.
+	for attempt in 2:
+		if not is_instance_valid(control) or not control.is_visible_in_tree():
+			return false
+		var pos := control.get_global_rect().get_center()
+		var losses := _focus_losses
+		_push_button(pos, true)
+		await frames()
+		var cancelled := _focus_losses != losses
+		_push_button(pos, false)
+		await frames()
+		if not cancelled:
+			return true
+		print("[E2E] window focus changed during a tap on %s; %s" % [control.name, "tapping again" if attempt == 0 else "giving up"])
+	return false
 
 
 # 손가락으로 끄는 동작. 목록·카드 위에서 시작해도 실제 기기처럼 스크롤되는지 확인한다.
@@ -116,9 +163,9 @@ func drag(from: Vector2, to: Vector2, steps := 10, hold := 0.0) -> void:
 		var point := from.lerp(to, float(i) / steps)
 		var motion := InputEventMouseMotion.new()
 		motion.button_mask = MOUSE_BUTTON_MASK_LEFT
-		motion.position = point
-		motion.global_position = point
-		motion.relative = point - previous
+		motion.position = _to_device(point)
+		motion.global_position = motion.position
+		motion.relative = _to_device(point) - _to_device(previous)
 		viewport.push_input(motion)
 		previous = point
 		await frames(1)
@@ -143,9 +190,13 @@ func scroll_into_view(control: Control, max_drags := 30) -> bool:
 			return true
 		var before := Vector2(scroll.scroll_horizontal, scroll.scroll_vertical)
 		var center := view.get_center()
+		var losses := _focus_losses
 		await drag(center, center - move, 10, 0.25)
 		await _settle(scroll)
 		if Vector2(scroll.scroll_horizontal, scroll.scroll_vertical) == before:
+			# 끄는 사이 창 포커스가 바뀌어 엔진이 끌기를 취소했으면 다시 끈다.
+			if _focus_losses != losses:
+				continue
 			return false
 	var view_end := scroll.get_global_rect()
 	var rect_end := control.get_global_rect()
@@ -159,7 +210,13 @@ func shot(name: String) -> void:
 		return
 	await RenderingServer.frame_post_draw
 	var path := out_dir.path_join("%s.png" % name)
-	viewport.get_texture().get_image().save_png(path)
+	# 기기 화면 크기로 저장한다. 비율이 다른 기기의 남는 가장자리는 실제처럼 검은 띠로 둔다.
+	var rendered := viewport.get_texture().get_image()
+	rendered.convert(Image.FORMAT_RGBA8)
+	var image := Image.create(device_size.x, device_size.y, false, Image.FORMAT_RGBA8)
+	image.fill(Color.BLACK)
+	image.blit_rect(rendered, Rect2i(Vector2i.ZERO, rendered.get_size()), (device_size - rendered.get_size()) / 2)
+	image.save_png(path)
 	_current.screenshots.append(path.get_file())
 
 
@@ -189,7 +246,8 @@ func _write_report(meta := {}) -> void:
 		"schemaVersion": 1,
 		"mode": "rendered" if capture else "headless",
 		"godotVersion": Engine.get_version_info().string,
-		"viewport": [viewport.size.x, viewport.size.y],
+		"viewport": [device_size.x, device_size.y],
+		"logicalSize": [logical_size.x, logical_size.y],
 		"scenarios": recorded,
 	}
 	report.merge(meta)
@@ -246,6 +304,6 @@ func _push_button(pos: Vector2, pressed: bool) -> void:
 	event.button_index = MOUSE_BUTTON_LEFT
 	event.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
 	event.pressed = pressed
-	event.position = pos
-	event.global_position = pos
+	event.position = _to_device(pos)
+	event.global_position = event.position
 	viewport.push_input(event)

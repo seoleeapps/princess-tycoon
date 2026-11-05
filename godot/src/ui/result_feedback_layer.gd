@@ -2,6 +2,7 @@ extends Control
 
 const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
 const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
+const PixelText = preload("res://src/ui/pixel/pixel_text.gd")
 const ICON_DIR := "res://assets/pixel/icons/"
 const STEP := 2.0
 
@@ -30,6 +31,9 @@ func _ready() -> void:
 # compact: 자동 진행으로 끝난 평범한 활동 결과. 하단에 한 줄 띠로 잠깐 보여 주고 장면을 가리지 않는다.
 func present(payload: Dictionary, reduced_motion: bool, compact: bool = false) -> void:
 	if payload.is_empty():
+		return
+	# 결과 창(도전·심사·새로 열림 등)이 떠 있는 동안 평범한 자동 결과는 띄우지 않는다. 그 결과는 홈의 최근 결과에 남는다.
+	if compact and has_active_feedback() and str(_active_panel.get_meta("motion_mode", "")) != "compact":
 		return
 	_reduced_motion = reduced_motion
 	_clear_active()
@@ -132,6 +136,7 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	# 제목은 아이콘·배지 아래 한 줄을 통째로 써서 잘리지 않게 한다.
 	var headline := _label(str(payload.get("headline", "활동 완료")), 24, PixelTokens.INK)
 	headline.max_lines_visible = 2
+	PixelText.wrap_at_spaces(headline)
 	content.add_child(headline)
 
 	var floating_stat_count := 0
@@ -164,6 +169,19 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 	panel.set_meta("floating_stat_count", floating_stat_count)
 
 	var detail_count := 0
+	# 같은 순간에 열린 해금 단계("새로 열림 · …")는 결과 창의 첫 줄로 강조한다. 상세 줄 상한에 함께 센다.
+	# 여러 단계가 한 번에 열려도 잘리지 않게 2줄까지 쓰고, 실제로 2줄로 접히면 첫 상세 줄을 1줄로 줄여 창 높이를 지킨다.
+	var notice := str(payload.get("notice", "")).strip_edges()
+	var notice_label: Label = null
+	if not notice.is_empty():
+		notice_label = _label(notice, 16, PixelTokens.ACCENT)
+		notice_label.max_lines_visible = 2
+		notice_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		notice_label.tooltip_text = notice
+		PixelText.wrap_at_spaces(notice_label)
+		content.add_child(notice_label)
+		detail_count += 1
+	var first_detail := true
 	for raw_line: Variant in payload.get("details", []) as Array:
 		if detail_count >= MAX_DETAIL_LINES:
 			break
@@ -173,17 +191,27 @@ func _build_panel(payload: Dictionary) -> PanelContainer:
 		# 결과 창이 화면 위쪽을 오래 가리지 않게 첫 줄은 2줄, 나머지는 1줄로 줄인다.
 		# 전체 문장은 홈의 최근 결과와 기록 탭에 남는다.
 		var detail := _label(line, 16, PixelTokens.INK_MUTED)
-		if detail_count == 0:
+		if first_detail:
 			detail.max_lines_visible = 2
 			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			PixelText.wrap_at_spaces(detail)
+			if notice_label != null:
+				notice_label.resized.connect(_fit_first_detail.bind(notice_label, detail))
 		else:
 			detail.autowrap_mode = TextServer.AUTOWRAP_OFF
 			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		detail.tooltip_text = line
 		content.add_child(detail)
 		detail_count += 1
+		first_detail = false
 	panel.set_meta("detail_count", detail_count)
 	return panel
+
+
+# 새로 열림 줄이 2줄로 접히면 첫 상세 줄을 1줄로, 1줄이면 2줄까지 보인다(창의 최대 줄 수 5줄 유지).
+func _fit_first_detail(notice_label: Label, detail: Label) -> void:
+	if is_instance_valid(notice_label) and is_instance_valid(detail):
+		detail.max_lines_visible = 1 if notice_label.text.contains("\n") else 2
 
 
 func _build_compact_panel(payload: Dictionary) -> PanelContainer:

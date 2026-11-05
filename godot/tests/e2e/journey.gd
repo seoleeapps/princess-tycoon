@@ -54,6 +54,8 @@ func _first_session(main: Control) -> void:
 	# 첫 세션은 단계적 해금 1~3단계를 실제로 지난다(GDD §2.2). 4단계 이후 기능은 복귀 여정에서 확인한다.
 	e2e.begin("first-session", ["home", "profile", "activity", "result", "plan", "growth", "settings", "menu"])
 	e2e.step("starts on home", _screen(main) == "home")
+	# 기기 화면 크기와 관계없이 장면은 기준 좌표계(390×844)로 그려진다(canvas_items + keep).
+	e2e.expect_equal("scene uses the logical 390x844 canvas", [int(main.size.x), int(main.size.y)], [390, 844])
 	await e2e.shot("01-home")
 
 	await _tap_id(main, "menu", "open menu")
@@ -126,8 +128,11 @@ func _first_session(main: Control) -> void:
 		if _unlock_stage(main) == 2 and not stage2_shot:
 			stage2_shot = true
 			await e2e.frames(4)
+			# 직접 실행으로 열리면 결과 창의 첫 줄에, 자동 진행의 한 줄 띠와 함께 열리면 알림 띠에 한 번만 보인다.
 			var notice := main.get("_toast_label") as Label
-			e2e.step("stage 2 shows an unlock notice", notice != null and notice.is_visible_in_tree() and notice.text.contains("새로 열림 · 아르바이트"), "" if notice == null else notice.text)
+			var in_toast := notice != null and notice.is_visible_in_tree() and notice.text.contains("새로 열림 · 아르바이트")
+			var card_notice := _search(_result_layer(main), func(node: Node) -> bool: return node is Label and (node as Label).text.begins_with("새로 열림 · 아르바이트")) as Label
+			e2e.step("stage 2 shows an unlock notice once", (card_notice != null) != in_toast, "card=%s toast=%s" % ["" if card_notice == null else card_notice.text, "" if notice == null else notice.text])
 			e2e.step("stage 2 teases the plan tab", _find_id(main, "tab_teaser") != null)
 			await e2e.shot("08-activity-stage2")
 	e2e.step("eight activities open stage 3", int(_read(main, ["lifetimeStats", "activities"], 0)) >= 8 and _unlock_stage(main) >= 3, "activities=%d stage=%d" % [int(_read(main, ["lifetimeStats", "activities"], 0)), _unlock_stage(main)])

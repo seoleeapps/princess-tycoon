@@ -13,6 +13,6 @@ done
 
 rg -q "강제 엔딩 없음" docs/10_현대형_무한성장_GDD.md
 rg -q "AC-UI-06" docs/11_현대형_구현계약.md
-rg -q "272/272 PASS" docs/12_구현_QA_증거.md
+rg -q "276/276 PASS" docs/12_구현_QA_증거.md
 rg -q "남은 미구현 항목은 없다" docs/12_구현_QA_증거.md
 echo "Documentation contract passed."
