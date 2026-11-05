@@ -87,7 +87,7 @@ func _run() -> void:
 	main.call("_collect_offline")
 	await process_frame
 	var settle_toast: Label = main.get("_toast_label") as Label
-	_check(settle_toast != null and not settle_toast.text.contains("새로 열림"), "오프라인 정산 알림에 직전 새로 열림 문구 없음")
+	_check(settle_toast != null and not settle_toast.text.replace("\n", " ").contains("새로 열림"), "오프라인 정산 알림에 직전 새로 열림 문구 없음")
 	main.call("_close_sheet")
 	await process_frame
 	# 기능 경로 도달(AC-UI-02)은 모든 단계를 연 뒤 확인한다.
@@ -112,6 +112,7 @@ func _run() -> void:
 		await process_frame
 
 	await _check_copy_and_rows(main)
+	await _check_manual_expedition(main)
 	main.queue_free()
 	await process_frame
 	_finish()
@@ -212,6 +213,74 @@ func _check_copy_and_rows(main: Node) -> void:
 	var near_line := _first_label_with(main, "부족 · ")
 	var near_lines := near_line.text.split("\n").size() if near_line != null else 0
 	_check(near_line != null and near_line.text.replace("\n", " ") == near_source and near_lines >= 2 and near_line.get_line_count() == near_lines, "가까운 진로 부족 줄은 띄어쓰기에서만 줄바꿈 [%s]" % ("" if near_line == null else near_line.text.replace("\n", " / ")))
+
+
+# 직접 고른 원정은 시험보다 먼저 한다(이슈 #12, AC-EXP-05). 화면은 겹치는 시험을 알리고, 출발 뒤 불참 알림을 띄운다.
+func _check_manual_expedition(main: Node) -> void:
+	var engine: Object = main.get("_engine") as Object
+	var state: Dictionary = (engine.call("get_state") as Dictionary).duplicate(true)
+	state["unlocks"] = {"stage": 7, "announced": 7, "tipsSeen": state.get("unlocks", {}).get("tipsSeen", [])}
+	for stat_key: String in ["stamina", "combat", "magic", "dance", "art", "communication", "cooking", "intelligence", "strength", "morals", "refinement"]:
+		(state["stats"] as Dictionary)[stat_key] = 600.0
+	state["worldTier"] = 6
+	(state["time"] as Dictionary)["slot"] = 20
+	(state["meters"] as Dictionary)["energy"] = 100.0
+	(state["meters"] as Dictionary)["stress"] = 0.0
+	(state["bigValues"] as Dictionary)["gold"] = BigValue.from_number(1.0e9)
+	state["activeTask"] = null
+	state["activityQueue"] = []
+	main.call("_adopt_engine_result", engine.call("initialize_from_state", state))
+	var ui_state: Dictionary = main.get("_state") as Dictionary
+	ui_state["lastPlannerDecision"] = {"rejected": {"ADV_VOLCANO": "예정 도전 우선: 21번 슬롯", "REST_RESORT": "예정 도전 우선: 21번 슬롯"}}
+	_check(str(main.call("_activity_lock_reason", "ADV_VOLCANO")) == "", "시험과 겹친 원정은 잠금이 아님")
+	# 엔진은 상태를 불러올 때 다음 활동을 미리 고르므로, 빠지는 시험은 화면이 가진 상태로 계산한 값을 기준으로 본다.
+	var conflict_ids: Array = engine.call("activity_schedule_conflicts", "ADV_VOLCANO", ui_state) as Array
+	var schedule: Dictionary = (main.get("_runtime_config") as Dictionary).get("challengeScheduleSlots", {}) as Dictionary
+	var first_name := str(main.call("_activity_name_by_id", str(conflict_ids[0]))) if not conflict_ids.is_empty() else ""
+	var first_day := int(schedule.get(str(conflict_ids[0]), 0)) if not conflict_ids.is_empty() else 0
+	var subject := first_name if conflict_ids.size() == 1 else "%s 외 %d개" % [first_name, conflict_ids.size() - 1]
+	var expected_warning := "%d일째 %s 겹쳐요" % [first_day, str(main.call("_josa", subject, "과", "와"))]
+	var names: Array[String] = []
+	for raw_id: Variant in conflict_ids:
+		names.append(str(main.call("_activity_name_by_id", str(raw_id))))
+	_check(not conflict_ids.is_empty(), "21일째 붉은 능선 원정은 시험과 겹침 %s" % str(conflict_ids))
+	_check(str(main.call("_activity_lock_reason", "REST_RESORT")).begins_with("다음 시즌"), "원정이 아닌 활동의 시험 겹침은 그대로 잠금")
+	main.call("_open_sheet", "world")
+	await process_frame
+	await process_frame
+	var world_sheet := _find_screen_node(main, "world")
+	var warning: Label = null
+	var start_button: Button = null
+	if world_sheet != null:
+		for raw_node: Node in world_sheet.find_children("*", "", true, false):
+			if raw_node is Label and (raw_node as Label).text.replace("\n", " ").begins_with(expected_warning):
+				warning = raw_node as Label
+			elif raw_node is Button and str(raw_node.get_meta("ui_id", "")) == "world_ADV_VOLCANO":
+				start_button = raw_node as Button
+	_check(warning != null and warning.get_theme_color("font_color") == PixelTokens.ACCENT, "월드 원정 카드가 겹치는 시험을 강조색으로 알림 [%s]" % expected_warning)
+	_check(start_button != null and not start_button.disabled and start_button.text == "시험 빠지고 출발", "월드 원정 버튼은 시험 빠지고 출발 [%s]" % ("" if start_button == null else start_button.text))
+	main.call("_close_sheet")
+	await process_frame
+	main.set("_activity_filter", "adventure")
+	main.call("_show_tab", "activity")
+	await process_frame
+	await process_frame
+	var row_warning := _row_label(main, "ADV_VOLCANO", "%d일째 시험에 빠져요" % first_day)
+	var row_button: Button = null
+	for raw_node: Node in main.find_children("*", "Button", true, false):
+		if str(raw_node.get_meta("ui_id", "")) == "activity_run_ADV_VOLCANO" and (raw_node as Button).is_visible_in_tree():
+			row_button = raw_node as Button
+	_check(row_warning != null and _text_fits(row_warning) and row_button != null and not row_button.disabled, "활동 탭 원정 행은 시험에 빠진다고 알리고 1회를 누를 수 있음")
+	main.call("_run_activity", "ADV_VOLCANO")
+	await process_frame
+	var toast := (main.get("_toast_label") as Label).text.replace("\n", " ")
+	var mastery: Dictionary = (main.get("_state") as Dictionary).get("mastery", {}) as Dictionary
+	_check(int(mastery.get("ADV_VOLCANO", 0)) > 0 and toast.contains("%s에는 불참했어요" % ", ".join(names)), "원정 출발 뒤 불참한 시험을 알림 [%s]" % toast.replace("\n", " / "))
+	# 알림 띠도 띄어쓰기에서만 줄을 바꾼다("불참했 / 어요" 방지).
+	var toast_label := main.get("_toast_label") as Label
+	var toast_lines := toast_label.text.split("\n").size()
+	_check(toast_lines >= 2 and toast_label.get_line_count() == toast_lines, "알림 띠는 띄어쓰기에서만 줄바꿈 [%s]" % toast_label.text.replace("\n", " / "))
+	main.set("_activity_filter", "education")
 
 
 func _first_label_with(main: Node, prefix: String) -> Label:

@@ -864,12 +864,19 @@ func _activity_card(activity: Dictionary) -> Control:
 		mastery_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		title_row.add_child(mastery_label)
 	text_box.add_child(title_row)
+	var conflicts := _expedition_conflicts(activity_id) if lock_reason.is_empty() else []
 	if not lock_reason.is_empty():
 		var lock_label := _lock_reason_label(activity_id, lock_reason)
 		lock_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		lock_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		lock_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		text_box.add_child(lock_label)
+	elif not conflicts.is_empty():
+		var skip_label := _label(_expedition_conflict_text(conflicts, false), 16, PixelTokens.ACCENT)
+		skip_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		skip_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		skip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		text_box.add_child(skip_label)
 	else:
 		text_box.add_child(_activity_facts(activity))
 	info.custom_minimum_size.y = 52.0
@@ -938,11 +945,16 @@ func _build_activity_detail_sheet(body: VBoxContainer) -> void:
 	if STAT_LABELS.has(primary_stat):
 		box.add_child(_label("주 성장 · %s" % STAT_LABELS[primary_stat], 16, PixelTokens.POSITIVE))
 	box.add_child(_label("숙련 %d" % int(_read(["mastery", _detail_activity_id], 0)), 16, PixelTokens.INK_MUTED))
+	var conflicts := _expedition_conflicts(_detail_activity_id) if lock_reason.is_empty() else []
 	if not lock_reason.is_empty():
 		box.add_child(_lock_reason_label(_detail_activity_id, lock_reason))
+	elif not conflicts.is_empty():
+		var skip_line := _label(_expedition_conflict_text(conflicts, true), 16, PixelTokens.ACCENT)
+		PixelText.wrap_at_spaces(skip_line)
+		box.add_child(skip_line)
 	card.add_child(box)
 	body.add_child(card)
-	var run := _button("이 활동 1회", _run_activity_from_detail.bind(_detail_activity_id), "primary", 52.0, "detail_run")
+	var run := _button("시험 빠지고 1회" if not conflicts.is_empty() else "이 활동 1회", _run_activity_from_detail.bind(_detail_activity_id), "primary", 52.0, "detail_run")
 	run.icon = _icon_texture("play")
 	run.disabled = not lock_reason.is_empty()
 	body.add_child(run)
@@ -1902,7 +1914,13 @@ func _run_activity(activity_id: String) -> void:
 	_play_sfx(SynthAudioPort.CUE_REWARD if succeeded else SynthAudioPort.CUE_FAILURE)
 	if succeeded:
 		_present_result_feedback(result, feedback_checkpoint, false, unlock_notice)
-		_show_toast("%s 1회를 해결했어요." % _activity_name_by_id(activity_id))
+		var skipped_names: Array[String] = []
+		for raw_skipped: Variant in (result as Dictionary).get("skippedChallenges", []) as Array:
+			skipped_names.append(_activity_name_by_id(str(raw_skipped)))
+		if skipped_names.is_empty():
+			_show_toast("%s 1회를 해결했어요." % _activity_name_by_id(activity_id))
+		else:
+			_show_toast("%s 1회를 해결했어요.\n%s에는 불참했어요." % [_activity_name_by_id(activity_id), ", ".join(skipped_names)])
 	else:
 		_show_toast(_friendly_rejection(str((result as Dictionary).get("error", "활동을 실행하지 못했어요.")), activity_id) if result is Dictionary else "활동을 실행하지 못했어요.")
 
@@ -2407,6 +2425,7 @@ func _build_toast() -> void:
 	_toast_panel.z_index = 100
 	_toast_panel.theme_type_variation = PixelTheme.panel_variation("toast")
 	_toast_label = _label("", 16, PixelTokens.ON_STRIP, HORIZONTAL_ALIGNMENT_CENTER)
+	PixelText.wrap_at_spaces(_toast_label)
 	_toast_panel.add_child(_toast_label)
 	_toast_panel.visible = false
 	_modal_layer.add_child(_toast_panel)
@@ -2420,7 +2439,7 @@ func _show_toast(message: String) -> void:
 	# 방금 띄운 새로 열림 알림은 다른 알림에 덮이지 않고 함께 보인다.
 	if message != _unlock_notice_text and Time.get_ticks_msec() < _unlock_notice_until:
 		message = "%s\n%s" % [_unlock_notice_text, message]
-	_toast_label.text = message
+	PixelText.set_text(_toast_label, message)
 	_toast_panel.visible = true
 	_toast_panel.modulate = Color.WHITE
 	get_tree().create_timer(2.2).timeout.connect(func():
@@ -2833,8 +2852,14 @@ func _world_action_card(title: String, detail: String, activity_id: String, acti
 				arrow.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 				nodes.add_child(arrow)
 		box.add_child(nodes)
+	var conflicts := _expedition_conflicts(activity_id) if lock_reason.is_empty() else []
 	if not lock_reason.is_empty():
 		box.add_child(_lock_reason_label(activity_id, lock_reason))
+	elif not conflicts.is_empty():
+		var skip_line := _label(_expedition_conflict_text(conflicts, true), 16, PixelTokens.ACCENT)
+		PixelText.wrap_at_spaces(skip_line)
+		box.add_child(skip_line)
+		action_label = "시험 빠지고 출발"
 	var action := _button(action_label, _run_world_activity.bind(activity_id), "primary" if lock_reason.is_empty() else "secondary", 48.0, "world_%s" % activity_id)
 	action.icon = _icon_texture("play")
 	action.disabled = not lock_reason.is_empty()
@@ -3198,6 +3223,11 @@ func _activity_lock_reason(activity_id: String) -> String:
 		if typeof(rejected) == TYPE_DICTIONARY and rejected.has(activity_id):
 			# 단계가 열리기 전에 내린 결정의 해금 잠금은 다음 결정 전까지 남아 있으므로, 이미 열린 활동에는 쓰지 않는다.
 			var raw := str(rejected[activity_id])
+			# 직접 고른 원정은 시험 일정보다 먼저 하므로(이슈 #12), 자동 판단의 시험 겹침 대신 지금 직접 실행할 때의 판단을 쓴다.
+			if raw.begins_with("예정 도전") and _activity_kind(_activity_by_id(activity_id)) == "adventure":
+				raw = _manual_rejection(activity_id)
+				if raw.is_empty():
+					return requirement
 			var stale_stage_lock := raw.begins_with("해금 단계") and _activity_open(_activity_by_id(activity_id))
 			# 결정 뒤 골드가 늘었거나 시험 일정이 지나 이미 풀린 거절도 다음 결정 전까지 남아 있으므로 쓰지 않는다.
 			var stale_gold := (raw.begins_with("비용 지불") or raw.begins_with("최소 보유금")) and _gold_shortfall(activity_id) <= 0.0
@@ -3246,6 +3276,32 @@ func _friendly_rejection(raw: String, activity_id: String) -> String:
 	if raw.begins_with("요청 활동 실행 제한"):
 		return "지금은 실행할 수 없어요"
 	return raw
+
+
+func _manual_rejection(activity_id: String) -> String:
+	if _engine == null or not _engine.has_method("manual_rejection_reason"):
+		return ""
+	return str(_engine.call("manual_rejection_reason", activity_id, _state))
+
+
+# 직접 고른 원정이 덮어 빠지게 되는 시험 id(원정이 아니거나 겹치지 않으면 빈 배열).
+func _expedition_conflicts(activity_id: String) -> Array:
+	if _engine == null or not _engine.has_method("activity_schedule_conflicts"):
+		return []
+	return _engine.call("activity_schedule_conflicts", activity_id, _state) as Array
+
+
+# 겹치는 첫 시험의 시즌 날짜와 이름. long이면 "24일째 개척 원정 리그와 겹쳐요. 출발하면 그 시험에 빠져요", 아니면 "24일째 시험에 빠져요".
+func _expedition_conflict_text(conflicts: Array, long: bool) -> String:
+	if conflicts.is_empty():
+		return ""
+	var schedule: Dictionary = _runtime_config.get("challengeScheduleSlots", {}) as Dictionary
+	var day := int(schedule.get(str(conflicts[0]), 0))
+	if not long:
+		return "%d일째 시험에 빠져요" % day
+	var name := _activity_name_by_id(str(conflicts[0]))
+	var subject := name if conflicts.size() == 1 else "%s 외 %d개" % [name, conflicts.size() - 1]
+	return "%d일째 %s 겹쳐요. 출발하면 그 시험에 빠져요" % [day, _josa(subject, "과", "와")]
 
 
 func _planner_rejection(activity_id: String) -> String:

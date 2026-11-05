@@ -14,6 +14,8 @@ const SELL_RATIO: float = 0.5
 var _state: Dictionary = {}
 var _content_db: ContentDB = ContentDB.new()
 var _planner: Planner = Planner.new()
+# 플레이어가 직접 실행 중인 원정. 이 원정만 시험 일정보다 먼저 고른다. 실행이 끝나면 지우고 저장하지 않는다.
+var _manual_expedition_id: String = ""
 var _unlock: UnlockProgress = UnlockProgress.new()
 var _generator: ProceduralGenerator = ProceduralGenerator.new()
 var _content_report: Dictionary = {}
@@ -246,9 +248,23 @@ func run_activity(activity_id: String, now_unix: int = -1) -> Dictionary:
 	var activity: Dictionary = _content_db.get_activity(activity_id)
 	if activity.is_empty():
 		return {"ok": false, "error": "존재하지 않는 활동", "activityId": activity_id}
-	var rejection_reason: String = _planner.rejection_reason(_state, activity)
+	# 직접 고른 원정은 시험 일정보다 먼저 한다(이슈 #12). 다른 규칙은 그대로 지킨다.
+	var expedition: bool = str(activity.get("kind", "")) == "adventure"
+	var rejection_reason: String = _planner.rejection_reason(_state, activity, expedition)
 	if not rejection_reason.is_empty():
 		return {"ok": false, "error": rejection_reason, "activityId": activity_id}
+	var skipped: Array[String] = []
+	if expedition:
+		skipped = _planner.schedule_conflicts(_state, activity)
+	_manual_expedition_id = activity_id if expedition else ""
+	var outcome: Dictionary = _run_requested_activity(activity_id, now_unix)
+	_manual_expedition_id = ""
+	if bool(outcome.get("ok", false)) and not skipped.is_empty():
+		outcome["skippedChallenges"] = skipped
+	return outcome
+
+
+func _run_requested_activity(activity_id: String, now_unix: int) -> Dictionary:
 	var active: Variant = _state.get("activeTask")
 	var active_is_requested: bool = active is Dictionary and str((active as Dictionary).get("activityId", (active as Dictionary).get("id", ""))) == activity_id
 	var queue: Array = _state.get("activityQueue", []) as Array
@@ -274,6 +290,25 @@ func run_activity(activity_id: String, now_unix: int = -1) -> Dictionary:
 		if not request_is_active and not queue.has(activity_id):
 			return _with_state({"ok": false, "error": "선행 활동 후 실행 조건을 충족하지 못함", "activityId": activity_id, "slotsAdvanced": guard})
 	return _with_state({"ok": false, "error": "요청 활동 실행 제한 초과", "activityId": activity_id, "slotsAdvanced": guard})
+
+
+# 직접 고른 원정이 덮어 빠지게 되는 시험 id. 원정이 아니면 빈 배열.
+func activity_schedule_conflicts(activity_id: String, state: Dictionary) -> Array[String]:
+	_ensure_initialized()
+	var activity: Dictionary = _content_db.get_activity(activity_id)
+	var none: Array[String] = []
+	if str(activity.get("kind", "")) != "adventure":
+		return none
+	return _planner.schedule_conflicts(state, activity)
+
+
+# 플레이어가 지금 직접 실행할 때의 거절 이유(원정은 시험 일정 예외를 적용). 실행할 수 있으면 빈 문자열.
+func manual_rejection_reason(activity_id: String, state: Dictionary) -> String:
+	_ensure_initialized()
+	var activity: Dictionary = _content_db.get_activity(activity_id)
+	if activity.is_empty():
+		return "존재하지 않는 활동"
+	return _planner.rejection_reason(state, activity, str(activity.get("kind", "")) == "adventure")
 
 
 # 세계 티어에서 활동 1회의 실제 비용과 기본 보수(성과 보정 전). 화면의 활동 행이 플래너와 같은 값을 보이게 한다.
@@ -488,7 +523,7 @@ func _ensure_active_task() -> void:
 		queue_scan_count -= 1
 		var queued_id: String = str(queue.pop_front())
 		var queued_activity: Dictionary = _content_db.get_activity(queued_id)
-		var queued_rejection: String = _planner.rejection_reason(_state, queued_activity) if not queued_activity.is_empty() else "존재하지 않는 활동"
+		var queued_rejection: String = _planner.rejection_reason(_state, queued_activity, queued_id == _manual_expedition_id) if not queued_activity.is_empty() else "존재하지 않는 활동"
 		if not queued_activity.is_empty() and queued_rejection.is_empty():
 			selected_activity = queued_activity
 			decision = {

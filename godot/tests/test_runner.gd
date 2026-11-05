@@ -44,6 +44,7 @@ func _run() -> void:
 	_test_progressive_unlock(content_db)
 	_test_career_gate_display()
 	_test_schedule_free_slot(content_db)
+	_test_manual_expedition(content_db)
 
 	_finish()
 
@@ -1570,6 +1571,80 @@ func _test_schedule_free_slot(content_db: ContentDB) -> void:
 		if (next_slot == resort_free and blocked) or (next_slot < resort_free and not blocked and not during_exam):
 			consistent = false
 	_check(consistent, "풀리는 slot 계산이 플래너의 예정 도전 거절과 일치")
+
+
+# 직접 고른 원정은 시험 일정보다 먼저 한다(이슈 #12, AC-EXP-01~04). 자동 진행과 다른 규칙은 그대로다.
+func _test_manual_expedition(content_db: ContentDB) -> void:
+	var planner := Planner.new()
+	planner.configure(content_db.config, content_db.profiles, content_db.activities)
+	var volcano: Dictionary = content_db.get_activity("ADV_VOLCANO")
+	var state := _all_exams_state(880201, 20)
+	var conflicts := planner.schedule_conflicts(state, volcano)
+	_check(conflicts == ["CH_CONTEST_COOKING", "CH_LEAGUE_EXPEDITION"], "21일째 4칸 원정이 빠지게 되는 시험: 요리 경연(21일째), 원정 리그(24일째) %s" % str(conflicts))
+	var busy := state.duplicate(true)
+	busy["activeTask"] = _manual_task("EDU_LITERATURE", 2, 6)
+	_check(planner.schedule_conflicts(busy, volcano) == ["CH_LEAGUE_EXPEDITION"], "진행 중 활동이 끝난 뒤 시작하므로 빠지는 시험이 달라짐")
+	# AC-EXP-02: 자동 판단(플래너 기본값)은 여전히 원정이 시험을 덮지 않는다.
+	_check(planner.rejection_reason(state, volcano).begins_with("예정 도전") and planner.rejection_reason(state, volcano, true).is_empty(), "자동 판단은 시험 우선, 직접 실행 판단만 예외")
+
+	# AC-EXP-01: 직접 실행하면 원정이 끝나고, 겹친 시험은 그 회차에 실행되지 않는다.
+	# 엔진은 상태를 불러올 때 다음 활동을 미리 고르므로, 빠지는 시험은 실행 직전 엔진 상태로 계산한다.
+	for case: Array in [["ADV_VOLCANO", 880202, 20], ["ADV_RIFT", 880203, 0]]:
+		var activity_id := str(case[0])
+		var engine := GameEngine.new()
+		engine.initialize_from_state(_all_exams_state(int(case[1]), int(case[2])))
+		var before: Dictionary = engine.get_state()
+		var expected := planner.schedule_conflicts(before, content_db.get_activity(activity_id))
+		var mastery_before: Dictionary = (before.get("mastery", {}) as Dictionary).duplicate()
+		var run: Dictionary = engine.run_activity(activity_id, 1_793_000_000)
+		var mastery_after: Dictionary = engine.get_state().get("mastery", {}) as Dictionary
+		var skipped_untouched := true
+		for exam_id: String in expected:
+			skipped_untouched = skipped_untouched and int(mastery_after.get(exam_id, 0)) == int(mastery_before.get(exam_id, 0))
+		_check(bool(run.get("ok", false)) and not expected.is_empty() and (run.get("skippedChallenges", []) as Array) == expected and skipped_untouched and int(mastery_after.get(activity_id, 0)) > int(mastery_before.get(activity_id, 0)), "AC-EXP-01 %s 직접 실행, 겹친 시험 %s 불참 %s" % [activity_id, str(expected), str(run.get("error", run.get("skippedChallenges", [])))])
+		_check(str(engine.get("_manual_expedition_id")) == "", "%s 직접 실행 표시는 실행이 끝나면 지워짐(저장하지 않음)" % activity_id)
+
+	# AC-EXP-02: 자동 큐에 넣은 원정은 시험을 덮지 않고 시험이 먼저 열린다.
+	var auto_engine := GameEngine.new()
+	auto_engine.initialize_from_state(_all_exams_state(880204, 20))
+	auto_engine.queue_activity("ADV_VOLCANO")
+	auto_engine.advance_slots(2, 1_793_000_000)
+	var auto_mastery: Dictionary = auto_engine.get_state().get("mastery", {}) as Dictionary
+	var auto_task: Variant = auto_engine.get_state().get("activeTask")
+	var auto_active := str((auto_task as Dictionary).get("activityId", "")) if auto_task is Dictionary else ""
+	_check(int(auto_mastery.get("ADV_VOLCANO", 0)) == 0 and auto_active != "ADV_VOLCANO", "AC-EXP-02 자동 큐 원정은 시험 날을 덮지 않음 (진행 중 %s)" % auto_active)
+
+	# AC-EXP-03: 시험 우선 외의 규칙은 직접 실행 원정에도 적용된다.
+	var tired := _all_exams_state(880205, 20)
+	(tired["meters"] as Dictionary)["energy"] = 5.0
+	var tired_engine := GameEngine.new()
+	tired_engine.initialize_from_state(tired)
+	var tired_run: Dictionary = tired_engine.run_activity("ADV_VOLCANO", 1_793_000_000)
+	var locked := _all_exams_state(880206, 20)
+	locked["unlocks"] = {"stage": 5, "announced": 5, "tipsSeen": []}
+	(locked["time"] as Dictionary)["slot"] = 20
+	var locked_reason := planner.rejection_reason(locked, volcano, true)
+	_check(not bool(tired_run.get("ok", false)) and str(tired_run.get("error", "")).begins_with("회복") and locked_reason.begins_with("해금 단계"), "AC-EXP-03 직접 실행 원정도 회복 강제·해금 단계는 지킴 [%s / %s]" % [str(tired_run.get("error", "")), locked_reason])
+
+	# AC-EXP-04: 원정이 아닌 활동의 직접 실행은 지금처럼 시험과 겹치면 막힌다.
+	var rest_engine := GameEngine.new()
+	rest_engine.initialize_from_state(_all_exams_state(880207, 5))
+	var rest_run: Dictionary = rest_engine.run_activity("REST_RESORT", 1_793_000_000)
+	_check(not bool(rest_run.get("ok", false)) and str(rest_run.get("error", "")).begins_with("예정 도전"), "AC-EXP-04 휴식의 직접 실행은 시험과 겹치면 막힘 [%s]" % str(rest_run.get("error", "")))
+
+
+# 7단계, 모든 시험·원정 조건을 채운 상태. slot은 지금 시각(다음에 진행할 칸은 slot+1).
+func _all_exams_state(seed_value: int, slot: int) -> Dictionary:
+	var state: Dictionary = _rich_state(seed_value, "원정대")
+	for stat_key: String in ["stamina", "combat", "magic", "dance", "art", "communication", "cooking", "intelligence", "strength", "morals", "refinement"]:
+		(state["stats"] as Dictionary)[stat_key] = 600.0
+	state["worldTier"] = 6
+	(state["time"] as Dictionary)["slot"] = slot
+	(state["meters"] as Dictionary)["energy"] = 100.0
+	(state["meters"] as Dictionary)["stress"] = 0.0
+	state["activeTask"] = null
+	state["activityQueue"] = []
+	return state
 
 
 func _open_unlocks(state: Dictionary) -> Dictionary:
