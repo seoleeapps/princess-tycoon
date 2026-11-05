@@ -3048,6 +3048,8 @@ func _activity_lock_reason(activity_id: String) -> String:
 func _friendly_rejection(raw: String, requirement: String) -> String:
 	var number := RegEx.create_from_string("(\\d+)").search(raw)
 	var slot := number.get_string(1) if number != null else ""
+	if raw.begins_with("해금 단계"):
+		return "아직 열리지 않았어요"
 	if raw.begins_with("잠금 조건"):
 		return requirement if not requirement.is_empty() else "조건을 채우면 열려요"
 	if raw.begins_with("시즌 일정"):

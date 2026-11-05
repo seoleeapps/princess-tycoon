@@ -41,6 +41,7 @@ func _run() -> void:
 	_test_relationship_system(content_db)
 	_test_shop_non_terminal()
 	_test_career_non_terminal()
+	_test_progressive_unlock(content_db)
 
 	_finish()
 
@@ -57,7 +58,7 @@ func _test_audit_regressions(content_db: ContentDB) -> void:
 		challenge_mastery_tables_valid = challenge_mastery_tables_valid and mastery_values == [1, 3, 5]
 	_check(challenge_mastery_tables_valid, "도전 8종 rewardTable 숙련 경험치 1/3/5 정합")
 
-	var fresh_state := StateFactory.create(701001, "기본 상태", content_db.config)
+	var fresh_state := _open_unlocks(StateFactory.create(701001, "기본 상태", content_db.config))
 	var repaired_state := StateFactory.ensure_v2_shape({"schemaVersion": 2, "seed": 701002, "generatedContent": {}})
 	_check(str((fresh_state.get("generatedContent", {}) as Dictionary).get("pinnedContractId", "missing")) == "" and str((repaired_state.get("generatedContent", {}) as Dictionary).get("pinnedContractId", "missing")) == "", "StateFactory generatedContent pin 기본·보정")
 
@@ -89,7 +90,7 @@ func _test_audit_regressions(content_db: ContentDB) -> void:
 	count_db.load_all("res://data")
 	count_db.config["generatedContractCount"] = 2
 	count_db.config["generatedRivalCount"] = 3
-	var counted := generator.generate(StateFactory.create(701004, "count", count_db.config), count_db)
+	var counted := generator.generate(_open_unlocks(StateFactory.create(701004, "count", count_db.config)), count_db)
 	_check((counted.get("contracts", []) as Array).size() == 2 and (counted.get("rivals", []) as Array).size() == 3, "생성 계약·라이벌 수 config SSOT")
 
 	var planner_config := content_db.config.duplicate(true)
@@ -135,7 +136,7 @@ func _test_audit_regressions(content_db: ContentDB) -> void:
 	(same_day_win_state.get("time", {}) as Dictionary)["slot"] = 3
 	var same_day_targets: Array = generator.call("_eligible_contract_targets", {"id": "win_challenge", "kind": "win_challenge", "requiredKind": "challenge"}, content_db.activities, content_db.config, 4, same_day_win_state) as Array
 	_check(not same_day_targets.has(content_db.get_activity("CH_EXAM_ACADEMY")), "생성 당일 단일 시도 win_challenge 제외")
-	var exact_win_state := StateFactory.create(81006, "exact challenge", content_db.config)
+	var exact_win_state := _open_unlocks(StateFactory.create(81006, "exact challenge", content_db.config))
 	(exact_win_state.get("bigValues", {}) as Dictionary)["gold"] = BigValue.from_number(1000)
 	(exact_win_state.get("growthPolicy", {}) as Dictionary)["reserveGold"] = BigValue.from_number(900)
 	exact_win_state["activeTask"] = _manual_task("REST_HOME", 1, 1)
@@ -165,7 +166,7 @@ func _test_audit_regressions(content_db: ContentDB) -> void:
 			academy_contract_completed = str((raw_contract as Dictionary).get("status", "")) == "completed"
 	_check(not academy_contract.is_empty() and academy_won and academy_contract_completed, "예정 완료 slot exact jitter 판정과 실제 도전 승리 계약 완료 일치")
 
-	var late_clear_state := StateFactory.create(701055, "late clear", content_db.config)
+	var late_clear_state := _open_unlocks(StateFactory.create(701055, "late clear", content_db.config))
 	(late_clear_state.get("time", {}) as Dictionary)["slot"] = 25
 	(late_clear_state.get("stats", {}) as Dictionary)["stamina"] = 70.0
 	var late_unlocked: Array[Dictionary] = generator.call("_unlocked_activities", late_clear_state, content_db.activities)
@@ -184,7 +185,7 @@ func _test_audit_regressions(content_db: ContentDB) -> void:
 	forced_db.procedural["modifiers"] = ["low_energy"]
 	forced_db.procedural["modifierCount"] = {"base": 1, "tierDivisor": 999999, "minimum": 1, "maximum": 1}
 	forced_db.procedural["bonusObjectives"] = []
-	var forced_state := StateFactory.create(701056, "forced reducer", forced_db.config)
+	var forced_state := _open_unlocks(StateFactory.create(701056, "forced reducer", forced_db.config))
 	(forced_state.get("time", {}) as Dictionary)["slot"] = 27
 	(forced_state.get("meters", {}) as Dictionary)["energy"] = 20.0
 	forced_state["activeTask"] = _manual_task("REST_HOME", 1, 1)
@@ -240,7 +241,7 @@ func _test_audit_regressions(content_db: ContentDB) -> void:
 	var stress_reachable: bool = bool(generator.call("_stress_path_reachable", stress_state, content_db.activities, stress_target, "complete_kind", 1, content_db.config, 27, 72.0))
 	_check(not stress_reachable, "stress_guard는 목표·회복 전체 완료 경로를 검사")
 
-	var event_state := StateFactory.create(701007, "event", content_db.config)
+	var event_state := _open_unlocks(StateFactory.create(701007, "event", content_db.config))
 	(event_state.get("bigValues", {}) as Dictionary)["gold"] = BigValue.from_number(100)
 	(event_state.get("bigValues", {}) as Dictionary)["lifetimeGold"] = BigValue.from_number(100)
 	(event_state.get("bigValues", {}) as Dictionary)["renown"] = BigValue.from_number(250)
@@ -255,7 +256,7 @@ func _test_audit_regressions(content_db: ContentDB) -> void:
 	_check(absf(BigValue.to_float((event_positive.get("bigValues", {}) as Dictionary).get("lifetimeGold", BigValue.zero()) as Dictionary) - 150.0) < 0.001 and absf(BigValue.to_float((event_positive.get("bigValues", {}) as Dictionary).get("lifetimeRenown", BigValue.zero()) as Dictionary) - 750.0) < 0.001 and int(event_positive.get("worldTier", 0)) == 3, "이벤트 양수 골드·명성 lifetime 및 세계 티어 동시 반영")
 	_check(absf(BigValue.to_float((event_negative.get("bigValues", {}) as Dictionary).get("gold", BigValue.zero()) as Dictionary) - 125.0) < 0.001 and absf(BigValue.to_float((event_negative.get("bigValues", {}) as Dictionary).get("lifetimeGold", BigValue.zero()) as Dictionary) - 150.0) < 0.001, "이벤트 음수 골드는 현재값만 차감")
 
-	var title_state := StateFactory.create(701008, "title tier", content_db.config)
+	var title_state := _open_unlocks(StateFactory.create(701008, "title tier", content_db.config))
 	(title_state.get("bigValues", {}) as Dictionary)["renown"] = BigValue.from_number(250)
 	(title_state.get("bigValues", {}) as Dictionary)["lifetimeRenown"] = BigValue.from_number(250)
 	title_state["worldTier"] = 2
@@ -271,13 +272,13 @@ func _test_audit_regressions(content_db: ContentDB) -> void:
 	var title_reviews := title_advance.get("seasonReviews", []) as Array
 	_check(not title_reviews.is_empty() and int((title_reviews[0] as Dictionary).get("worldTierAfter", 0)) == 3 and int(title_engine.get_state().get("worldTier", 0)) == 3, "칭호 명성 지급 직후 같은 심사에서 세계 티어 재계산")
 
-	var modifier_state := StateFactory.create(701009, "modifier", content_db.config)
+	var modifier_state := _open_unlocks(StateFactory.create(701009, "modifier", content_db.config))
 	var modifier_engine := GameEngine.new()
 	modifier_engine.initialize_from_state(modifier_state)
 	var no_repeat_status: Dictionary = modifier_engine.call("_contract_modifier_status", {"modifiers": ["no_repeat"], "modifierRequirements": {"no_repeat": {"maximumConsecutiveSame": 1}}}, {}, {}, {"maximumConsecutiveSame": 2}, true)
 	_check(not bool(no_repeat_status.get("no_repeat", true)), "no_repeat는 누적 maximumConsecutiveSame 위반을 유지")
 
-	var rolling_state := StateFactory.create(701010, "rolling", content_db.config)
+	var rolling_state := _open_unlocks(StateFactory.create(701010, "rolling", content_db.config))
 	(rolling_state.get("time", {}) as Dictionary)["slot"] = 27
 	rolling_state["activeTask"] = _manual_task("REST_HOME", 1, 1)
 	var rolling_vectors: Array = []
@@ -292,7 +293,7 @@ func _test_audit_regressions(content_db: ContentDB) -> void:
 	var magic_damage_taken: Array[float] = []
 	for magic_defense: float in [0.0, 1000.0]:
 		var combat_engine := GameEngine.new()
-		combat_engine.initialize_from_state(StateFactory.create(701011, "combat", content_db.config))
+		combat_engine.initialize_from_state(_open_unlocks(StateFactory.create(701011, "combat", content_db.config)))
 		var magic_enemies: Array[Dictionary] = [{"id": "MAGIC", "name": "마법체", "hp": 1000, "attack": 0, "defense": 0, "magicAttack": 100, "magicDefense": 0}]
 		var combat_result: Dictionary = combat_engine.call("_resolve_adventure_combat_node", magic_enemies, false, 1, 500.0, 1.0, 1.0, 1000.0, magic_defense, 1.0, "시험 지역", {})
 		magic_damage_taken.append(500.0 - float(combat_result.get("playerHp", 500.0)))
@@ -402,8 +403,8 @@ func _test_rng_and_thousand_slot_determinism() -> void:
 
 	var first: GameEngine = GameEngine.new()
 	var second: GameEngine = GameEngine.new()
-	first.initialize(424242)
-	second.initialize(424242)
+	_open_initialize(first, 424242)
+	_open_initialize(second, 424242)
 	first.advance_slots(1000)
 	second.advance_slots(1000)
 	var first_state: Dictionary = first.get_state()
@@ -420,7 +421,7 @@ func _test_rng_and_thousand_slot_determinism() -> void:
 
 func _test_planner_constraints(content_db: ContentDB) -> void:
 	var planner: Planner = Planner.new()
-	var state: Dictionary = StateFactory.create(1001, "플래너")
+	var state: Dictionary = _open_unlocks(StateFactory.create(1001, "플래너"))
 	var literature: Dictionary = content_db.get_activity("EDU_LITERATURE")
 	var home: Dictionary = content_db.get_activity("REST_HOME")
 
@@ -486,7 +487,7 @@ func _test_challenge_schedule_and_hints(content_db: ContentDB) -> void:
 	var outside_result: Dictionary = outside_engine.run_activity("CH_EXAM_ACADEMY")
 	_check(not bool(outside_result.get("ok", true)) and str(outside_result.get("error", "")).contains("시즌 일정 잠금"), "수동 도전 일정 밖 구체 잠금 이유")
 
-	var weak_state: Dictionary = StateFactory.create(771003, "도전 힌트")
+	var weak_state: Dictionary = _open_unlocks(StateFactory.create(771003, "도전 힌트"))
 	weak_state["activeTask"] = _manual_task("CH_EXAM_ACADEMY", 1, 1)
 	var weak_engine: GameEngine = GameEngine.new()
 	weak_engine.initialize_from_state(weak_state)
@@ -532,7 +533,7 @@ func _test_manual_activity_execution() -> void:
 	_check(bool(executed.get("ok", false)) and str((executed.get("result", {}) as Dictionary).get("activityId", "")) == "EDU_LITERATURE", "수동 실행은 선행 activeTask 뒤 요청 ID 실제 완료를 반환")
 	_check(int(executed.get("slotsAdvanced", 0)) == 3, "수동 실행 선행 2 slot + 요청 1 slot 처리")
 
-	var locked_state: Dictionary = StateFactory.create(778002, "잠금")
+	var locked_state: Dictionary = _open_unlocks(StateFactory.create(778002, "잠금"))
 	var locked_engine: GameEngine = GameEngine.new()
 	locked_engine.initialize_from_state(locked_state)
 	var before_count: int = int((locked_engine.get_state().get("lifetimeStats", {}) as Dictionary).get("activities", 0))
@@ -552,7 +553,7 @@ func _test_manual_activity_execution() -> void:
 
 
 func _test_offline_cap_and_rollback() -> void:
-	var cap_state: Dictionary = StateFactory.create(9001, "오프라인")
+	var cap_state: Dictionary = _open_unlocks(StateFactory.create(9001, "오프라인"))
 	cap_state["lastSimulatedAt"] = 100000
 	var cap_engine: GameEngine = GameEngine.new()
 	cap_engine.initialize_from_state(cap_state)
@@ -560,7 +561,7 @@ func _test_offline_cap_and_rollback() -> void:
 	_check(int(cap_result.get("slotsAdvanced", -1)) == 480, "AC-IDLE-01 8시간/480 slot 상한")
 	_check(int(cap_result.get("elapsedSeconds", -1)) == 28800 and bool(cap_result.get("capped", false)), "AC-IDLE-01 오프라인 28,800초 cap")
 
-	var rollback_state: Dictionary = StateFactory.create(9002, "역행")
+	var rollback_state: Dictionary = _open_unlocks(StateFactory.create(9002, "역행"))
 	rollback_state["lastSimulatedAt"] = 200000
 	var rollback_engine: GameEngine = GameEngine.new()
 	rollback_engine.initialize_from_state(rollback_state)
@@ -572,7 +573,7 @@ func _test_offline_cap_and_rollback() -> void:
 	_check(_canonical(before.get("stats", {})) == _canonical(after.get("stats", {})), "AC-IDLE-02 역행 시 스탯 손실 없음")
 	_check((after.get("warnings", []) as Array).size() == (before.get("warnings", []) as Array).size() + 1, "AC-IDLE-02 역행 경고 기록")
 
-	var parity_state: Dictionary = StateFactory.create(9003, "동일 리듀서")
+	var parity_state: Dictionary = _open_unlocks(StateFactory.create(9003, "동일 리듀서"))
 	parity_state["lastSimulatedAt"] = 300000
 	var online: GameEngine = GameEngine.new()
 	var offline: GameEngine = GameEngine.new()
@@ -585,7 +586,7 @@ func _test_offline_cap_and_rollback() -> void:
 	var offline_state: Dictionary = offline.get_state()
 	_check(_canonical(online_state) == _canonical(offline_state), "AC-IDLE-03 온라인/오프라인 동일 reducer")
 
-	var paused_state: Dictionary = StateFactory.create(9004, "일시정지")
+	var paused_state: Dictionary = _open_unlocks(StateFactory.create(9004, "일시정지"))
 	paused_state["lastSimulatedAt"] = 500000
 	(paused_state["settings"] as Dictionary)["autoRun"] = false
 	var paused_engine: GameEngine = GameEngine.new()
@@ -602,7 +603,7 @@ func _test_offline_cap_and_rollback() -> void:
 		"defaultChoice": "safe",
 		"choices": [{"id": "safe", "effects": {"stats": {"intelligence": 100.0}}}],
 	}
-	var boundary_state: Dictionary = StateFactory.create(9005, "경계 만료")
+	var boundary_state: Dictionary = _open_unlocks(StateFactory.create(9005, "경계 만료"))
 	boundary_state["lastSimulatedAt"] = 400000
 	boundary_state["eventInbox"] = [boundary_event]
 	boundary_state["activeTask"] = _manual_task("EDU_LITERATURE", 1, 1)
@@ -622,7 +623,7 @@ func _test_event_expiry_boundary(content_db: ContentDB) -> void:
 	event["instanceId"] = "TEST_EVENT_EXPIRY"
 	event["queuedAtUnix"] = 0
 	event["expiresAtUnix"] = 0
-	var state: Dictionary = StateFactory.create(779001, "이벤트 만료")
+	var state: Dictionary = _open_unlocks(StateFactory.create(779001, "이벤트 만료"))
 	state["eventInbox"] = [event]
 	var first: GameEngine = GameEngine.new()
 	first.initialize_from_state(state)
@@ -646,7 +647,7 @@ func _test_event_expiry_boundary(content_db: ContentDB) -> void:
 
 
 func _test_save_codec() -> void:
-	var state: Dictionary = StateFactory.create(5555, "세이브 왕복")
+	var state: Dictionary = _open_unlocks(StateFactory.create(5555, "세이브 왕복"))
 	(state["stats"] as Dictionary)["intelligence"] = 1234.56789
 	(state["careerTitles"] as Dictionary)["END_WRITER"] = {"stars": 7, "firstSeason": 1, "lastSeason": 8}
 	var encoded: String = SaveCodec.encode(state)
@@ -677,7 +678,7 @@ func _test_save_codec() -> void:
 
 	var test_path: String = "user://princess_tycoon_test_save_codec.json"
 	_cleanup_save_path(test_path)
-	var backup_state: Dictionary = StateFactory.create(8080, "백업 원본")
+	var backup_state: Dictionary = _open_unlocks(StateFactory.create(8080, "백업 원본"))
 	var first_save: Dictionary = SaveCodec.save_atomic(test_path, backup_state)
 	var newer_state: Dictionary = backup_state.duplicate(true)
 	newer_state["playerName"] = "손상 대상"
@@ -703,7 +704,7 @@ func _test_save_codec() -> void:
 		"defaultChoice": "safe",
 		"choices": [{"id": "safe", "effects": {"stats": {"intelligence": 10.0}}}],
 	}
-	var failure_state: Dictionary = StateFactory.create(8081, "저장 실패")
+	var failure_state: Dictionary = _open_unlocks(StateFactory.create(8081, "저장 실패"))
 	failure_state["lastSimulatedAt"] = 650000
 	failure_state["eventInbox"] = [failure_event]
 	var failure_engine: GameEngine = GameEngine.new()
@@ -717,7 +718,7 @@ func _test_save_codec() -> void:
 	var preserve_event: Dictionary = failure_event.duplicate(true)
 	preserve_event["instanceId"] = "TEST_PRESERVE_EVENT_1"
 	preserve_event["expiresAtUnix"] = 850000
-	var preserve_state: Dictionary = StateFactory.create(8082, "역행 경계 저장")
+	var preserve_state: Dictionary = _open_unlocks(StateFactory.create(8082, "역행 경계 저장"))
 	preserve_state["lastSimulatedAt"] = 900000
 	preserve_state["eventInbox"] = [preserve_event]
 	var preserve_engine: GameEngine = GameEngine.new()
@@ -730,7 +731,7 @@ func _test_save_codec() -> void:
 
 func _test_procedural_generation(content_db: ContentDB) -> void:
 	var generator: ProceduralGenerator = ProceduralGenerator.new()
-	var original: Dictionary = StateFactory.create(24681357, "생성")
+	var original: Dictionary = _open_unlocks(StateFactory.create(24681357, "생성"))
 	original["worldTier"] = 12
 	(original["time"] as Dictionary)["season"] = 3
 	(original["challengeLeague"] as Dictionary)["bestScore"] = 420.0
@@ -802,7 +803,7 @@ func _test_procedural_generation(content_db: ContentDB) -> void:
 
 	var initial_contracts_compatible: bool = true
 	for initial_seed: int in range(40):
-		var initial_state: Dictionary = StateFactory.create(890000 + initial_seed, "초기 계약", content_db.config)
+		var initial_state: Dictionary = _open_unlocks(StateFactory.create(890000 + initial_seed, "초기 계약", content_db.config))
 		var initial_generated: Dictionary = generator.generate(initial_state, content_db)
 		for raw_contract: Variant in initial_generated.get("contracts", []) as Array:
 			if raw_contract is not Dictionary:
@@ -921,7 +922,7 @@ func _test_adventure_and_challenge(content_db: ContentDB) -> void:
 	var mismatch_outcome: Dictionary = mismatch_completed.get("outcome", {}) as Dictionary
 	_check(bool(mismatch_outcome.get("regionApplied", false)) and str((mismatch_outcome.get("region", {}) as Dictionary).get("templateId", "")) == mismatch_activity_id, "생성 region template과 다른 해금 adventure는 deterministic lazy 변형 적용")
 
-	var defeat_state: Dictionary = StateFactory.create(33003, "모험 패배")
+	var defeat_state: Dictionary = _open_unlocks(StateFactory.create(33003, "모험 패배"))
 	defeat_state["worldTier"] = 10000
 	defeat_state["activeTask"] = {
 		"id": "ADV_RIFT",
@@ -1099,7 +1100,7 @@ func _test_contract_semantics(content_db: ContentDB) -> void:
 	var exact_challenge_contract: Dictionary = {"kind": "win_challenge", "targetActivityIds": ["CH_EXAM_MAGIC"], "targetKind": "challenge"}
 	var cross_kind_stat_contract: Dictionary = {"kind": "gain_stat", "targetActivityIds": ["EDU_LITERATURE"], "targetStat": "stamina"}
 	_check(not match_planner.contract_activity_matches(exact_challenge_contract, content_db.get_activity("CH_EXAM_ACADEMY")) and match_planner.contract_activity_matches(cross_kind_stat_contract, content_db.get_activity("JOB_FARM")), "Planner와 reducer가 공유하는 계약 대상 predicate: 정확 ID·gain_stat 교차 kind")
-	var pinned_stat_state: Dictionary = StateFactory.create(66005, "플래너 계약", content_db.config)
+	var pinned_stat_state: Dictionary = _open_unlocks(StateFactory.create(66005, "플래너 계약", content_db.config))
 	pinned_stat_state["generatedContent"] = {"contracts": [{"id": "PIN_STAT", "kind": "gain_stat", "targetActivityIds": ["EDU_LITERATURE"], "targetStat": "stamina", "status": "active"}], "pinnedContractId": "PIN_STAT"}
 	var pinned_stat_score: float = float(match_planner.choose(pinned_stat_state, [content_db.get_activity("JOB_FARM")]).get("score", 0.0))
 	(pinned_stat_state["generatedContent"] as Dictionary)["pinnedContractId"] = ""
@@ -1108,7 +1109,7 @@ func _test_contract_semantics(content_db: ContentDB) -> void:
 
 
 func _test_extended_infinite_rules(content_db: ContentDB) -> void:
-	var event_state: Dictionary = StateFactory.create(67001, "일정 이벤트", content_db.config)
+	var event_state: Dictionary = _open_unlocks(StateFactory.create(67001, "일정 이벤트", content_db.config))
 	(event_state["time"] as Dictionary)["slot"] = 11
 	for relation_id: Variant in (event_state.get("relations", {}) as Dictionary).keys():
 		(event_state["relations"] as Dictionary)[relation_id] = 0.0
@@ -1124,7 +1125,7 @@ func _test_extended_infinite_rules(content_db: ContentDB) -> void:
 	_check((event_engine.get_state().get("eventInbox", []) as Array).size() == 1, "한 활동 완료당 이벤트 최대 1개")
 
 	var locked_engine: GameEngine = GameEngine.new()
-	locked_engine.initialize_from_state(StateFactory.create(67002, "해금 전"))
+	locked_engine.initialize_from_state(_open_unlocks(StateFactory.create(67002, "해금 전")))
 	var unlock_state: Dictionary = locked_engine.get_state()
 	var initially_locked_region: bool = not bool(((unlock_state.get("generatedContent", {}) as Dictionary).get("region", {}) as Dictionary).get("active", true))
 	(unlock_state["stats"] as Dictionary)["stamina"] = 120.0
@@ -1167,7 +1168,7 @@ func _test_extended_infinite_rules(content_db: ContentDB) -> void:
 
 	var preferred_planner: Planner = Planner.new()
 	preferred_planner.configure(content_db.config, content_db.profiles, content_db.activities)
-	var preferred_state: Dictionary = StateFactory.create(67300, "선호 태그", content_db.config)
+	var preferred_state: Dictionary = _open_unlocks(StateFactory.create(67300, "선호 태그", content_db.config))
 	preferred_state["growthPolicy"] = GrowthPolicy.create("scholar")
 	var candidate_base: Dictionary = {
 		"kind": "education", "name": "동일 후보", "durationSlots": 1, "baseCost": 0, "baseReward": 0,
@@ -1378,6 +1379,135 @@ func _test_career_non_terminal() -> void:
 	_check(_state_is_non_terminal(after_second), "AC-CONTENT-05 칭호가 게임을 종료/초기화하지 않음")
 
 
+
+# GDD §2.2, 계약 §4.1, AC-UNLOCK-02~05·07·10(일부)
+func _test_progressive_unlock(content_db: ContentDB) -> void:
+	_check(int((content_db.get_last_report().get("counts", {}) as Dictionary).get("unlockStages", 0)) == 7, "해금 단계 7개 로드")
+	_check(not UnlockProgress.validate({"stages": [{"stage": 1, "when": {}}, {"stage": 3, "when": {}}]}).is_empty(), "해금 단계 번호 불연속 거부")
+	_check(not UnlockProgress.validate({"stages": [{"stage": 1, "when": {"activities": 5}}, {"stage": 2, "when": {"activities": 3}}]}).is_empty(), "해금 조건 감소 거부")
+	_check(not UnlockProgress.validate({"stages": [{"stage": 1, "when": {"days": 3}}]}).is_empty(), "허용되지 않은 해금 조건 거부")
+
+	var engine := GameEngine.new()
+	engine.initialize(880001)
+	var planner := Planner.new()
+	planner.configure(content_db.config, content_db.profiles, content_db.activities)
+	var start: Dictionary = engine.get_state()
+	var open_ids: Array[String] = []
+	for activity: Dictionary in content_db.activities:
+		if planner.requirements_met(start, activity.get("requires", {}) as Dictionary):
+			open_ids.append(str(activity.get("id", "")))
+	open_ids.sort()
+	_check(UnlockProgress.stage_of(start) == 1 and open_ids == ["EDU_DOJO", "EDU_ETIQUETTE", "EDU_LITERATURE", "REST_HOME", "REST_WALK"], "AC-UNLOCK-01 새 게임은 1단계 활동 5개만")
+	var first_status: Dictionary = engine.unlock_status()
+	_check(int((first_status.get("next", {}) as Dictionary).get("stage", 0)) == 2 and int(((first_status.get("next", {}) as Dictionary).get("remaining", {}) as Dictionary).get("activities", -1)) == 3, "다음 단계 예고: 활동 3회 더")
+	var locked_run: Dictionary = engine.run_activity("JOB_CARE")
+	_check(not bool(locked_run.get("ok", true)) and str(locked_run.get("error", "")) == "해금 단계 잠금", "AC-UNLOCK-03 열리지 않은 활동 즉시 실행 거절")
+	_check(not engine.is_feature_unlocked("plan") and engine.is_feature_unlocked("activity"), "1단계 기능 판정")
+
+	var reached: Dictionary = {}
+	var reported: Array[int] = []
+	var first_event_slot: int = -1
+	var first_contract_slot: int = -1
+	var first_challenge_slot: int = -1
+	var stage_violation: String = ""
+	var last_stage: int = 1
+	var monotonic: bool = true
+	for slot: int in range(1, 113):
+		var stage_before: int = UnlockProgress.stage_of(engine.get_state())
+		var result: Dictionary = engine.advance_slots(1)
+		for opened: Variant in result.get("newUnlocks", []) as Array:
+			reported.append(int(opened))
+		for raw_done: Variant in result.get("completedActivities", []) as Array:
+			var done: Dictionary = raw_done as Dictionary
+			var activity_stage: int = int((content_db.get_activity(str(done.get("activityId", ""))).get("requires", {}) as Dictionary).get("stage", 1))
+			if activity_stage > maxi(stage_before, UnlockProgress.stage_of(engine.get_state())):
+				stage_violation = "%s at %d" % [str(done.get("activityId", "")), slot]
+			if str(done.get("kind", "")) == "challenge" and first_challenge_slot < 0:
+				first_challenge_slot = int((engine.get_state().get("time", {}) as Dictionary).get("slot", slot))
+		var state: Dictionary = engine.get_state()
+		var day: int = int((state.get("time", {}) as Dictionary).get("slot", slot))
+		var stage_now: int = UnlockProgress.stage_of(state)
+		monotonic = monotonic and stage_now >= last_stage
+		last_stage = stage_now
+		if not reached.has(stage_now):
+			reached[stage_now] = {"slot": day, "activities": int((state.get("lifetimeStats", {}) as Dictionary).get("activities", 0))}
+		if first_event_slot < 0 and not (state.get("eventInbox", []) as Array).is_empty():
+			first_event_slot = day
+		if first_contract_slot < 0 and not ((state.get("generatedContent", {}) as Dictionary).get("contracts", []) as Array).is_empty():
+			first_contract_slot = day
+		for entry in (state.get("eventInbox", []) as Array).duplicate():
+			engine.resolve_default_event(str((entry as Dictionary).get("instanceId", (entry as Dictionary).get("id", ""))))
+	_check(monotonic and reported == [2, 3, 4, 5, 6, 7], "AC-UNLOCK-02 단계 2~7을 한 번씩 순서대로 열고 내려가지 않음")
+	_check(reached.has(2) and int((reached[2] as Dictionary)["activities"]) == 3, "2단계는 활동 3회 완료 시")
+	_check(reached.has(3) and int((reached[3] as Dictionary)["activities"]) == 8, "3단계는 활동 8회 완료 시")
+	_check(reached.has(4) and int((reached[4] as Dictionary)["slot"]) == 14, "4단계는 14일째")
+	_check(reached.has(5) and int((reached[5] as Dictionary)["slot"]) == 28 and reached.has(6) and int((reached[6] as Dictionary)["slot"]) == 56 and reached.has(7) and int((reached[7] as Dictionary)["slot"]) == 84, "5·6·7단계는 시즌 심사 1·2·3회")
+	_check(stage_violation.is_empty(), "AC-UNLOCK-03 자동 진행은 열린 활동만 완료 %s" % stage_violation)
+	_check(first_event_slot >= 56, "AC-UNLOCK-04 이벤트는 6단계부터(첫 이벤트 %d일)" % first_event_slot)
+	_check(first_contract_slot == 28, "AC-UNLOCK-04 계약은 첫 시즌 심사에서 생성(%d일)" % first_contract_slot)
+	_check(first_challenge_slot > 28, "AC-UNLOCK-04 첫 시험은 4단계 뒤 2시즌 일정(%d일)" % first_challenge_slot)
+	_check(bool(engine.validate_state().get("ok", false)), "해금 진행 뒤 상태 불변식")
+
+	var online := GameEngine.new()
+	var offline := GameEngine.new()
+	var parity_state: Dictionary = StateFactory.create(880002, "해금 동일", content_db.config)
+	parity_state["lastSimulatedAt"] = 600000
+	online.initialize_from_state(parity_state)
+	offline.initialize_from_state(parity_state)
+	for parity_slot: int in range(120):
+		online.advance_slots(1, 600000 + (parity_slot + 1) * 60)
+	var offline_result: Dictionary = offline.settle_offline(600000 + 120 * 60)
+	_check(_canonical(online.get_state()) == _canonical(offline.get_state()) and UnlockProgress.stage_of(offline.get_state()) == 7, "AC-UNLOCK-05 온라인·오프라인 같은 단계와 상태")
+	_check(offline_result.get("newUnlocks", []) == [2, 3, 4, 5, 6, 7], "오프라인 정산 결과에 새로 열린 단계 목록")
+
+	var legacy_late: Dictionary = online.get_state()
+	legacy_late.erase("unlocks")
+	var legacy_engine := GameEngine.new()
+	legacy_engine.initialize_from_state(legacy_late)
+	var legacy_status: Dictionary = legacy_engine.unlock_status()
+	var tip_reference := UnlockProgress.new()
+	tip_reference.configure(content_db.unlocks, int(content_db.config.get("slotsPerSeason", 28)))
+	_check(int(legacy_status.get("stage", 0)) == 7 and int(legacy_status.get("announced", 0)) == 7 and (legacy_status.get("tipsSeen", []) as Array).size() == tip_reference.all_tip_features().size() and tip_reference.all_tip_features().size() == 13, "AC-UNLOCK-07 기존 저장 84일 이상은 7단계, 알림·안내 생략")
+	var legacy_early: Dictionary = StateFactory.create(880003, "초반 기존 저장", content_db.config)
+	legacy_early.erase("unlocks")
+	(legacy_early["time"] as Dictionary)["slot"] = 10
+	(legacy_early["lifetimeStats"] as Dictionary)["activities"] = 9
+	var early_engine := GameEngine.new()
+	early_engine.initialize_from_state(legacy_early)
+	_check(int(early_engine.unlock_status().get("stage", 0)) == 3, "AC-UNLOCK-07 기존 저장은 진행값으로 단계 계산(9회·10일은 3단계)")
+
+	var invalid := engine.get_state()
+	(invalid["unlocks"] as Dictionary)["stage"] = 2
+	var invalid_engine := GameEngine.new()
+	invalid_engine.initialize_from_state(invalid)
+	_check(not bool(invalid_engine.validate_state().get("ok", true)), "진행값보다 낮은 단계는 불변식 위반")
+
+	var ack := GameEngine.new()
+	ack.initialize(880004)
+	ack.advance_slots(10)
+	ack.acknowledge_unlocks()
+	ack.mark_unlock_tip_seen("plan")
+	var ack_path := "user://test_unlock_ack.json"
+	ack.save(ack_path)
+	var ack_loaded := GameEngine.new()
+	ack_loaded.load_save(ack_path)
+	var ack_status: Dictionary = ack_loaded.unlock_status()
+	_check(int(ack_status.get("announced", 0)) == int(ack_status.get("stage", -1)) and (ack_status.get("tipsSeen", []) as Array).has("plan"), "AC-UNLOCK-09 알림·안내 확인 상태 저장 왕복")
+	_cleanup_save_path(ack_path)
+
+
+# 기존 시스템 테스트는 해금 단계와 무관한 규칙을 본다. 모든 단계를 연 상태에서 시작해
+# 단계적 해금 이전과 같은 시작 조건을 유지한다. 해금 자체는 _test_progressive_unlock이 검사한다.
+func _open_unlocks(state: Dictionary) -> Dictionary:
+	state["unlocks"] = {"stage": 7, "announced": 7, "tipsSeen": []}
+	return state
+
+
+func _open_initialize(engine: GameEngine, seed_value: int) -> Dictionary:
+	var db := ContentDB.new()
+	db.load_all("res://data")
+	return engine.initialize_from_state(_open_unlocks(StateFactory.create(seed_value, "아리아", db.config)))
+
 func _engine_with_queued_activity(activity_id: String, seed_value: int) -> GameEngine:
 	var state: Dictionary = _rich_state(seed_value, activity_id)
 	state["activityQueue"] = []
@@ -1399,7 +1529,7 @@ func _manual_task(activity_id: String, remaining_slots: int, world_tier: int) ->
 
 
 func _rich_state(seed_value: int, player_name: String) -> Dictionary:
-	var state: Dictionary = StateFactory.create(seed_value, player_name)
+	var state: Dictionary = _open_unlocks(StateFactory.create(seed_value, player_name))
 	(state["bigValues"] as Dictionary)["gold"] = BigValue.from_number(1.0e12)
 	(state["bigValues"] as Dictionary)["lifetimeGold"] = BigValue.from_number(1.0e12)
 	for stat_key: Variant in (state.get("stats", {}) as Dictionary).keys():

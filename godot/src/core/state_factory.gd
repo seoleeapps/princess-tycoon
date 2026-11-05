@@ -85,6 +85,7 @@ static func create(seed_value: int = 1, player_name: String = "수련생", confi
 			"contracts": 0,
 			"adventures": 0,
 		},
+		"unlocks": {"stage": 1, "announced": 1, "tipsSeen": []},
 		"seasonCounters": {"challengeWins": 0, "completedContracts": 0},
 		"recentGrowthVectors": [],
 		"flags": {},

@@ -39,6 +39,19 @@ activity_fields = {
     "energyDelta", "stressDelta", "risk", "primaryStat", "gains", "fixedDeltas",
     "requires", "tags",
 }
+unlocks = json.loads((root / "unlocks.json").read_text(encoding="utf-8"))["stages"]
+if [entry["stage"] for entry in unlocks] != list(range(1, len(unlocks) + 1)):
+    raise SystemExit("unlocks.json: stages must be numbered 1..N without gaps")
+features = [feature for entry in unlocks for feature in entry.get("features", [])]
+if len(features) != len(set(features)):
+    raise SystemExit("unlocks.json: a feature appears in two stages")
+for row in loaded["activities.json"]:
+    stage = row.get("requires", {}).get("stage")
+    if not isinstance(stage, int) or not 1 <= stage <= len(unlocks):
+        raise SystemExit(f"{row['id']}: requires.stage must be 1..{len(unlocks)}")
+if sorted(row["id"] for row in loaded["activities.json"] if row["requires"]["stage"] == 1) != ["EDU_DOJO", "EDU_ETIQUETTE", "EDU_LITERATURE", "REST_HOME", "REST_WALK"]:
+    raise SystemExit("unlocks: stage 1 must open exactly the five starter activities")
+
 for row in loaded["activities.json"]:
     missing = activity_fields - row.keys()
     if missing:

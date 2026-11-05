@@ -12,7 +12,7 @@
     "check:content": "bash scripts/check_content.sh",
     "check:architecture": "bash scripts/check_architecture.sh",
     "check:pixel": "python3 scripts/pixel_art/generate.py --check",
-    "test:godot": "bash scripts/godot_quality_gate.sh --project godot --smoke-script tests/test_runner.gd --smoke-script tests/acceptance_gap_smoke.gd --smoke-script tests/headless_smoke.gd --smoke-script tests/layout_probe.gd --smoke-script tests/ports_smoke.gd --smoke-script tests/ports_ui_smoke.gd --smoke-script tests/ui_motion_smoke.gd --smoke-script tests/pixel_contract_smoke.gd",
+    "test:godot": "bash scripts/godot_quality_gate.sh --project godot --smoke-script tests/test_runner.gd --smoke-script tests/acceptance_gap_smoke.gd --smoke-script tests/headless_smoke.gd --smoke-script tests/layout_probe.gd --smoke-script tests/ports_smoke.gd --smoke-script tests/ports_ui_smoke.gd --smoke-script tests/ui_motion_smoke.gd --smoke-script tests/pixel_contract_smoke.gd --smoke-script tests/unlock_pacing_smoke.gd",
     "test:e2e": "bash scripts/e2e.sh",
     "capture:e2e": "bash scripts/e2e.sh --capture",
     "test:balance": "${GODOT_BIN:-godot} --headless --path godot --script res://tests/balance_sim.gd",

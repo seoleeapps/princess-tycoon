@@ -160,6 +160,8 @@ func tier_reward(activity: Dictionary, world_tier: int, performance_mod: float =
 func requirements_met(state: Dictionary, requires: Dictionary) -> bool:
 	if requires.is_empty():
 		return true
+	if not stage_met(state, requires):
+		return false
 	var gte: Dictionary = requires.get("gte", {}) as Dictionary
 	for key: Variant in gte.keys():
 		if _state_metric(state, str(key)) < float(gte[key]):
@@ -198,7 +200,14 @@ func requirements_met(state: Dictionary, requires: Dictionary) -> bool:
 	return true
 
 
+# 활동이 처음 열리는 해금 단계(GDD §2.2). 다른 잠금 조건보다 먼저 본다.
+func stage_met(state: Dictionary, requires: Dictionary) -> bool:
+	return UnlockProgress.stage_of(state) >= int(requires.get("stage", 1))
+
+
 func _hard_rejection(state: Dictionary, policy: Dictionary, activity: Dictionary, recovery_forced: bool) -> String:
+	if not stage_met(state, activity.get("requires", {}) as Dictionary):
+		return "해금 단계 잠금"
 	if not requirements_met(state, activity.get("requires", {}) as Dictionary):
 		return "잠금 조건 미충족"
 	var activity_kind: String = str(activity.get("kind", ""))
