@@ -31,6 +31,8 @@ func _run() -> void:
 	player.call("set_activity_context", {"id": "A", "kind": "education"}, true)
 	player.call("advance", 0.51)
 	_check(player.call("frame", false) == 3 and player.call("frame", true) == 2, "PA-02 도구 6fps 환경 4fps")
+	player.call("set_environment", "city")
+	_check(player.call("frame", true) == 2, "PA-02 배경 클립 전환도 환경 시간 보존")
 	player.call("set_activity_context", {"id": "A", "kind": "education"}, true)
 	_check(player.call("frame", false) == 3, "PA-02 같은 활동 context 갱신은 시간 보존")
 	player.call("set_activity_context", {"id": "A", "kind": "education"}, false)
@@ -58,8 +60,29 @@ func _run() -> void:
 			var image := texture.get_image()
 			var has_transparent_corner := image.get_pixel(0, 0).a == 0.0
 			_check(has_transparent_corner and image.get_used_rect().has_area(), "PA-03 %s 투명 배경과 비어 있지 않은 그림" % clip)
+	await _check_clip_redraw(script)
 	await _check_main()
 	_finish()
+
+
+func _check_clip_redraw(player_script: Script) -> void:
+	var player: RefCounted = player_script.new()
+	player.call("set_activity_context", {"id": "book", "kind": "education"}, false)
+	var avatar := (load("res://src/ui/pixel/pixel_trainee_view.gd") as Script).new() as Control
+	avatar.size = Vector2(390, 440)
+	avatar.call("set_animation_player", player)
+	var observed := {"draws": 0}
+	avatar.draw.connect(func() -> void: observed["draws"] += 1)
+	root.add_child(avatar)
+	await process_frame
+	await process_frame
+	var before := int(observed["draws"])
+	player.call("set_activity_context", {"id": "magic", "kind": "education", "tags": ["magic"]}, false)
+	await process_frame
+	await process_frame
+	_check(before > 0 and int(observed["draws"]) > before, "PA-01 정지된 같은 프레임의 클립 전환도 즉시 다시 그림")
+	avatar.queue_free()
+	await process_frame
 
 
 func _check_main() -> void:

@@ -30,6 +30,7 @@ var _trainee_source: Image
 var _frame := 0
 var animation_player: RefCounted = PixelAnimationPlayer.new()
 var _animation_frames := Vector2i(-1, -1)
+var _animation_clips := ""
 
 
 func _ready() -> void:
@@ -106,8 +107,10 @@ func _process(_delta: float) -> void:
 		return
 	var frames := Vector2i(animation_player.call("frame", false), animation_player.call("frame", true))
 	var idle := int(animation_player.call("idle_frame"))
-	if frames != _animation_frames or idle != _frame:
+	var clips := "%s:%s" % [animation_player.get("activity_clip"), animation_player.get("environment_clip")]
+	if frames != _animation_frames or idle != _frame or clips != _animation_clips:
 		_animation_frames = frames
+		_animation_clips = clips
 		_frame = idle
 		queue_redraw()
 

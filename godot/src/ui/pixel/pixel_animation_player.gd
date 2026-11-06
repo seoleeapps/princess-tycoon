@@ -35,8 +35,6 @@ func set_environment(value: String) -> void:
 		next = "candle"
 	elif value in ["city", "forest"]:
 		next = "leaves"
-	if environment_clip != next:
-		environment_time = 0.0
 	environment_clip = next
 
 
