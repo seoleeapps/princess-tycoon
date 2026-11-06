@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "app": {
+    "name": "왕립 아카데미: 수련생 육성",
+    "repo": "seoleeapps/princess-tycoon",
+    "sourceRevision": "pending-merge"
+  },
+  "release": {
+    "version": "1.0.0",
+    "tag": "v1.0.0",
+    "objective": "public_live",
+    "countries": [
+      "KR"
+    ],
+    "rolloutMode": "full (100%)"
+  },
+  "deploymentApproval": {
+    "status": "approved",
+    "markets": [
+      "google_play"
+    ],
+    "objective": "public_live",
+    "approvedAt": "2026-11-06",
+    "evidence": [
+      "사용자 지시 2026-11-06: 'wellknowngeek@gmail.com 으로 구글 플레이에 론칭하자.'",
+      "질문 응답 2026-11-06: 패키지 com.seoleeapps.princesstycoon, 스토어 이름 '왕립 아카데미: 수련생 육성', 국가 한국, 실기기 확인 승인(AND-01~07)",
+      "설계 docs/design/2026-11-google-play-launch/design.md"
+    ]
+  },
+  "commonGates": {
+    "candidate": {
+      "status": "pending",
+      "evidence": [],
+      "checkedAt": null,
+      "blocker": null
+    },
+    "quality": {
+      "status": "pending",
+      "evidence": [],
+      "checkedAt": null,
+      "blocker": null
+    },
+    "production_dependencies": {
+      "status": "na",
+      "evidence": [
+        "게임은 네트워크를 쓰지 않는다(HTTPRequest·HTTPClient 사용 없음). 서버·Firebase·광고·결제 없음"
+      ],
+      "checkedAt": "2026-11-06T09:20:00+09:00",
+      "blocker": null
+    },
+    "observability": {
+      "status": "na",
+      "evidence": [
+        "분석·충돌 보고 SDK를 넣지 않는 출시 범위(설계 §범위). Play Console의 Android vitals(비정상 종료·ANR)만 사용"
+      ],
+      "checkedAt": "2026-11-06T09:20:00+09:00",
+      "blocker": null
+    }
+  },
+  "markets": {
+    "google_play": {
+      "objective": "public_live",
+      "state": "pending",
+      "identity": {
+        "applicationId": "com.seoleeapps.princesstycoon",
+        "version": "1.0.0",
+        "build": "versionCode 1"
+      },
+      "gates": {
+        "candidate": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "artifact": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "upload": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "processing": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "qa": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "metadata": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "policy": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "submission": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "approval": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "release": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        },
+        "live_smoke": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
+          "blocker": null
+        }
+      }
+    }
+  }
+}

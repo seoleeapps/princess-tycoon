@@ -1,0 +1,65 @@
+{
+  "packageName": "com.seoleeapps.princesstycoon",
+  "defaultLanguage": "ko-KR",
+  "appType": "game",
+  "category": "GAME_SIMULATION",
+  "freeOrPaid": "free",
+  "countries": [
+    "KR"
+  ],
+  "contactEmail": "cs@seorilabs.com",
+  "contactPhone": "+821050675746",
+  "contactWebsite": "https://www.seorilabs.com",
+  "privacyPolicyUrl": "https://www.seorilabs.com/privacy/",
+  "storeListing": {
+    "appName": {
+      "ko-KR": "왕립 아카데미: 수련생 육성"
+    },
+    "shortDescription": {
+      "ko-KR": "성장 방향만 정하면 수련생이 스스로 배우고 일하고 모험하는 도트 방치형 육성 게임"
+    },
+    "fullDescription": {
+      "ko-KR": "왕립 아카데미에 들어온 수련생의 성장 방향과 안전 규칙을 정해 주세요. 수련생은 학습, 아르바이트, 휴식, 모험, 시험을 스스로 골라 하루하루 성장합니다.\n\n■ 스스로 성장하는 수련생\n· 학문, 무예, 예술, 리더십 등 8가지 성장 방향 가운데 하나를 고르면 수련생이 그 방향에 맞는 활동을 직접 고릅니다.\n· 지친 날에는 쉬고, 골드가 모자라면 아르바이트를 하며, 정해진 날에는 시험과 대회에 나갑니다.\n· 지금 무엇을 하는지와 그 활동을 고른 이유를 언제든 볼 수 있습니다.\n\n■ 차근차근 열리는 아카데미\n· 처음에는 홈과 활동만 보입니다. 활동을 하고 시즌 심사를 지날 때마다 계획, 성장, 기록, 월드, 상점이 하나씩 열립니다.\n· 다음에 무엇이 열리는지 미리 알려 줘서 처음 하는 사람도 천천히 익힐 수 있습니다.\n\n■ 다양한 활동과 도전\n· 학습 15종, 아르바이트 11종, 휴식 4종, 모험 5종, 시험·대회 8종, 모두 43가지 활동\n· 숲과 동굴, 유적을 탐사하는 3단계 원정과 라이벌과 겨루는 리그\n· 시즌 심사로 얻는 진로 칭호 38종, 장비와 선물 21종, 선택이 남는 이벤트 26종\n\n■ 꺼 두어도 이어지는 성장\n· 게임을 닫아 둔 동안에도 수련생은 계속 성장합니다. 다시 들어오면 그동안 무엇이 바뀌었는지 한눈에 정리해 줍니다.\n\n■ 도트 그래픽\n· 수련생, 방, 창과 아이콘을 모두 도트로 그렸고, 장비를 바꾸면 수련생의 모습도 바뀝니다.\n\n■ 광고와 결제 없이\n· 광고와 인앱 결제가 없습니다. 인터넷 연결 없이 플레이할 수 있고, 진행 기록은 기기 안에만 저장됩니다.\n\n문의: cs@seorilabs.com"
+    }
+  },
+  "assets": {
+    "playIcon": "play-store/assets/icon-512.png",
+    "featureGraphic": "play-store/assets/feature-graphic-1024x500.png",
+    "phoneScreenshots": [
+      "play-store/screenshots/phone/01-home.png",
+      "play-store/screenshots/phone/02-result.png",
+      "play-store/screenshots/phone/03-activity.png",
+      "play-store/screenshots/phone/04-growth.png",
+      "play-store/screenshots/phone/05-world.png",
+      "play-store/screenshots/phone/06-record.png"
+    ],
+    "sevenInchTabletScreenshots": [
+      "play-store/screenshots/tablet-7/01-home.png",
+      "play-store/screenshots/tablet-7/02-result.png",
+      "play-store/screenshots/tablet-7/03-activity.png",
+      "play-store/screenshots/tablet-7/04-growth.png"
+    ],
+    "tenInchTabletScreenshots": [
+      "play-store/screenshots/tablet-10/01-home.png",
+      "play-store/screenshots/tablet-10/02-result.png",
+      "play-store/screenshots/tablet-10/03-activity.png",
+      "play-store/screenshots/tablet-10/04-growth.png"
+    ]
+  },
+  "release": {
+    "versionName": "1.0.0",
+    "versionCode": 1,
+    "releaseNotes": {
+      "ko-KR": "왕립 아카데미 첫 출시입니다."
+    }
+  },
+  "contentDeclarations": {
+    "dataSafety": "확정 필요: Play Console에서 '수집·공유 없음'으로 신고",
+    "contentRating": "확정 필요",
+    "targetAudience": "13+ (13-15, 16-17, 18+), not designed for children",
+    "ads": "no",
+    "appAccess": "all functionality available without special access",
+    "koreaDistribution": "yes",
+    "koreaGameRating": "확정 필요"
+  }
+}

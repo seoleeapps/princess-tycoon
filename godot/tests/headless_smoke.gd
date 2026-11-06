@@ -113,6 +113,7 @@ func _run() -> void:
 
 	await _check_copy_and_rows(main)
 	await _check_manual_expedition(main)
+	await _check_android_back(main)
 	main.queue_free()
 	await process_frame
 	_finish()
@@ -340,6 +341,36 @@ func _check_manual_expedition(main: Node) -> void:
 	var toast_lines := toast_label.text.split("\n").size()
 	_check(toast_lines >= 2 and toast_label.get_line_count() == toast_lines, "알림 띠는 띄어쓰기에서만 줄바꿈 [%s]" % toast_label.text.replace("\n", " / "))
 	main.set("_activity_filter", "education")
+
+
+# Android 뒤로 가기: 결과 창 → 시트 → 다른 탭이면 홈 순서로 닫고, 홈에서는 2초 안에 한 번 더 누를 때만 닫는다.
+func _check_android_back(main: Node) -> void:
+	var layer: Control = main.get("_result_feedback_layer") as Control
+	main.call("_close_sheet")
+	await process_frame
+	layer.call("present", {"kind": "activity", "badge": "성장", "headline": "뒤로 가기 확인", "details": []}, true)
+	await process_frame
+	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await process_frame
+	_check(not bool(layer.call("has_active_feedback")), "뒤로 가기는 먼저 결과 창을 닫음")
+	main.call("_open_sheet", "settings")
+	await process_frame
+	await process_frame
+	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await process_frame
+	await process_frame
+	_check(_find_screen_node(main, "settings") == null, "뒤로 가기는 열린 시트를 닫음")
+	main.call("_show_tab", "activity")
+	await process_frame
+	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await process_frame
+	_check(str(main.get("_current_tab")) == "home", "다른 탭에서 뒤로 가기는 홈으로")
+	main.set("_back_exit_until", 0)
+	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await process_frame
+	var toast := (main.get("_toast_label") as Label).text.replace("\n", " ")
+	_check(toast.contains("한 번 더 누르면 게임을 닫아요") and int(main.get("_back_exit_until")) > Time.get_ticks_msec(), "홈에서 첫 뒤로 가기는 닫지 않고 안내")
+	main.set("_back_exit_until", 0)
 
 
 func _button_with_id(main: Node, ui_id: String) -> Button:

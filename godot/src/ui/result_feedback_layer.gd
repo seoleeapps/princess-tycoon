@@ -65,6 +65,11 @@ func set_reduced_motion(enabled: bool) -> void:
 	_schedule_static_hide(_active_serial)
 
 
+# 결과 창을 바로 닫는다(Android 뒤로 가기).
+func dismiss() -> void:
+	_clear_active()
+
+
 func has_active_feedback() -> bool:
 	return _active_panel != null and is_instance_valid(_active_panel) and _active_panel.visible
 
