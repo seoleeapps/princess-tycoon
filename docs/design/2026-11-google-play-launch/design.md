@@ -61,6 +61,16 @@ Solana Mobile Seeker(Android 16, 1200×2670)에 Play 내부 테스트로 설치�
 | AND-06 | 실패 → 수정 | Android 16은 edge-to-edge를 강제해 상단 바가 카메라 컷아웃 띠(위 78px)까지 올라옴. 화면 전체를 컷아웃 안전 영역 안으로 줄이고 여백은 화면비 여백과 같은 검정으로 칠한다 |
 | AND-07 | 미완료 | 기기 미디어 볼륨이 음소거라 소리를 듣지 못함. 앱 오디오 트랙은 활성 |
 
+### 재확인 결과(versionCode 2, 2026-11-06)
+
+같은 기기에서 Play 내부 테스트 업데이트로 versionCode 2를 받아 다른 에이전트가 승인된 재확인 범위(약 10분)를 실행했다. AND-01(cold start 235ms), AND-05(단독 뒤로 가기 12회, 두 번 눌러 저장 종료, 결과 카드 모두 한 단계), AND-06(내용 시작 y=80, 컷아웃 위 띠 검정, 탭 바 전부 보임), AND-07(볼륨 5/15에서 앱 트랙 스피커 출력, 확인 뒤 음소거 0/15로 복원)이 통과했다. AND-02~04는 versionCode 1 결과를 쓴다. 입력, 저장, 수명 주기 경로는 versionCode 2에서 바뀌지 않았다. 증적은 NAS1dual `princess-tycoon/2026-11-06/<SHA>/android-device-qa-N`에 있다.
+
+## 제출 기록
+
+- 2026-11-06 오후 1:18 Play Console 제출 ID 1: 프로덕션 1.0.0 (2) 전체 출시, 대한민국, 등록정보와 앱 콘텐츠 신고. 상태 '검토 중'. 관리형 게시가 꺼져 있어 승인되면 바로 공개된다.
+- 프로덕션 미리보기의 선택 경고 2개: 가독화 파일 없음(R8 미사용), 네이티브 디버그 기호 없음(비정상 종료 시 네이티브 스택이 주소로만 보임).
+- 제출한 AAB 원본은 NAS1dual `princess-tycoon/2026-11-06/ee4017e/google-play-release-aab`에 있다(SHA-256 `a1a2efa1…`).
+
 ## 완료 조건
 
 공개 출시 완료는 `release/market-launch-state.json`의 Google Play 관문(candidate → artifact → upload → processing → qa → metadata → policy → submission → approval → release → live_smoke)이 모두 증거로 통과하고, 한국 Play 스토어에서 1.0.0이 공개로 읽힐 때다.
