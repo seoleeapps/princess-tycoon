@@ -114,6 +114,7 @@ func _run() -> void:
 	await _check_copy_and_rows(main)
 	await _check_manual_expedition(main)
 	await _check_android_back(main)
+	await _check_safe_area(main)
 	main.queue_free()
 	await process_frame
 	_finish()
@@ -350,22 +351,34 @@ func _check_android_back(main: Node) -> void:
 	await process_frame
 	layer.call("present", {"kind": "activity", "badge": "성장", "headline": "뒤로 가기 확인", "details": []}, true)
 	await process_frame
-	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	_press_back(main)
 	await process_frame
 	_check(not bool(layer.call("has_active_feedback")), "뒤로 가기는 먼저 결과 창을 닫음")
 	main.call("_open_sheet", "settings")
 	await process_frame
 	await process_frame
-	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	_press_back(main)
 	await process_frame
 	await process_frame
 	_check(_find_screen_node(main, "settings") == null, "뒤로 가기는 열린 시트를 닫음")
-	main.call("_show_tab", "activity")
+	# Android는 한 번 누른 뒤로 가기를 키 입력과 시스템 콜백 두 경로로 보낼 수 있다. 겹쳐 온 요청은 한 번만 처리한다.
+	main.call("_open_sheet", "settings")
 	await process_frame
+	await process_frame
+	main.set("_back_exit_until", 0)
+	_press_back(main)
 	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
 	await process_frame
-	_check(str(main.get("_current_tab")) == "home", "다른 탭에서 뒤로 가기는 홈으로")
+	await process_frame
+	_check(_find_screen_node(main, "settings") == null and int(main.get("_back_exit_until")) == 0, "한 번 누른 뒤로 가기가 두 번 와도 시트만 닫음")
+	main.call("_show_tab", "activity")
+	await process_frame
+	_press_back(main)
+	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await process_frame
+	_check(str(main.get("_current_tab")) == "home" and int(main.get("_back_exit_until")) == 0, "다른 탭에서 뒤로 가기는 홈으로만 가고 닫기 안내는 띄우지 않음")
 	main.set("_back_exit_until", 0)
+	_press_back(main)
 	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
 	await process_frame
 	var toast := (main.get("_toast_label") as Label).text.replace("\n", " ")
@@ -382,12 +395,39 @@ func _check_android_back(main: Node) -> void:
 	var save_path := str(ProjectSettings.get_setting("princess_tycoon/testing/save_path", ""))
 	if FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
-	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
-	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	_press_back(main)
+	_press_back(main)
 	await process_frame
 	_check(exits[0] == 1 and FileAccess.file_exists(save_path), "홈에서 2초 안에 두 번 누르면 저장하고 닫음")
 	main.set("_exit_handler", Callable())
 	main.set("_back_exit_until", 0)
+
+
+# 사람이 따로 누른 뒤로 가기. 겹침 판정 시각을 지나간 것으로 돌린 뒤 요청을 보낸다.
+func _press_back(main: Node) -> void:
+	main.set("_last_back_request_at", -100000)
+	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+
+
+# 화면 컷아웃 안전 영역을 논리 화면(390×844, keep) 여백으로 바꾸고 화면 전체를 그 안에 둔다.
+func _check_safe_area(main: Node) -> void:
+	var safe_area: Script = load("res://src/ui/safe_area.gd")
+	var base := Vector2(390, 844)
+	_check(safe_area.call("insets_for", Vector2(1200, 2670), Rect2(0, 78, 1200, 2592), base) == Vector2(14, 0), "위 컷아웃 78px(1200×2670)은 위 여백 14")
+	_check(safe_area.call("insets_for", Vector2(1080, 2400), Rect2(0, 0, 1080, 2400), base) == Vector2.ZERO, "컷아웃이 없으면 여백 없음")
+	_check(safe_area.call("insets_for", Vector2(1080, 2400), Rect2(0, 20, 1080, 2360), base) == Vector2.ZERO, "화면비 여백 안에 들어가는 컷아웃은 여백 없음")
+	_check(safe_area.call("insets_for", Vector2(1170, 2532), Rect2(0, 141, 1170, 2385), base) == Vector2(48, 2), "위아래 컷아웃은 짝수 논리 픽셀로 올림")
+	_check(safe_area.call("insets_for", Vector2.ZERO, Rect2(), base) == Vector2.ZERO, "화면 정보가 없으면 여백 없음")
+	ProjectSettings.set_setting("princess_tycoon/testing/safe_area_insets", Vector2(14, 0))
+	main.call("_apply_safe_area")
+	await process_frame
+	await process_frame
+	var root := main as Control
+	_check(is_equal_approx(root.offset_top, 14.0) and is_equal_approx(root.offset_bottom, 0.0) and root.size.y == 830.0, "안전 영역 여백만큼 화면 전체를 줄임")
+	ProjectSettings.set_setting("princess_tycoon/testing/safe_area_insets", Vector2.ZERO)
+	main.call("_apply_safe_area")
+	await process_frame
+	_check(is_zero_approx(root.offset_top) and root.size.y == 844.0, "여백이 없으면 원래 크기")
 
 
 func _button_with_id(main: Node, ui_id: String) -> Button:

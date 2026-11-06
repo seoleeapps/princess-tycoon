@@ -64,7 +64,7 @@
       "identity": {
         "applicationId": "com.seoleeapps.princesstycoon",
         "version": "1.0.0",
-        "build": "versionCode 1"
+        "build": "versionCode 2"
       },
       "gates": {
         "candidate": {
