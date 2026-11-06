@@ -66,7 +66,9 @@ var _current_tab := "home"
 # Android 뒤로 가기: 홈에서 이 시각(밀리초) 전에 한 번 더 누르면 저장하고 닫는다.
 const BACK_EXIT_WINDOW_MS := 2000
 # Android는 한 번 누른 뒤로 가기를 키 입력과 시스템 뒤로 가기 콜백 두 경로로 보낼 수 있다.
-# 이 시간 안에 겹쳐 온 요청은 같은 누르기로 보고 한 번만 처리한다.
+# 이 시간 안에 겹쳐 온 요청은 같은 누르기로 보고 한 번만 처리한다. 두 요청의 간격은 손을 떼기까지의
+# 시간이라 300ms로 덮는다. 사람이 300ms 안에 두 번 누르면 한 번으로 처리되고, 홈의 닫기 안내는 2초 동안
+# 유지되므로 한 번 더 누르면 닫힌다.
 const BACK_DUPLICATE_MS := 300
 var _back_exit_until := 0
 var _last_back_request_at := -BACK_DUPLICATE_MS
