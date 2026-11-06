@@ -25,12 +25,14 @@ npm run build:android    # 서명한 AAB: build/android/princess-tycoon.aab(+ .s
 npm run check:play       # 등록정보·그림 검사(Console 전용 신고는 제외)
 ```
 
-`build:android`는 Godot가 Android Gradle 템플릿을 `godot/android/`에 설치하고(저장소에 넣지 않는다) AAB를 만든 뒤, 서명 인증서가 위 업로드 키와 같은지 확인한다. 업로드 키는 카탈로그 항목의 동반 파일 `~/.config/seorilabs/play-store/princess-tycoon-keystore.env`(`ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_ALIAS`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD`)에서 읽고 값을 출력하지 않는다. 다른 위치를 쓰려면 `PRINCESS_TYCOON_KEYSTORE_ENV`로 지정한다.
+`build:android`는 Godot가 Android Gradle 템플릿을 `godot/android/`에 설치하고(저장소에 넣지 않는다) AAB를 만든 뒤, 서명 인증서가 위 업로드 키와 같은지 확인한다. 업로드 키는 카탈로그 항목의 동반 파일 `~/.config/seorilabs/play-store/princess-tycoon-keystore.env`(`ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_ALIAS`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD`)에서 읽고 값을 출력하지 않는다. Godot 서명은 비밀번호 하나로 저장소와 키를 함께 열기 때문에 이 키는 두 비밀번호를 같게 만들었고, 스크립트는 `ANDROID_KEYSTORE_PASSWORD`만 넘긴다. 키를 바꿀 때도 두 비밀번호를 같게 둔다. 다른 위치를 쓰려면 `PRINCESS_TYCOON_KEYSTORE_ENV`로 지정한다.
 
 버전을 올릴 때는 세 곳을 함께 바꾼다.
 - `godot/export_presets.cfg`의 `version/code`(직전보다 1 크게)와 `version/name`
 - `play-store/google-play.config.json`의 `release.versionCode`, `release.versionName`, 출시 노트
-- `release/market-launch-state.json`의 `release.version`·`tag`와 Google Play `identity.build`(새 원장으로 시작)
+- `release/market-launch-state.json`의 `release.version`·`tag`와 Google Play `identity.version`·`identity.build`
+
+새 출시는 새 원장과 새 설계 기록(`docs/design/<날짜>-...`)으로 시작하고, 이번 설계(`2026-11-google-play-launch`)는 1.0.0의 기록으로 둔다.
 
 ## 그림
 
