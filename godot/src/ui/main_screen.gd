@@ -10,6 +10,7 @@ const LocalAnalyticsPort = preload("res://src/ports/local_analytics_port.gd")
 const NoOpAdPort = preload("res://src/ports/noop_ad_port.gd")
 const NoOpIapPort = preload("res://src/ports/noop_iap_port.gd")
 const SynthAudioPort = preload("res://src/ports/synth_audio_port.gd")
+const SafeArea = preload("res://src/ui/safe_area.gd")
 const ICON_DIR := "res://assets/pixel/icons/"
 
 const TABS := [
@@ -64,7 +65,13 @@ var _seed := 1729
 var _current_tab := "home"
 # Android 뒤로 가기: 홈에서 이 시각(밀리초) 전에 한 번 더 누르면 저장하고 닫는다.
 const BACK_EXIT_WINDOW_MS := 2000
+# Android는 한 번 누른 뒤로 가기를 키 입력과 시스템 뒤로 가기 콜백 두 경로로 보낼 수 있다.
+# 이 시간 안에 겹쳐 온 요청은 같은 누르기로 보고 한 번만 처리한다. 두 요청의 간격은 손을 떼기까지의
+# 시간이라 300ms로 덮는다. 사람이 300ms 안에 두 번 누르면 한 번으로 처리되고, 홈의 닫기 안내는 2초 동안
+# 유지되므로 한 번 더 누르면 닫힌다.
+const BACK_DUPLICATE_MS := 300
 var _back_exit_until := 0
+var _last_back_request_at := -BACK_DUPLICATE_MS
 # 테스트가 실제 종료 대신 호출을 가로챌 때만 쓴다. 비어 있으면 get_tree().quit().
 var _exit_handler := Callable()
 var _activity_filter := "education"
@@ -139,6 +146,8 @@ func _ready() -> void:
 	_auto_running = bool(_read(["settings", "autoRun"], true))
 	_initialize_runtime_ports()
 	_build_shell()
+	_apply_safe_area()
+	get_viewport().size_changed.connect(_apply_safe_area)
 	_show_tab("home")
 	_refresh_chrome()
 	set_process(true)
@@ -151,9 +160,15 @@ func _notification(what: int) -> void:
 		_track_event(&"app_background", {"slot": int(_read(["time", "slot"], 0))})
 		_persist_silently()
 	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		_handle_back()
+		var now := Time.get_ticks_msec()
+		if now - _last_back_request_at >= BACK_DUPLICATE_MS:
+			_last_back_request_at = now
+			_handle_back()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		_apply_safe_area()
 	elif what == NOTIFICATION_APPLICATION_RESUMED:
 		_back_exit_until = 0
+		_apply_safe_area()
 		_sync_engine_state()
 		var resume_now := _now_unix()
 		var last_boundary := int(_state.get("lastSimulatedAt", 0))
@@ -1335,6 +1350,13 @@ func _open_sheet(kind: String) -> void:
 	if keep != null:
 		overlay.modulate.a = 0.0
 		_swap_in_after_layout(overlay, scroll, keep_scroll, [keep])
+
+
+# 카메라 컷아웃을 피하도록 화면 전체(배경, 탭, 시트, 결과 창)를 안전 영역 안으로 줄인다.
+func _apply_safe_area() -> void:
+	var insets := SafeArea.current_insets(get_viewport().get_visible_rect().size)
+	offset_top = insets.x
+	offset_bottom = -insets.y
 
 
 # Android 뒤로 가기. 결과 창 → 열린 시트 → 다른 탭이면 홈 순서로 하나씩 닫는다.

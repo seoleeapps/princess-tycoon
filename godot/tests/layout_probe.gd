@@ -12,9 +12,12 @@ const EDGE_TOLERANCE: float = 1.5
 # AC-UNLOCK-11: 단계마다 보이는 탭·예고·안내가 다르므로 대표 단계의 열린 화면도 확인한다.
 const UNLOCK_STAGES: Array[int] = [1, 2, 3, 4, 5, 6]
 const SAVE_PATH := "user://qa_layout_probe_save.json"
+# 카메라 컷아웃이 큰 Android 기기(1080×2400, 위 컷아웃 약 118px)는 위 여백이 논리 32px다.
+const SAFE_AREA_INSETS := Vector2(32, 0)
 
 var _failures: Array[String] = []
 var _passes: int = 0
+var _label_suffix := ""
 
 
 func _initialize() -> void:
@@ -32,6 +35,12 @@ func _run() -> void:
 
 	for viewport_size: Vector2i in VIEWPORTS:
 		await _probe_viewport(packed, viewport_size)
+	# 안전 영역 여백으로 줄어든 가장 작은 화면에서도 같은 검사를 통과해야 한다.
+	ProjectSettings.set_setting("princess_tycoon/testing/safe_area_insets", SAFE_AREA_INSETS)
+	_label_suffix = "+safe%d" % int(SAFE_AREA_INSETS.x)
+	await _probe_viewport(packed, Vector2i(390, 844))
+	ProjectSettings.set_setting("princess_tycoon/testing/safe_area_insets", Vector2.ZERO)
+	_label_suffix = ""
 
 	_finish()
 
@@ -229,7 +238,7 @@ func _finite(value: float) -> bool:
 
 
 func _size_label(value: Vector2i) -> String:
-	return "%dx%d" % [value.x, value.y]
+	return "%dx%d%s" % [value.x, value.y, _label_suffix]
 
 
 func _check(condition: bool, label: String) -> void:

@@ -48,18 +48,18 @@
   },
   "release": {
     "versionName": "1.0.0",
-    "versionCode": 1,
+    "versionCode": 2,
     "releaseNotes": {
       "ko-KR": "왕립 아카데미 첫 출시입니다."
     }
   },
   "contentDeclarations": {
-    "dataSafety": "확정 필요: Play Console에서 '수집·공유 없음'으로 신고",
-    "contentRating": "확정 필요",
+    "dataSafety": "Console 신고 완료(2026-11-06): 수집 없음, 공유 없음",
+    "contentRating": "IARC 설문 제출(2026-11-06): 사람 이외 대상에 대한 판타지 폭력 언급, 픽셀 표현, 선혈 없음",
     "targetAudience": "13+ (13-15, 16-17, 18+), not designed for children",
     "ads": "no",
     "appAccess": "all functionality available without special access",
     "koreaDistribution": "yes",
-    "koreaGameRating": "확정 필요"
+    "koreaGameRating": "IARC를 통한 GRAC 전체이용가(2026-11-06)"
   }
 }
