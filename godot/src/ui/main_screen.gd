@@ -65,6 +65,8 @@ var _current_tab := "home"
 # Android 뒤로 가기: 홈에서 이 시각(밀리초) 전에 한 번 더 누르면 저장하고 닫는다.
 const BACK_EXIT_WINDOW_MS := 2000
 var _back_exit_until := 0
+# 테스트가 실제 종료 대신 호출을 가로챌 때만 쓴다. 비어 있으면 get_tree().quit().
+var _exit_handler := Callable()
 var _activity_filter := "education"
 # 플래너 이유 이름 중 개발 용어처럼 들리는 것을 쉬운 말로 바꿔 보여 준다.
 const REASON_DISPLAY := {"프리셋 선호": "방향 선호"}
@@ -151,6 +153,7 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		_handle_back()
 	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		_back_exit_until = 0
 		_sync_engine_state()
 		var resume_now := _now_unix()
 		var last_boundary := int(_state.get("lastSimulatedAt", 0))
@@ -476,6 +479,8 @@ func _build_navigation() -> Control:
 
 
 func _show_tab(tab_id: String) -> void:
+	# 두 번 눌러 닫기는 홈에 머무는 동안만 이어진다.
+	_back_exit_until = 0
 	if not _feature_open(tab_id):
 		tab_id = "home"
 	if tab_id != _current_tab:
@@ -1345,8 +1350,12 @@ func _handle_back() -> void:
 		_show_tab("home")
 		return
 	if Time.get_ticks_msec() < _back_exit_until:
+		_back_exit_until = 0
 		_persist_silently()
-		get_tree().quit()
+		if _exit_handler.is_valid():
+			_exit_handler.call()
+		else:
+			get_tree().quit()
 		return
 	_back_exit_until = Time.get_ticks_msec() + BACK_EXIT_WINDOW_MS
 	_show_toast("한 번 더 누르면 게임을 닫아요.")

@@ -11,7 +11,7 @@
 | 스토어 이름 | 왕립 아카데미: 수련생 육성 (ko-KR) |
 | 국가 | 대한민국 |
 | 가격·수익화 | 무료, 광고·인앱 결제 없음 |
-| 대상 API·최소 API | 36 · 24 |
+| 대상 API·최소 API | 36 · 24(`godot/export_presets.cfg`에 명시) |
 | 업로드 키 | 카탈로그 `app/princess-tycoon/google-play/upload-key`, 인증서 SHA-256 `BB:CF:E8:D7:B9:D2:65:61:7A:B8:41:4A:DC:26:58:79:50:84:A2:06:ED:11:E9:07:37:C8:3B:6A:39:E3:13:65` |
 | 개인정보처리방침 | https://www.seorilabs.com/privacy/ |
 | 고객 지원 | cs@seorilabs.com |
@@ -25,7 +25,12 @@ npm run build:android    # 서명한 AAB: build/android/princess-tycoon.aab(+ .s
 npm run check:play       # 등록정보·그림 검사(Console 전용 신고는 제외)
 ```
 
-`build:android`는 Godot가 Android Gradle 템플릿을 `godot/android/`에 설치하고(저장소에 넣지 않는다) AAB를 만든 뒤, 서명 인증서가 위 업로드 키와 같은지 확인한다. 업로드 키 값은 `~/.config/seorilabs`에서 읽고 출력하지 않는다. 버전을 올릴 때는 `godot/export_presets.cfg`의 `version/code`(1씩 증가)와 `version/name`을 함께 바꾼다.
+`build:android`는 Godot가 Android Gradle 템플릿을 `godot/android/`에 설치하고(저장소에 넣지 않는다) AAB를 만든 뒤, 서명 인증서가 위 업로드 키와 같은지 확인한다. 업로드 키는 카탈로그 항목의 동반 파일 `~/.config/seorilabs/play-store/princess-tycoon-keystore.env`(`ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_ALIAS`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD`)에서 읽고 값을 출력하지 않는다. 다른 위치를 쓰려면 `PRINCESS_TYCOON_KEYSTORE_ENV`로 지정한다.
+
+버전을 올릴 때는 세 곳을 함께 바꾼다.
+- `godot/export_presets.cfg`의 `version/code`(직전보다 1 크게)와 `version/name`
+- `play-store/google-play.config.json`의 `release.versionCode`, `release.versionName`, 출시 노트
+- `release/market-launch-state.json`의 `release.version`·`tag`와 Google Play `identity.build`(새 원장으로 시작)
 
 ## 그림
 

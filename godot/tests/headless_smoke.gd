@@ -370,6 +370,23 @@ func _check_android_back(main: Node) -> void:
 	await process_frame
 	var toast := (main.get("_toast_label") as Label).text.replace("\n", " ")
 	_check(toast.contains("한 번 더 누르면 게임을 닫아요") and int(main.get("_back_exit_until")) > Time.get_ticks_msec(), "홈에서 첫 뒤로 가기는 닫지 않고 안내")
+	# 다른 탭으로 옮기면 대기가 풀려, 홈으로 돌아와 누른 뒤로 가기가 바로 닫지 않는다.
+	main.call("_show_tab", "growth")
+	await process_frame
+	_check(int(main.get("_back_exit_until")) == 0, "탭을 옮기면 두 번 눌러 닫기 대기가 풀림")
+	main.call("_show_tab", "home")
+	await process_frame
+	# 두 번째 누르기는 저장한 뒤 닫는다(닫기는 테스트에서 가로챈다).
+	var exits := [0]
+	main.set("_exit_handler", func() -> void: exits[0] += 1)
+	var save_path := str(ProjectSettings.get_setting("princess_tycoon/testing/save_path", ""))
+	if FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
+	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	main.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await process_frame
+	_check(exits[0] == 1 and FileAccess.file_exists(save_path), "홈에서 2초 안에 두 번 누르면 저장하고 닫음")
+	main.set("_exit_handler", Callable())
 	main.set("_back_exit_until", 0)
 
 

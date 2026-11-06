@@ -25,7 +25,7 @@
 ## 계정과 식별자
 
 - 마켓 계정: Google Play `Seolee Apps`, 개인 계정, 개발자 ID `5547060480954653351`(2026-11-06 Console 읽기). 앱 안 구매·유료 배포가 없는 새 앱은 이 계정에 만든다는 계정 규칙과 맞다.
-- 업로드 서명: 이 앱 전용 업로드 키를 새로 만들어 `~/.config/seorilabs` 카탈로그(`app/princess-tycoon/google-play/upload-key`)에 등록하고 백업·복원 검증을 거친다. 앱 서명 키는 Play App Signing이 관리한다.
+- 업로드 서명: 이 앱 전용 업로드 키를 새로 만들어 `~/.config/seorilabs` 카탈로그(`app/princess-tycoon/google-play/upload-key`)에 등록하고 백업·복원 검증을 거친다. 빌드 스크립트는 카탈로그 항목의 동반 파일 `play-store/princess-tycoon-keystore.env`를 읽는다. 앱 서명 키는 Play App Signing이 관리한다(2026-11-06 생성, 인증서 SHA-256 `BB:CF:E8:…:13:65`, 로컬·BeeStation 백업 복원 검증 통과).
 - API 업로드: 등록된 공용 게시 서비스 계정을 재사용하고, 새 앱에 대한 권한을 업로드 전에 읽어 확인한다.
 - 버전: versionName `1.0.0`, versionCode `1`
 
