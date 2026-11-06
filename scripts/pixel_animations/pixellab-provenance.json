@@ -1,0 +1,144 @@
+{
+  "runs": [
+    {
+      "date": "2026-11-06",
+      "endpoint": "/animate-with-text-v3",
+      "seed": 19,
+      "clips": [
+        "book/idle"
+      ],
+      "generations_used": 1.0,
+      "failed": []
+    },
+    {
+      "date": "2026-11-06",
+      "endpoint": "/animate-with-text-v3",
+      "seed": 19,
+      "clips": [
+        "magic/idle",
+        "ledger/idle",
+        "tea/idle",
+        "compass/idle",
+        "flag/idle",
+        "candle/idle",
+        "leaves/idle"
+      ],
+      "generations_used": 55.0,
+      "failed": []
+    }
+  ],
+  "clips": {
+    "book/idle": {
+      "seam": 0.0012,
+      "edge": false,
+      "ground": [
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    "magic/idle": {
+      "seam": 0.0002,
+      "edge": false,
+      "ground": [
+        45,
+        45,
+        45,
+        45,
+        45,
+        45,
+        45,
+        45
+      ]
+    },
+    "ledger/idle": {
+      "seam": 0.0002,
+      "edge": false,
+      "ground": [
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    "tea/idle": {
+      "seam": 0.0002,
+      "edge": false,
+      "ground": [
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47
+      ]
+    },
+    "compass/idle": {
+      "seam": 0.0002,
+      "edge": false,
+      "ground": [
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50
+      ]
+    },
+    "flag/idle": {
+      "seam": 0.0015,
+      "edge": false,
+      "ground": [
+        51,
+        51,
+        51,
+        51,
+        51,
+        51,
+        51,
+        51
+      ]
+    },
+    "candle/idle": {
+      "seam": 0.0012,
+      "edge": false,
+      "ground": [
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50
+      ]
+    },
+    "leaves/idle": {
+      "seam": 0.0005,
+      "edge": false,
+      "ground": [
+        46,
+        46,
+        46,
+        46,
+        46,
+        46,
+        46,
+        46
+      ]
+    }
+  }
+}

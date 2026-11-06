@@ -4,6 +4,7 @@ const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
 const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
 const PixelText = preload("res://src/ui/pixel/pixel_text.gd")
 const PixelTraineeView = preload("res://src/ui/pixel/pixel_trainee_view.gd")
+const PixelAnimationPlayer = preload("res://src/ui/pixel/pixel_animation_player.gd")
 const ResultFeedbackLayer = preload("res://src/ui/result_feedback_layer.gd")
 const ActivityProgressRing = preload("res://src/ui/activity_progress_ring.gd")
 const LocalAnalyticsPort = preload("res://src/ports/local_analytics_port.gd")
@@ -121,6 +122,9 @@ var _toast_serial := 0
 var _result_feedback_layer: Control
 var _trainee_name_edit: LineEdit
 var _home_avatar: Control
+var _pixel_animation_player := PixelAnimationPlayer.new()
+var _application_focused := true
+var _application_paused := false
 var _detail_activity_id := ""
 var _rendered_tab := ""
 var _page_dirty := false
@@ -156,6 +160,14 @@ func _ready() -> void:
 
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_application_focused = false
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		_application_focused = true
+	elif what == NOTIFICATION_APPLICATION_PAUSED:
+		_application_paused = true
+	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		_application_paused = false
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_track_event(&"app_background", {"slot": int(_read(["time", "slot"], 0))})
 		_persist_silently()
@@ -188,6 +200,8 @@ func _notification(what: int) -> void:
 
 
 func _process(delta: float) -> void:
+	_sync_pixel_animation_context()
+	_pixel_animation_player.advance(delta)
 	_track_scroll_motion()
 	if _page_dirty and not _list_in_motion():
 		_page_dirty = false
@@ -577,11 +591,13 @@ func _build_home_page() -> Control:
 	var avatar := PixelTraineeView.new()
 	_home_avatar = avatar
 	avatar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	avatar.set_animation_player(_pixel_animation_player)
 	avatar.set_profile(_policy_preset())
 	avatar.set_environment(_profile_environment())
 	avatar.set_equipment(_equipment_visual_state())
 	avatar.set_reduced_motion(bool(_read(["settings", "reducedMotion"], false)))
 	avatar.set_activity(_activity_icon_name(), _activity_elapsed / maxf(0.01, _config_float("onlineSecondsPerSlot", 5.0)))
+	avatar.set_activity_context(_active_activity_descriptor(), _pixel_animation_running())
 	stage.add_child(avatar)
 	var overlay := MarginContainer.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
@@ -2471,6 +2487,7 @@ func _reset_game() -> void:
 
 
 func _refresh_chrome() -> void:
+	_sync_pixel_animation_context()
 	_announce_unlocks()
 	_refresh_navigation()
 	if _header_gold_label != null:
@@ -2489,6 +2506,23 @@ func _refresh_chrome() -> void:
 		_pause_button.icon = _icon_texture("pause" if _auto_running else "play")
 		_pause_button.tooltip_text = "일시정지" if _auto_running else "계속하기"
 		_pause_button.theme_type_variation = PixelTheme.button_variation("gold" if _auto_running else "primary")
+
+
+func _active_activity_descriptor() -> Dictionary:
+	var task: Variant = _state.get("activeTask")
+	if task is not Dictionary:
+		return {}
+	return _activity_by_id(str((task as Dictionary).get("activityId", (task as Dictionary).get("id", ""))))
+
+
+func _pixel_animation_running() -> bool:
+	return _current_tab == "home" and _auto_running and int(_state.get("pendingOfflineSlots", 0)) == 0 and _application_focused and not _application_paused
+
+
+func _sync_pixel_animation_context() -> void:
+	_pixel_animation_player.reduced_motion = bool(_read(["settings", "reducedMotion"], false))
+	_pixel_animation_player.set_environment(_profile_environment())
+	_pixel_animation_player.set_activity_context(_active_activity_descriptor(), _pixel_animation_running())
 
 
 func _refresh_high_contrast() -> void:

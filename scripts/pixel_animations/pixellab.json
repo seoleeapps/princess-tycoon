@@ -1,0 +1,96 @@
+{
+  "size": 64,
+  "seed": 19,
+  "raw_dir": "../../build/pixel-animations/raw",
+  "out_dir": "../../godot/assets/pixel_animations",
+  "sheet_name": "{id}.png",
+  "clips": {
+    "idle": {
+      "frames": 8,
+      "loop": true,
+      "action": "subtle seamless idle loop"
+    }
+  },
+  "items": [
+    {
+      "id": "book",
+      "source": "../../godot/assets/pixel_animations/references/book.png",
+      "clips": [
+        "idle"
+      ],
+      "actions": {
+        "idle": "One page of the open book lifts slowly, turns from right to left and settles flat. The book cover and spine stay completely still. Subtle seamless idle loop; fixed camera; no new objects."
+      }
+    },
+    {
+      "id": "magic",
+      "source": "../../godot/assets/pixel_animations/references/magic.png",
+      "clips": [
+        "idle"
+      ],
+      "actions": {
+        "idle": "The small blue magic orb gently pulses and its tiny star glints twinkle. Its golden stand stays completely still. Subtle seamless idle loop; fixed camera; no new objects."
+      }
+    },
+    {
+      "id": "ledger",
+      "source": "../../godot/assets/pixel_animations/references/ledger.png",
+      "clips": [
+        "idle"
+      ],
+      "actions": {
+        "idle": "The quill gently writes a short stroke in the open work ledger then returns to its resting position. The ledger stays still. Subtle seamless idle loop; no letters or text; fixed camera; no new objects."
+      }
+    },
+    {
+      "id": "tea",
+      "source": "../../godot/assets/pixel_animations/references/tea.png",
+      "clips": [
+        "idle"
+      ],
+      "actions": {
+        "idle": "Thin curls of steam gently rise from the teacup and fade, repeating. The cup, tea and saucer stay completely still. Subtle seamless idle loop; fixed camera; no new objects."
+      }
+    },
+    {
+      "id": "compass",
+      "source": "../../godot/assets/pixel_animations/references/compass.png",
+      "clips": [
+        "idle"
+      ],
+      "actions": {
+        "idle": "The compass needle gently swings a little left and right and returns north. The round case stays completely still. Subtle seamless idle loop; fixed camera; no new objects."
+      }
+    },
+    {
+      "id": "flag",
+      "source": "../../godot/assets/pixel_animations/references/flag.png",
+      "clips": [
+        "idle"
+      ],
+      "actions": {
+        "idle": "The small blue tournament flag gently ripples in a light breeze. The pole and golden base stay completely still. Subtle seamless idle loop; fixed camera; preserve the emblem; no new objects."
+      }
+    },
+    {
+      "id": "candle",
+      "source": "../../godot/assets/pixel_animations/references/candle.png",
+      "clips": [
+        "idle"
+      ],
+      "actions": {
+        "idle": "The small candle flame gently flickers left and right. The wax candle and brass holder stay completely still. Subtle seamless idle loop; fixed camera; no new objects."
+      }
+    },
+    {
+      "id": "leaves",
+      "source": "../../godot/assets/pixel_animations/references/leaves.png",
+      "clips": [
+        "idle"
+      ],
+      "actions": {
+        "idle": "The three small leaves gently flutter in place in a soft breeze and return to their initial positions. Small motion only. Subtle seamless idle loop; fixed camera; no new objects."
+      }
+    }
+  ]
+}
