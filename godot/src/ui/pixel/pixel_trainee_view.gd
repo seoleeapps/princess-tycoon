@@ -6,13 +6,13 @@ extends Control
 const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
 const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
 const TraineeCompositor = preload("res://src/ui/pixel/trainee_compositor.gd")
+const PixelAnimationPlayer = preload("res://src/ui/pixel/pixel_animation_player.gd")
 
 const SPRITE := "res://assets/pixel/sprites/trainee.json"
 const SCENE_DIR := "res://assets/pixel/scenes/"
 const ICON_DIR := "res://assets/pixel/icons/"
 const ENVIRONMENTS := ["academy", "library", "city", "forest", "arena"]
 const SCALE := 2.0
-const FRAME_SECONDS := 0.5
 const SLOTS := ["outfit", "weapon", "armor", "accessory"]
 
 static var _shared_compositor: RefCounted
@@ -28,7 +28,9 @@ var expression := "focus"
 var _trainee_texture: ImageTexture
 var _trainee_source: Image
 var _frame := 0
-var _elapsed := 0.0
+var animation_player: RefCounted = PixelAnimationPlayer.new()
+var _animation_frames := Vector2i(-1, -1)
+var _animation_clips := ""
 
 
 func _ready() -> void:
@@ -46,6 +48,7 @@ func set_profile(value: String) -> void:
 
 func set_environment(value: String) -> void:
 	environment = value if ENVIRONMENTS.has(value) else "academy"
+	animation_player.call("set_environment", environment)
 	queue_redraw()
 
 
@@ -56,8 +59,19 @@ func set_equipment(value: Dictionary) -> void:
 
 func set_reduced_motion(value: bool) -> void:
 	reduced_motion = value
+	animation_player.set("reduced_motion", value)
 	if reduced_motion:
 		_frame = 0
+	queue_redraw()
+
+
+func set_animation_player(value: RefCounted) -> void:
+	animation_player = value
+	queue_redraw()
+
+
+func set_activity_context(activity: Dictionary, running: bool) -> void:
+	animation_player.call("set_activity_context", activity, running)
 	queue_redraw()
 
 
@@ -88,13 +102,16 @@ func trainee_image() -> Image:
 	return _trainee_source
 
 
-func _process(delta: float) -> void:
-	if reduced_motion:
+func _process(_delta: float) -> void:
+	if not is_visible_in_tree():
 		return
-	_elapsed += delta
-	if _elapsed >= FRAME_SECONDS:
-		_elapsed = fmod(_elapsed, FRAME_SECONDS)
-		_frame = 1 - _frame
+	var frames := Vector2i(animation_player.call("frame", false), animation_player.call("frame", true))
+	var idle := int(animation_player.call("idle_frame"))
+	var clips := "%s:%s" % [animation_player.get("activity_clip"), animation_player.get("environment_clip")]
+	if frames != _animation_frames or idle != _frame or clips != _animation_clips:
+		_animation_frames = frames
+		_animation_clips = clips
+		_frame = idle
 		queue_redraw()
 
 
@@ -105,6 +122,8 @@ func _draw() -> void:
 	var bg_size := background.get_size()
 	var bg_origin := _even(Vector2((size.x - bg_size.x) * 0.5, size.y - bg_size.y))
 	draw_texture(background, bg_origin)
+	# 환경은 왼쪽 바닥, 도구는 오른쪽 바닥에 둔다. 캔버스 기준점은 (32, 52) 아트픽셀.
+	_draw_clip(str(animation_player.get("environment_clip")), true, bg_origin + Vector2(42, 166) * SCALE)
 	if _trainee_texture == null:
 		return
 	var body_size := Vector2(_trainee_texture.get_size())
@@ -113,7 +132,18 @@ func _draw() -> void:
 	var body_origin := _even(Vector2((size.x - body_size.x) * 0.5, feet_y - body_size.y + bob))
 	_draw_sparkles(body_origin, body_size)
 	draw_texture(_trainee_texture, body_origin)
+	_draw_clip(str(animation_player.get("activity_clip")), false, bg_origin + Vector2(144, 166) * SCALE)
 	_draw_bubble(Vector2(body_origin.x + body_size.x * 0.5, body_origin.y - 4.0))
+
+
+func _draw_clip(clip: String, ambient: bool, anchor: Vector2) -> void:
+	var texture: Texture2D = animation_player.call("texture_for", clip, reduced_motion)
+	if texture == null:
+		return
+	var index := 0 if reduced_motion else int(animation_player.call("frame", ambient))
+	var source := Rect2(Vector2(index * 64, 0), Vector2(64, 64))
+	var destination := Rect2(_even(anchor - Vector2(32, 52) * SCALE), Vector2(128, 128))
+	draw_texture_rect_region(texture, destination, source)
 
 
 func _draw_bubble(anchor: Vector2) -> void:

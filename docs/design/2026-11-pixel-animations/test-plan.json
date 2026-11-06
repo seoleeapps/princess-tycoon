@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "level": "L1",
+  "baseline": "aa74dca59f8ff5595510d6187d766ac026317882",
+  "changedFeatures": ["home-activity-animation", "home-environment-animation", "reduced-motion"],
+  "environments": ["dev"],
+  "redesign": false,
+  "foundationRerun": false,
+  "floorOverrides": [],
+  "release": null
+}

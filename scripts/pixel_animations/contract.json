@@ -1,0 +1,25 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-with-text-v3",
+  "size": [
+    64,
+    64
+  ],
+  "requestedFrames": 8,
+  "firstAndLastReferenceIdentical": true,
+  "no_background": true,
+  "runtimeScale": 2,
+  "activityFps": 6,
+  "environmentFps": 4,
+  "anchor": [
+    32,
+    52
+  ],
+  "approvedGenerationCeiling": 128,
+  "maxAttemptsPerClip": 2,
+  "referenceBuilder": "references.py",
+  "manifest": "pixellab.json",
+  "officialDocumentation": "https://www.pixellab.ai/docs/tools/animate-with-text-new",
+  "completion": "main-merge",
+  "release": null
+}
