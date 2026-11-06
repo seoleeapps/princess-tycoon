@@ -32,7 +32,6 @@ func _run() -> void:
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate() as Control
 	await e2e.mount(main)
 	# fixture는 활동을 완료하지 않는다. 긴 온라인 주기로 같은 활동의 전체 루프를 관찰한다.
-	(main.call("_game_config") as Dictionary)["onlineSecondsPerSlot"] = 10000.0
 	main.set("_auto_running", true)
 	for clip: String in CASES:
 		if not only.is_empty() and only != clip: continue
@@ -41,6 +40,7 @@ func _run() -> void:
 		fixture["activeTask"] = {"id": CASES[clip], "activityId": CASES[clip], "durationSlots": 1, "remainingSlots": 1, "startedAtSlot": 0}
 		var engine: Object = main.get("_engine")
 		main.call("_adopt_engine_result", engine.call("initialize_from_state", fixture))
+		(main.call("_game_config") as Dictionary)["onlineSecondsPerSlot"] = 10000.0
 		main.call("_render_current_page")
 		main.call("_refresh_chrome")
 		main.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN)
