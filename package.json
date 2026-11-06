@@ -7,7 +7,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "test": "npm run check:docs && npm run check:content && npm run check:architecture && npm run check:pixel && npm run test:godot",
+    "test": "npm run check:docs && npm run check:content && npm run check:architecture && npm run check:pixel && npm run check:store-assets && npm run test:godot",
     "check:docs": "bash scripts/check_docs.sh",
     "check:content": "bash scripts/check_content.sh",
     "check:architecture": "bash scripts/check_architecture.sh",
@@ -16,6 +16,9 @@
     "test:e2e": "bash scripts/e2e.sh",
     "capture:e2e": "bash scripts/e2e.sh --capture",
     "test:balance": "${GODOT_BIN:-godot} --headless --path godot --script res://tests/balance_sim.gd",
-    "build:web": "mkdir -p build/web && ${GODOT_BIN:-godot} --headless --path godot --export-release Web ../build/web/index.html"
+    "build:web": "mkdir -p build/web && ${GODOT_BIN:-godot} --headless --path godot --export-release Web ../build/web/index.html",
+    "build:android": "bash scripts/build_android.sh",
+    "check:store-assets": "python3 scripts/store_assets/generate.py --check",
+    "check:play": "python3 ${AGENT_HOME:-$HOME/.agent}/skills/google-play-publishing/scripts/validate_play_store_config.py --root . --allow-console-gates"
   }
 }

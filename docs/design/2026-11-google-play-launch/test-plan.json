@@ -1,0 +1,45 @@
+{
+  "$comment": "seoleeapps 저장소라 Seorilabs 중앙 검증기 대상이 아니다. 형식은 중앙 test-plan 스키마를 따른다. 첫 Android 출시라 개발 환경 전체 회귀(L3)에 더해, 개발 환경으로 확인할 수 없는 Android 필수 항목만 사용자가 승인한 실기기 1대에서 다른 에이전트가 확인한다.",
+  "schemaVersion": 1,
+  "level": "L3",
+  "baseline": "5680e22352c0b89536e919321a5f08c0ddc1f55f",
+  "changedFeatures": [
+    "android-export",
+    "android-back-button",
+    "boot-splash",
+    "store-listing",
+    "release-signing"
+  ],
+  "environments": [
+    "dev",
+    "android"
+  ],
+  "redesign": false,
+  "foundationRerun": true,
+  "floorOverrides": [],
+  "deviceChecks": [
+    "AND-01 Play 내부 테스트 설치본 cold start(기기 GPU의 GL Compatibility 렌더링)",
+    "AND-02 실제 터치 탭과 목록 끌기·관성 스크롤",
+    "AND-03 강제 종료 뒤 다시 실행해도 저장 유지",
+    "AND-04 백그라운드 2분 뒤 복귀 시 오프라인 정산",
+    "AND-05 뒤로 가기(결과 창·시트 닫기, 다른 탭에서 홈, 홈에서 두 번 눌러 닫기)",
+    "AND-06 몰입 모드의 시스템 표시줄 숨김, 노치·제스처 바와 겹치지 않음, 화면 비율",
+    "AND-07 효과음 재생과 효과음 끄기"
+  ],
+  "release": {
+    "markets": ["google-play"],
+    "endPoint": "public",
+    "countries": ["KR"],
+    "rollout": {"google-play": 100}
+  },
+  "devRuns": [
+    "npm test",
+    "npm run test:e2e",
+    "npm run capture:e2e",
+    "npm run test:balance",
+    "npm run build:web",
+    "npm run build:android",
+    "npm run check:play"
+  ],
+  "reviewRounds": 1
+}

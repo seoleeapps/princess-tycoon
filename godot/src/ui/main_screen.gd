@@ -62,6 +62,11 @@ var _engine: Object = null
 var _state: Dictionary = {}
 var _seed := 1729
 var _current_tab := "home"
+# Android 뒤로 가기: 홈에서 이 시각(밀리초) 전에 한 번 더 누르면 저장하고 닫는다.
+const BACK_EXIT_WINDOW_MS := 2000
+var _back_exit_until := 0
+# 테스트가 실제 종료 대신 호출을 가로챌 때만 쓴다. 비어 있으면 get_tree().quit().
+var _exit_handler := Callable()
 var _activity_filter := "education"
 # 플래너 이유 이름 중 개발 용어처럼 들리는 것을 쉬운 말로 바꿔 보여 준다.
 const REASON_DISPLAY := {"프리셋 선호": "방향 선호"}
@@ -145,7 +150,10 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_track_event(&"app_background", {"slot": int(_read(["time", "slot"], 0))})
 		_persist_silently()
+	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		_handle_back()
 	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		_back_exit_until = 0
 		_sync_engine_state()
 		var resume_now := _now_unix()
 		var last_boundary := int(_state.get("lastSimulatedAt", 0))
@@ -471,6 +479,8 @@ func _build_navigation() -> Control:
 
 
 func _show_tab(tab_id: String) -> void:
+	# 두 번 눌러 닫기는 홈에 머무는 동안만 이어진다.
+	_back_exit_until = 0
 	if not _feature_open(tab_id):
 		tab_id = "home"
 	if tab_id != _current_tab:
@@ -1325,6 +1335,39 @@ func _open_sheet(kind: String) -> void:
 	if keep != null:
 		overlay.modulate.a = 0.0
 		_swap_in_after_layout(overlay, scroll, keep_scroll, [keep])
+
+
+# Android 뒤로 가기. 결과 창 → 열린 시트 → 다른 탭이면 홈 순서로 하나씩 닫는다.
+# 홈에서는 실수로 닫지 않게 2초 안에 한 번 더 누를 때만 저장하고 닫는다.
+func _handle_back() -> void:
+	if _result_feedback_layer != null and bool(_result_feedback_layer.call("has_active_feedback")):
+		_result_feedback_layer.call("dismiss")
+		return
+	if _has_open_sheet():
+		_close_sheet()
+		return
+	if _current_tab != "home":
+		_show_tab("home")
+		return
+	if Time.get_ticks_msec() < _back_exit_until:
+		_back_exit_until = 0
+		_persist_silently()
+		if _exit_handler.is_valid():
+			_exit_handler.call()
+		else:
+			get_tree().quit()
+		return
+	_back_exit_until = Time.get_ticks_msec() + BACK_EXIT_WINDOW_MS
+	_show_toast("한 번 더 누르면 게임을 닫아요.")
+
+
+func _has_open_sheet() -> bool:
+	if _modal_layer == null:
+		return false
+	for child in _modal_layer.get_children():
+		if child != _toast_panel and child != _result_feedback_layer and not child.is_queued_for_deletion():
+			return true
+	return false
 
 
 func _close_sheet(keep: Node = null) -> void:

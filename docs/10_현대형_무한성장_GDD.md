@@ -254,12 +254,13 @@ gain = round2(baseGain × focusMod × conditionMod × masteryMod × relationMod 
 - 자동 플래너, 온라인/오프라인 진행, 절차 계약/라이벌/지역 변형
 - 자동 모험/전투, 시험/스포츠/대회, 관계, 장비, 세이브/마이그레이션
 - 한국어 UI, 절차 비주얼, 로컬 분석 훅 인터페이스, 광고/IAP no-op 포트
+- Google Play 한국 출시: 무료, 광고·결제 없음, Android AAB(대상 API 36), 몰입 모드, Android 뒤로 가기(2026-11-06 사용자 지시, 설계 `docs/design/2026-11-google-play-launch/`)
 
 ### 포함하지 않음
 
 - 원작 텍스트·이미지·음악의 상용 런타임 포함
 - 유료 이미지/음악 생성 API
-- 실제 광고/IAP SDK, 서버, 클라우드 저장, 멀티플레이, 스토어 등록/출시
+- 실제 광고/IAP SDK, 서버, 클라우드 저장, 멀티플레이, Google Play 밖 스토어(App Store 등)와 한국 밖 국가 출시
 - 강제 엔딩, 하드 리셋 프레스티지, 미성년 성적 묘사, 확률형 유료 뽑기
 
 ## 14. 구현 단계와 게이트
