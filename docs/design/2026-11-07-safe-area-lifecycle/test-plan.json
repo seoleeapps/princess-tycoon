@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "level": "L1",
+  "baseline": "9e7f02f334449e0741001f28026575029b189eaa",
+  "changedFeatures": [
+    "settings-sfx-motion-contrast",
+    "dev-back-navigation"
+  ],
+  "environments": [
+    "dev"
+  ],
+  "redesign": false,
+  "foundationRerun": false,
+  "floorOverrides": [],
+  "release": null
+}
