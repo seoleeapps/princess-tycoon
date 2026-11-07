@@ -1,0 +1,401 @@
+{
+  "provider": "PixelLab",
+  "apiVersion": "v2",
+  "endpoint": "/generate-image-v2",
+  "maxGenerations": 576,
+  "concurrency": 2,
+  "qualityRetriesPerAsset": 1,
+  "styleSource": "hero/variant-00.png",
+  "rawDir": "build/pixellab-redesign",
+  "jobs": [
+    {
+      "id": "region_academy",
+      "kind": "background",
+      "size": [
+        192,
+        176
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. An inviting royal academy study room, intricately carved warm walnut bookshelves at both side margins, varied book spines, a large arched window in the back with soft daylight, heavy muted teal curtains, a small antique side desk and fine wall details. A richly textured warm timber floor and a small faded rug cross the lower quarter. Keep the central foreground open for one standing trainee. No battle damage. Eye-level side-view woodland RPG combat stage. Natural framing at the side margins, rich layered depth, an OPEN horizontal arena on the bottom quarter. No creatures, no people, no HUD, no text or border. Fill the entire canvas edge to edge.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "region_library",
+      "kind": "background",
+      "size": [
+        192,
+        176
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. A magnificent quiet old academy library, tall irregular rows of richly detailed books, carved walnut galleries, an ornate distant arched window and tiny brass reading lamps. Deep warm brown wood, parchment gold and muted teal details. An open timber floor crosses the lower quarter, with a distant reading table leaving the foreground empty. Eye-level side-view woodland RPG combat stage. Natural framing at the side margins, rich layered depth, an OPEN horizontal arena on the bottom quarter. No creatures, no people, no HUD, no text or border. Fill the entire canvas edge to edge.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "region_city",
+      "kind": "background",
+      "size": [
+        192,
+        176
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. An inviting fantasy academy town street, finely detailed cream stone and warm timber buildings framing the left and right, an arched academy gate far in the background, small cloth awnings, hanging flower baskets and distant greenery. Rich warm daylight and cool teal shadows. A broad cobblestone street crosses the lower quarter, clear foreground space for a trainee. Eye-level side-view woodland RPG combat stage. Natural framing at the side margins, rich layered depth, an OPEN horizontal arena on the bottom quarter. No creatures, no people, no HUD, no text or border. Fill the entire canvas edge to edge.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "region_arena",
+      "kind": "background",
+      "size": [
+        192,
+        176
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. An elegant royal academy tournament courtyard, ornate weathered ivory stone arches and columns framing the sides, distant blue and gold cloth banners, fine carved stone, climbing ivy and warm afternoon sunlight. A broad flat stone arena crosses the lower quarter, open center with layered architecture behind it. No audience crowd or participants. Eye-level side-view woodland RPG combat stage. Natural framing at the side margins, rich layered depth, an OPEN horizontal arena on the bottom quarter. No creatures, no people, no HUD, no text or border. Fill the entire canvas edge to edge.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "region_cave",
+      "kind": "background",
+      "size": [
+        192,
+        176
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. A deep echoing cave, layered rough limestone and hanging stalactites, irregular glowing turquoise and violet crystal clusters, dim shafts of blue light reflecting in distant pools. A weathered flat stone path crosses the lower quarter horizontally. Dark recesses and a large arch recede into atmospheric depth. Small bright minerals, moist rock textures and organic broken contours. Eye-level side-view woodland RPG combat stage. Natural framing at the side margins, rich layered depth, an OPEN horizontal arena on the bottom quarter. No creatures, no people, no HUD, no text or border. Fill the entire canvas edge to edge.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "region_ruins",
+      "kind": "background",
+      "size": [
+        192,
+        176
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. Ancient star-inscribed observatory ruins reclaimed by lush vines. Weathered ivory stone columns and cracked arches frame both sides; a distant intricate brass astronomical doorway, tiny moss and ivy leaves, warm dusty sunlight, soft turquoise shadows. A flat stone mosaic path crosses the lower quarter horizontally. Abstract non-readable glyphs and fine carved stone details. Eye-level side-view woodland RPG combat stage. Natural framing at the side margins, rich layered depth, an OPEN horizontal arena on the bottom quarter. No creatures, no people, no HUD, no text or border. Fill the entire canvas edge to edge.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "region_volcano",
+      "kind": "background",
+      "size": [
+        192,
+        176
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. A dramatic volcanic ridge, rough charcoal basalt cliffs with irregular red-orange lava fissures, flowing distant lava rivers, glowing ember motes, layers of dark jagged crags and a smoky copper sky. A broad intact basalt ledge crosses the lower quarter horizontally as safe battle ground. Rich rock texture, heat glow and contrasting cool purple shadows. Eye-level side-view woodland RPG combat stage. Natural framing at the side margins, rich layered depth, an OPEN horizontal arena on the bottom quarter. No creatures, no people, no HUD, no text or border. Fill the entire canvas edge to edge.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "region_rift",
+      "kind": "background",
+      "size": [
+        192,
+        176
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. An otherworldly blue-violet rift gate, an ancient intricate metallic circular portal receding in the far background, broken floating stone arches and luminous crystalline fragments amid teal and indigo stars. A broad intact weathered stone bridge crosses the lower quarter horizontally. Mystical depth, subtle golden highlights, detailed carved stone and curling wisps of pale light. Eye-level side-view woodland RPG combat stage. Natural framing at the side margins, rich layered depth, an OPEN horizontal arena on the bottom quarter. No creatures, no people, no HUD, no text or border. Fill the entire canvas edge to edge.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_FOREST_VINE",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: A living tangle of silverleaf vines, coiled root limbs, serrated leaves, tiny pale flowers and glowing amber seed eyes. Low stalking plant-beast stance with several distinct grounded root feet, organic asymmetry, thorn details, readable mouth in its knot of roots. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_FOREST_SENTINEL",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: A massive ancient moss-covered granite guardian with a curved burly hunched silhouette, irregular weathered boulder plates, long root-like heavy arms, glowing warm eyes in a deeply carved stone face, ferns growing from shoulder crevices, dangling roots and fine stone fissures. Not a stack of square blocks. Standing on two broad uneven stone feet. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_CAVE_SWARM",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: A tightly grouped flock of three distinctive little cave bats, dark indigo fur, luminous blue ears, translucent turquoise inner wings, expressive sharp silhouettes and differing wing positions. The central larger bat faces left, with two small bats behind; the entire flock remains one coherent sprite with no scenery. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_CAVE_CRAB",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: A powerful strange cave crab with an irregular layered crystalline carapace, violet and icy blue mineral facets, fine cracks, asymmetric broad claw raised toward the left, six distinct jointed legs and two small amber eyes. Organic armor anatomy, sharp readable claw silhouette, not a simple circle. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_CAVE_CHIME",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: A mysterious floating deep-cave resonance entity: a cracked ancient bronze bell core nested in a spiraling crown of suspended turquoise crystals, violet inner light, weathered metal etching, irregular crystal spikes and delicate tiny orbiting fragments. Facing left by its luminous slitted eye. No whole scene or ground. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_RUIN_LENS",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: An intricate hovering ancient lens automaton, bronze and ivory layered rings, a large refracting teal glass eye facing left, four articulated brass fins, fine filigree, tiny bolts, weathered verdigris and soft internal magic glow. A rich functional magical machine, not a plain geometric symbol. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_RUIN_ARCHIVIST",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: An imposing ancient archive guardian construct with a hooded ivory stone head and luminous eye slits, layered bronze armor plates, dark teal trailing cloth, curled parchment ribbons and small metal talons. No readable letters. A dynamic slightly hunched left-facing silhouette with two grounded feet and clearly separated arms. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_RUIN_ORRERY",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: An elaborate floating brass celestial orrery guardian: interwoven tilted engraved orbital rings around a luminous star core, suspended small mineral spheres, sharp unfolding metal fins, ancient teal patina and tiny mechanical details. Left-facing ominous eye in the core, elegant asymmetric silhouette, not a flat icon. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_VOLCANO_CINDER",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: A ferocious original volcanic quadruped predator, lean muscular charcoal-scaled body, ragged rocky fur ridges, glowing amber-orange cracks along its shoulders, curved obsidian horns, long ember-tipped tail, expressive amber eyes and large claws. Low stalking stance facing left, no fire blast or ground. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_VOLCANO_TORTOISE",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: An ancient giant basalt tortoise with an elaborate irregular dark armored shell, naturally layered rock plates split by glowing orange magma seams, a heavy beaked head facing left, four thick clawed legs, tiny mineral spikes and subtle smoke wisps. Fine rugged rock textures, weighty organic silhouette. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_VOLCANO_HEART",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: A formidable hovering volcanic heart entity, a brilliant molten amber core cradled by a ragged open cage of asymmetric obsidian rock plates, curling basalt horns and dangling mineral claws, deep lava fissures and tiny hot sparks. Highly detailed natural rock, strong dramatic silhouette, no fire column or background. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_RIFT_ECHO",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: An original otherworldly shadow echo beast, a sinuous quadruped silhouette made of deep indigo and iridescent teal layered fur, two sweeping translucent pale horn fins, glowing amber eyes, long flowing split tail and delicate violet edge light. Sleek alert left-facing stance, clear legs and expressive anatomy. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_RIFT_WEAVER",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: An intricate boundary-weaver creature with six slender jointed metallic limbs, a pearlescent violet armored body, an amber eye-mask facing left, thin floating ribbon-like appendages and fine turquoise crystalline ornament. A readable graceful predatory silhouette, not a generic spider icon, no web or scenery. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "EN_RIFT_CROWN",
+      "kind": "enemy",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One complete monster sprite: An imposing levitating nameless gate crown guardian: an empty aged-gold crown formed from intricate interlocking branchlike spires, suspended around an ominous deep-violet glowing eye, flowing indigo wisps and two layered blade-like wing ornaments. Strong asymmetric left-facing silhouette, fine engraved metal and teal crystalline highlights, no human head or background. Three-quarter side view FACING LEFT, the enemy faces the hero to its left, centered on a transparent 128x128 canvas with at least 8px clear margin around every extremity. No props, no ground shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "OUTFIT_FORMAL",
+      "kind": "outfit",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. Keep the exact same adult woman, chestnut half-braid, face, anatomy, 5-head-tall proportions, right-facing three-quarter view, empty relaxed hands, 100-pixel figure height and original canvas placement from the reference. Change ONLY the clothing to a refined fitted royal blue formal academy coat with ivory lapels, gold embroidered cuffs and a neat short blue shoulder cape, a tapered navy skirt panel and polished leather boots. Preserve the face and hairstyle exactly. Entire character and all clothing inside the transparent 128x128 canvas, 8px margins, no weapons, no shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "subject": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "OUTFIT_NOBLE",
+      "kind": "outfit",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. Keep the exact same adult woman, chestnut half-braid, face, anatomy, 5-head-tall proportions, right-facing three-quarter view, empty relaxed hands, 100-pixel figure height and original canvas placement from the reference. Change ONLY the clothing to an elegant long tailored deep burgundy ceremonial coat with intricate gold edging, an ivory front panel and rich layered split skirt tails, a small shoulder mantle and fitted polished boots. Preserve the face and hairstyle exactly. Entire character and all clothing inside the transparent 128x128 canvas, 8px margins, no weapons, no shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "subject": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "OUTFIT_ACTIVE",
+      "kind": "outfit",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. Keep the exact same adult woman, chestnut half-braid, face, anatomy, 5-head-tall proportions, right-facing three-quarter view, empty relaxed hands, 100-pixel figure height and original canvas placement from the reference. Change ONLY the clothing to a practical forest-green short traveler jacket over an ivory blouse, a moss-teal asymmetric shoulder cape, fitted dark trousers, brown leather straps and sturdy lace-up boots. Preserve the face and hairstyle exactly. Entire character and all clothing inside the transparent 128x128 canvas, 8px margins, no weapons, no shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "subject": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "OUTFIT_STAGE",
+      "kind": "outfit",
+      "size": [
+        128,
+        128
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. Keep the exact same adult woman, chestnut half-braid, face, anatomy, 5-head-tall proportions, right-facing three-quarter view, empty relaxed hands, 100-pixel figure height and original canvas placement from the reference. Change ONLY the clothing to a beautiful flowing deep violet performance dress with a fitted midnight-blue bodice, restrained gold star embroidery, a delicate short plum shoulder cape, layered split skirt panels over dark leggings and neat boots. Preserve the face and hairstyle exactly. Entire character and all clothing inside the transparent 128x128 canvas, 8px margins, no weapons, no shadow, no scenery, no text.",
+      "style": "hero/variant-00.png",
+      "subject": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "WPN_DAGGER",
+      "kind": "equipment",
+      "size": [
+        64,
+        64
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. A finely crafted short training dagger, polished steel blade with a real tapered edge, dark leather grip and a small bronze crossguard. One isolated item only, angled three-quarter view facing right matching a right-facing character. Rich small material details, clear readable silhouette, centered on transparent canvas with generous margin. No character or mannequin, no stand or pedestal, no floor shadow, no labels, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "WPN_SWORD",
+      "kind": "equipment",
+      "size": [
+        64,
+        64
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. An elegant guards longsword, long straight silver blade, engraved small golden crossguard, dark leather grip and a restrained teal pommel gem. One isolated item only, angled three-quarter view facing right matching a right-facing character. Rich small material details, clear readable silhouette, centered on transparent canvas with generous margin. No character or mannequin, no stand or pedestal, no floor shadow, no labels, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "WPN_RAPIER",
+      "kind": "equipment",
+      "size": [
+        64,
+        64
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. A slender ornate ceremonial rapier, a fine long silver blade, intricate golden swept basket hilt, dark blue grip and small bright pommel. One isolated item only, angled three-quarter view facing right matching a right-facing character. Rich small material details, clear readable silhouette, centered on transparent canvas with generous margin. No character or mannequin, no stand or pedestal, no floor shadow, no labels, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "WPN_WAND",
+      "kind": "equipment",
+      "size": [
+        64,
+        64
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. A refined bronze-ring magic wand, a dark carved wood handle supporting three delicate bronze rings around a luminous pale blue crystal, fine engraved metal. One isolated item only, angled three-quarter view facing right matching a right-facing character. Rich small material details, clear readable silhouette, centered on transparent canvas with generous margin. No character or mannequin, no stand or pedestal, no floor shadow, no labels, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "ARM_LEATHER",
+      "kind": "equipment",
+      "size": [
+        48,
+        48
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. An EMPTY wearable supple chest armor vest, fitted brown leather cuirass with curved shoulder guards, fine stitched seams, dark buckles and layered natural leather texture. Only the upper torso armor, no wearer, no head, no legs, no hands. One isolated item only, angled three-quarter view facing right matching a right-facing character. Rich small material details, clear readable silhouette, centered on transparent canvas with generous margin. No character or mannequin, no stand or pedestal, no floor shadow, no labels, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "ARM_PLATE",
+      "kind": "equipment",
+      "size": [
+        48,
+        48
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. An EMPTY wearable silver chest armor cuirass, fitted curved breastplate with small elegant shoulder guards, layered engraved steel and restrained gold trim. Only the upper torso armor, no wearer, no head, no legs, no hands. One isolated item only, angled three-quarter view facing right matching a right-facing character. Rich small material details, clear readable silhouette, centered on transparent canvas with generous margin. No character or mannequin, no stand or pedestal, no floor shadow, no labels, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "ARM_ROBE",
+      "kind": "equipment",
+      "size": [
+        48,
+        48
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. An EMPTY wearable dark violet protective mage mantle and fitted robe chest panel, rich flowing cloth folds, tiny gold constellation embroidery and a pale blue clasp. Only the upper torso garment, no wearer, no head, no legs, no hands. One isolated item only, angled three-quarter view facing right matching a right-facing character. Rich small material details, clear readable silhouette, centered on transparent canvas with generous margin. No character or mannequin, no stand or pedestal, no floor shadow, no labels, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "ACC_RIBBON",
+      "kind": "equipment",
+      "size": [
+        32,
+        32
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One beautifully tied rich blue silk hair ribbon, two asymmetric loops, two short flowing tails, nuanced satin highlights and delicate dark edging. One isolated item only, angled three-quarter view facing right matching a right-facing character. Rich small material details, clear readable silhouette, centered on transparent canvas with generous margin. No character or mannequin, no stand or pedestal, no floor shadow, no labels, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    },
+    {
+      "id": "ACC_JEWEL",
+      "kind": "equipment",
+      "size": [
+        32,
+        32
+      ],
+      "description": "Exquisite hand-crafted 16-bit fantasy RPG pixel art, crisp intentional pixel clusters, rich hue-shifted shading, textured natural materials, delicate colored outlines and elegant readable silhouettes. Not flat icons, not primitive geometric shapes, not voxel art, not blurry painting. One exquisite small dawn-prism brooch, a faceted amber and pale teal gemstone set in fine branching gold filigree, tiny ivory highlights, elegant wearable jewelry. One isolated item only, angled three-quarter view facing right matching a right-facing character. Rich small material details, clear readable silhouette, centered on transparent canvas with generous margin. No character or mannequin, no stand or pedestal, no floor shadow, no labels, no text.",
+      "style": "hero/variant-00.png",
+      "estimatedGenerations": 10
+    }
+  ]
+}

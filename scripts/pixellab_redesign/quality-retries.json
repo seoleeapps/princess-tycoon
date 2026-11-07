@@ -1,0 +1,17 @@
+{
+  "EN_CAVE_SWARM__defeat": {
+    "reason": "가장 큰 박쥐가 마지막까지 날개를 펼쳐 패배 자세가 읽히지 않음",
+    "attempt": 2,
+    "action": "All three bats are defeated together. Each bat descends to the floor and folds both wings tightly against its body. In the final frames ALL THREE bats rest on the ground, completely still, wings folded, heads low. No bat remains flying. Keep the exact three creatures and colors. No effects or new props."
+  },
+  "EN_RIFT_ECHO__attack": {
+    "reason": "앞발 움직임이 작아 공격 시점이 충분히 읽히지 않음",
+    "attempt": 2,
+    "action": "The horned beast facing left lowers its head and makes a distinct forward clawing lunge to the left with its front paws, visibly bending the shoulders and pushing off the hind legs, then returns to the exact first pose. The torso moves forward several pixels. Keep the full tail and horns inside the canvas. No effects or props."
+  },
+  "EN_RUIN_ORRERY__defeat": {
+    "reason": "패배 모션의 마지막까지 기계의 눈이 밝게 점멸하고 떠 있어 정지·패배가 읽히지 않음",
+    "attempt": 2,
+    "action": "The floating clockwork orrery is defeated and powers off. Its bright central eye fades completely to a dark unlit core, the metal rings slowly tilt and settle onto the ground. End with the entire mechanism resting on the floor, motionless and dark. No flashing or pulsing in the final frames. Preserve all metal rings and colors. Keep every part inside the canvas. No effects or new props."
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "repository": "seorilabs/game-foundation",
+  "revision": "ca2ff1f22b3b3aa0ffb718639a980d4d4bb5b6b8",
+  "scope": "ui_kit components only",
+  "files": {
+    "theme_builder.gd": "df811f065dd4d801d601a558837d241f9ec3dd1eee246c09f3175b629caeed6f",
+    "juice.gd": "1253857797412834f0c06ee0a53f772bd6590555672b3a757dab23b979d06f19",
+    "ui_sfx.gd": "8f4a77f193daa3fe9487568bb82484e34726e4975579b107547cecb514367bcd",
+    "hud_layers.gd": "19bda38b82743b925205412f99e23d8ec9857c1a37c6b59dc32ab0333ffb60c6",
+    "hud_layers.tscn": "0cc4d81f14714084119f14f5133a77e12d505b40176f874cfc871d7d65743764",
+    "reward_ceremony.gd": "a8f7eab829c1b96ddca53cf410f7f94e60a60d2865d4434227cf5f371459d453",
+    "reward_ceremony.tscn": "33488b1416a0c0a004e45e8741d4737821c5f258a7996c91c6583ea77c2569d8",
+    "currency_chip.gd": "77796f313069b572ce4d41f53d76519e5a64c9cfcab4dff0ef3f630671567963",
+    "currency_chip.tscn": "c2d80c329518e7ebd39b2ae070063c21581e6977e4254ecb8e34478d10a3cf49",
+    "particles/sparkle.tscn": "cae963f63b1bf6f2bf9da7a91e020cbf40e6f2ac3de07b7afc1087a54decce43",
+    "particles/burst.tscn": "8ae45cbee858a11e31b7e6c73a368ff6a6af47cf03ca23e286882a3e7eca7258",
+    "sfx/tap.wav": "e816691c3953ad444e3c926e65dc7f51cc1e6470c7831071fe33051666d516c0",
+    "sfx/cancel.wav": "758991eb1331ab2fb8e3a8a1bee09472a101ff9e844673524846dacc99dea31c",
+    "sfx/reward_sting.wav": "8c8eaf3f7fa00dfc11902667cb4c9fd0a5c2da2e25bfaf8cc94b959fd68b5b9a",
+    "sfx/error.wav": "507d8d354bdabf94fa11580e41b4ca0b0826520c43b8f63ba0cb2e0fa2b5ab89",
+    "sfx/confirm.wav": "0a8a13f04db4235f8011d1a8b76575b9aa2f46abf7d3051148aaa9e7d2d064f0"
+  },
+  "license": "LICENSE",
+  "licenseSha256": "44a6be16b60cab758678f098d2e1a9964305ce870ab39f338c9d7a397ad2d7fc"
+}

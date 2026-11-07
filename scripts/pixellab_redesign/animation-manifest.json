@@ -1,0 +1,590 @@
+{
+  "provider": "PixelLab",
+  "apiVersion": "v2",
+  "maxGenerations": 576,
+  "concurrency": 4,
+  "qualityRetriesPerAsset": 1,
+  "rawDir": "build/pixellab-redesign",
+  "jobs": [
+    {
+      "id": "EN_FOREST_WARDEN__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_FOREST_WARDEN.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 168890124,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_CHIME__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_CHIME.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1810724070,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_CHIME__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_CHIME.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 667475893,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_CHIME__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_CHIME.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 865026161,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_CRAB__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_CRAB.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1635980742,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_CRAB__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_CRAB.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 544041492,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_CRAB__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_CRAB.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 895119734,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_SWARM__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_SWARM.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 393854913,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_SWARM__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_SWARM.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 1728853097,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_SWARM__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_SWARM.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 2061039925,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_FOREST_SENTINEL__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_FOREST_SENTINEL.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 252273085,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_FOREST_SENTINEL__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_FOREST_SENTINEL.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 1786210892,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_FOREST_SENTINEL__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_FOREST_SENTINEL.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 836773862,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_FOREST_VINE__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_FOREST_VINE.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 2045790565,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_FOREST_VINE__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_FOREST_VINE.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 1509356106,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_FOREST_VINE__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_FOREST_VINE.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 642662433,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_CROWN__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_CROWN.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1754008163,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_CROWN__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_CROWN.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 451260058,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_CROWN__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_CROWN.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 929392094,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_ECHO__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_ECHO.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1398842158,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_ECHO__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_ECHO.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 350512176,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_ECHO__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_ECHO.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 2093845544,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_WEAVER__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_WEAVER.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1153674702,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_WEAVER__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_WEAVER.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 1337193109,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_WEAVER__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_WEAVER.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 298933593,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_ARCHIVIST__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_ARCHIVIST.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1031258265,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_ARCHIVIST__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_ARCHIVIST.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 790908749,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_ARCHIVIST__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_ARCHIVIST.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 1355025540,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_LENS__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_LENS.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1564805412,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_LENS__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_LENS.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 384565857,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_LENS__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_LENS.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 740743630,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_ORRERY__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_ORRERY.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1641681092,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_ORRERY__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_ORRERY.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 355374014,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_ORRERY__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_ORRERY.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 1626402256,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_VOLCANO_CINDER__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_VOLCANO_CINDER.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1853604435,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_VOLCANO_CINDER__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_VOLCANO_CINDER.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 1703594179,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_VOLCANO_CINDER__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_VOLCANO_CINDER.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 1140317059,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_VOLCANO_HEART__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_VOLCANO_HEART.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 1150389602,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_VOLCANO_HEART__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_VOLCANO_HEART.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 1360933384,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_VOLCANO_HEART__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_VOLCANO_HEART.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 851305383,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_VOLCANO_TORTOISE__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_VOLCANO_TORTOISE.png",
+      "action": "Subtle breathing and natural body motion, facing left. Feet stay grounded. Seamless loop.",
+      "seed": 861551701,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_VOLCANO_TORTOISE__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_VOLCANO_TORTOISE.png",
+      "action": "Facing left, make one clear short forward attack lunge, then recover to the exact starting pose. Keep the full body and all limbs on canvas. No projectiles, no new props.",
+      "seed": 1257416508,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_VOLCANO_TORTOISE__defeat",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_VOLCANO_TORTOISE.png",
+      "action": "Facing left, recoil from defeat then sink gently onto the ground and remain still in a defeated resting pose. Keep the same creature identity, full body visible. Do not vanish.",
+      "seed": 3746870,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_ACTIVE__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_ACTIVE.png",
+      "action": "Standing relaxed, subtle breathing and gentle hair and cloth movement. Feet planted. Seamless loop.",
+      "seed": 262842634,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_ACTIVE__walk",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_ACTIVE.png",
+      "action": "Walking in place facing right, clear alternating steps, natural arm swing and cloth sway. Seamless loop.",
+      "seed": 45351439,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_ACTIVE__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_ACTIVE.png",
+      "action": "Facing right, make one clear forward hand thrust with the front arm, lean forward then return to the exact starting pose. Empty hands. No weapon or effects.",
+      "seed": 884086871,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_FORMAL__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_FORMAL.png",
+      "action": "Standing relaxed, subtle breathing and gentle hair and cloth movement. Feet planted. Seamless loop.",
+      "seed": 1445711342,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_FORMAL__walk",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_FORMAL.png",
+      "action": "Walking in place facing right, clear alternating steps, natural arm swing and cloth sway. Seamless loop.",
+      "seed": 1975355442,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_FORMAL__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_FORMAL.png",
+      "action": "Facing right, make one clear forward hand thrust with the front arm, lean forward then return to the exact starting pose. Empty hands. No weapon or effects.",
+      "seed": 1496262769,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_NOBLE__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_NOBLE.png",
+      "action": "Standing relaxed, subtle breathing and gentle hair and cloth movement. Feet planted. Seamless loop.",
+      "seed": 1728089741,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_NOBLE__walk",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_NOBLE.png",
+      "action": "Walking in place facing right, clear alternating steps, natural arm swing and cloth sway. Seamless loop.",
+      "seed": 1386942578,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_NOBLE__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_NOBLE.png",
+      "action": "Facing right, make one clear forward hand thrust with the front arm, lean forward then return to the exact starting pose. Empty hands. No weapon or effects.",
+      "seed": 982369065,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_STAGE__idle",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_STAGE.png",
+      "action": "Standing relaxed, subtle breathing and gentle hair and cloth movement. Feet planted. Seamless loop.",
+      "seed": 982859478,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_STAGE__walk",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_STAGE.png",
+      "action": "Walking in place facing right, clear alternating steps, natural arm swing and cloth sway. Seamless loop.",
+      "seed": 1252110847,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "OUTFIT_STAGE__attack",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/OUTFIT_STAGE.png",
+      "action": "Facing right, make one clear forward hand thrust with the front arm, lean forward then return to the exact starting pose. Empty hands. No weapon or effects.",
+      "seed": 408187082,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_CAVE_SWARM__defeat__retry",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_CAVE_SWARM.png",
+      "action": "All three bats are defeated together. Each bat descends to the floor and folds both wings tightly against its body. In the final frames ALL THREE bats rest on the ground, completely still, wings folded, heads low. No bat remains flying. Keep the exact three creatures and colors. No effects or new props.",
+      "seed": 2061039926,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RIFT_ECHO__attack__retry",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RIFT_ECHO.png",
+      "action": "The horned beast facing left lowers its head and makes a distinct forward clawing lunge to the left with its front paws, visibly bending the shoulders and pushing off the hind legs, then returns to the exact first pose. The torso moves forward several pixels. Keep the full tail and horns inside the canvas. No effects or props.",
+      "seed": 350512177,
+      "returnToStart": true,
+      "estimatedGenerations": 2
+    },
+    {
+      "id": "EN_RUIN_ORRERY__defeat__retry",
+      "kind": "animation",
+      "endpoint": "/animate-with-text-v3",
+      "source": "selected/EN_RUIN_ORRERY.png",
+      "action": "The floating clockwork orrery is defeated and powers off. Its bright central eye fades completely to a dark unlit core, the metal rings slowly tilt and settle onto the ground. End with the entire mechanism resting on the floor, motionless and dark. No flashing or pulsing in the final frames. Preserve all metal rings and colors. Keep every part inside the canvas. No effects or new props.",
+      "seed": 1626402257,
+      "returnToStart": false,
+      "estimatedGenerations": 2
+    }
+  ]
+}

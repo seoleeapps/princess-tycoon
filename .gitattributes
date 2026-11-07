@@ -1,0 +1,6 @@
+# 재생성한 아틀라스 메타데이터와 검수된 공통 구성요소는 변경 검토에서 구분한다.
+godot/assets/pixellab_v2/*.json linguist-generated=true
+scripts/pixellab_redesign/*-manifest.json linguist-generated=true
+scripts/pixellab_redesign/selections.json linguist-generated=true
+godot/addons/seorilabs_game/ui_kit/** linguist-vendored=true
+godot/assets/adventure_ui/theme.tres linguist-generated=true
