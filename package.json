@@ -7,7 +7,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "test": "npm run check:docs && npm run check:content && npm run check:architecture && npm run check:pixel && npm run check:painted && npm run check:store-assets && npm run test:godot",
+    "test": "npm run check:docs && npm run check:content && npm run check:architecture && npm run check:export && npm run check:pixel && npm run check:painted && npm run check:store-assets && npm run test:godot",
     "check:docs": "bash scripts/check_docs.sh",
     "check:content": "bash scripts/check_content.sh",
     "check:architecture": "bash scripts/check_architecture.sh",
@@ -21,6 +21,7 @@
     "check:store-assets": "python3 scripts/store_assets/generate.py --check",
     "check:play": "python3 ${AGENT_HOME:-$HOME/.agent}/skills/google-play-publishing/scripts/validate_play_store_config.py --root . --allow-console-gates",
     "capture:animations": "bash scripts/pixel_animations/capture.sh",
-    "check:painted": "python3 scripts/pixellab_redesign/check.py && python3 -m unittest discover -s scripts/pixellab_redesign -p \"test_*.py\""
+    "check:painted": "python3 scripts/pixellab_redesign/check.py && python3 -m unittest discover -s scripts/pixellab_redesign -p \"test_*.py\"",
+    "check:export": "python3 scripts/check_export_resources.py"
   }
 }
