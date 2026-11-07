@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "level": "L1",
+  "baseline": "85dd49c1715862d139557de782bbd09cb1f752e6",
+  "changedFeatures": [
+    "release-version",
+    "store-listing"
+  ],
+  "environments": [
+    "dev"
+  ],
+  "redesign": false,
+  "foundationRerun": false,
+  "floorOverrides": [
+    {
+      "rule": "regression",
+      "reason": "export_presets.cfg는 version/name과 version/code만 바꾼다. 승인된 기존 seoleeapps 수동 출시 레인으로 전체 개발 검사와 AAB 실제 manifest/서명/리소스를 대조하며 엔진·SDK·권한은 바꾸지 않는다."
+    }
+  ],
+  "release": {
+    "markets": [
+      "google-play"
+    ],
+    "until": "public",
+    "rollout": 1
+  }
+}
