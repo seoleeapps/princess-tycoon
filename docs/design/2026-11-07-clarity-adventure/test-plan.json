@@ -2,8 +2,19 @@
   "schemaVersion": 1,
   "level": "L3",
   "baseline": "6232e9c5d177900b830ab20eac3ad1f2d58b50fa",
-  "changedFeatures": ["home-goals", "first-session-guidance", "career-goal-preview", "adventure-presentation", "adventure-result-trace"],
-  "environments": ["dev"],
+  "changedFeatures": [
+    "home-goals",
+    "first-session-guidance",
+    "career-goal-preview",
+    "adventure-presentation",
+    "adventure-result-trace",
+    "hero-pixel-art",
+    "region-pixel-art",
+    "character-frame-animation"
+  ],
+  "environments": [
+    "dev"
+  ],
   "redesign": true,
   "foundationRerun": true,
   "floorOverrides": [],

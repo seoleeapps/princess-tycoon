@@ -93,7 +93,7 @@ static func create(seed_value: int = 1, player_name: String = "수련생", confi
 		"forceRest": false,
 		"lastPlannerDecision": {},
 		"lastResult": {},
-		"settings": {"autoRun": true, "reducedMotion": false, "sound": true, "highContrast": false},
+		"settings": {"autoRun": true, "reducedMotion": false, "sound": true, "highContrast": false, "guidanceSeen": []},
 	}
 
 
@@ -107,6 +107,10 @@ static func ensure_v2_shape(input_state: Dictionary) -> Dictionary:
 		str(input_state.get("playerName", input_state.get("name", "수련생")))
 	)
 	var merged: Dictionary = _deep_fill(input_state.duplicate(true), defaults)
+	# 이 필드가 없던 기존 기록은 첫 실행 안내를 강제로 다시 받지 않는다.
+	var previous_settings: Variant = input_state.get("settings", {})
+	if not previous_settings is Dictionary or not (previous_settings as Dictionary).get("guidanceSeen") is Array:
+		(merged["settings"] as Dictionary)["guidanceSeen"] = ["intro", "first_direction"]
 	# 해금 단계가 없던 저장은 기본값(1단계)을 채우지 않는다. 엔진이 진행값으로 단계를 계산한다.
 	if input_state.get("unlocks") is not Dictionary:
 		merged.erase("unlocks")

@@ -1,17 +1,16 @@
 extends Control
 
-# 홈 장면: 활동별 배경, 도트 페이퍼돌 수련생, 머리 위 활동 말풍선과 진행 게이지, 장비 강화 반짝임.
-# 아트 1px = 논리 2px로만 그린다. 대기 모션은 0.5초 간격 2프레임(1 아트픽셀 오르내림)이고 모션 줄이기에서 멈춘다.
+# 홈 장면: PixelLab 수련생과 활동별 배경, 말풍선, 장비 강화 반짝임.
+# 아트 1px = 논리 2px. 몸 모션은 6fps이며 모션 줄이기에서는 참조 프레임을 쓴다.
 
 const PixelTheme = preload("res://src/ui/pixel/pixel_theme.gd")
 const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
-const TraineeCompositor = preload("res://src/ui/pixel/trainee_compositor.gd")
+const TraineeCompositor = preload("res://src/ui/pixel/painted_trainee_compositor.gd")
+const Catalog = preload("res://src/ui/pixel/painted_catalog.gd")
 const PixelAnimationPlayer = preload("res://src/ui/pixel/pixel_animation_player.gd")
 
-const SPRITE := "res://assets/pixel/sprites/trainee.json"
-const SCENE_DIR := "res://assets/pixel/scenes/"
 const ICON_DIR := "res://assets/pixel/icons/"
-const ENVIRONMENTS := ["academy", "library", "city", "forest", "arena"]
+const ENVIRONMENTS := ["academy", "library", "city", "forest", "arena", "cave", "ruins", "volcano", "rift"]
 const SCALE := 2.0
 const SLOTS := ["outfit", "weapon", "armor", "accessory"]
 
@@ -23,7 +22,6 @@ var reduced_motion := false
 var equipment: Dictionary = {}
 var activity_icon := "activity"
 var progress := 0.0
-var expression := "focus"
 
 var _trainee_texture: ImageTexture
 var _trainee_source: Image
@@ -31,6 +29,7 @@ var _frame := 0
 var animation_player: RefCounted = PixelAnimationPlayer.new()
 var _animation_frames := Vector2i(-1, -1)
 var _animation_clips := ""
+var _body_clip := "idle"
 
 
 func _ready() -> void:
@@ -61,8 +60,8 @@ func set_reduced_motion(value: bool) -> void:
 	reduced_motion = value
 	animation_player.set("reduced_motion", value)
 	if reduced_motion:
-		_frame = 0
-	queue_redraw()
+		_frame = 8
+	_refresh_trainee()
 
 
 func set_animation_player(value: RefCounted) -> void:
@@ -72,6 +71,10 @@ func set_animation_player(value: RefCounted) -> void:
 
 func set_activity_context(activity: Dictionary, running: bool) -> void:
 	animation_player.call("set_activity_context", activity, running)
+	var next_clip := "walk" if str(activity.get("kind", "")) == "adventure" else "idle"
+	if next_clip != _body_clip:
+		_body_clip = next_clip
+		_refresh_trainee()
 	queue_redraw()
 
 
@@ -95,7 +98,7 @@ func _progress_step(value: float) -> int:
 
 
 func current_frame() -> int:
-	return _frame
+	return 0 if _frame == 8 else _frame
 
 
 func trainee_image() -> Image:
@@ -106,34 +109,35 @@ func _process(_delta: float) -> void:
 	if not is_visible_in_tree():
 		return
 	var frames := Vector2i(animation_player.call("frame", false), animation_player.call("frame", true))
-	var idle := int(animation_player.call("idle_frame"))
+	var idle := 8 if reduced_motion else int(floorf(float(animation_player.get("activity_time")) * 6.0)) % 8
 	var clips := "%s:%s" % [animation_player.get("activity_clip"), animation_player.get("environment_clip")]
 	if frames != _animation_frames or idle != _frame or clips != _animation_clips:
 		_animation_frames = frames
 		_animation_clips = clips
 		_frame = idle
-		queue_redraw()
+		_refresh_trainee()
 
 
 func _draw() -> void:
 	if size.x < 10.0 or size.y < 10.0:
 		return
-	var background := PixelTheme.doubled_texture(SCENE_DIR + environment + ".png")
-	var bg_size := background.get_size()
+	var background := Catalog.background(environment)
+	if background == null:
+		return
+	var bg_size := background.get_size() * SCALE
 	var bg_origin := _even(Vector2((size.x - bg_size.x) * 0.5, size.y - bg_size.y))
-	draw_texture(background, bg_origin)
+	draw_texture_rect(background, Rect2(bg_origin, bg_size), false)
 	# 환경은 왼쪽 바닥, 도구는 오른쪽 바닥에 둔다. 캔버스 기준점은 (32, 52) 아트픽셀.
 	_draw_clip(str(animation_player.get("environment_clip")), true, bg_origin + Vector2(42, 166) * SCALE)
 	if _trainee_texture == null:
 		return
 	var body_size := Vector2(_trainee_texture.get_size())
-	var feet_y := bg_origin.y + 160.0 * SCALE
-	var bob := -SCALE if _frame == 1 else 0.0
-	var body_origin := _even(Vector2((size.x - body_size.x) * 0.5, feet_y - body_size.y + bob))
+	var feet_y := size.y - 28.0
+	var body_origin := _even(Vector2(size.x * 0.5 - 88.0 * SCALE, feet_y - 137.0 * SCALE))
 	_draw_sparkles(body_origin, body_size)
 	draw_texture(_trainee_texture, body_origin)
 	_draw_clip(str(animation_player.get("activity_clip")), false, bg_origin + Vector2(144, 166) * SCALE)
-	_draw_bubble(Vector2(body_origin.x + body_size.x * 0.5, body_origin.y - 4.0))
+	_draw_bubble(Vector2(size.x * 0.5 + 78.0, body_origin.y + 130.0))
 
 
 func _draw_clip(clip: String, ambient: bool, anchor: Vector2) -> void:
@@ -189,8 +193,7 @@ func _max_enhancement_level() -> int:
 func _refresh_trainee() -> void:
 	if _shared_compositor == null:
 		_shared_compositor = TraineeCompositor.new()
-		_shared_compositor.call("load_sprite", SPRITE)
-	var image: Image = _shared_compositor.call("compose", profile, equipment, expression)
+	var image: Image = _shared_compositor.call("compose", profile, equipment, _body_clip, 8 if reduced_motion else _frame)
 	if image != null:
 		var doubled := image.duplicate() as Image
 		doubled.resize(image.get_width() * int(SCALE), image.get_height() * int(SCALE), Image.INTERPOLATE_NEAREST)

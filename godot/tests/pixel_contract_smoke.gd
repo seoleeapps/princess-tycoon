@@ -132,13 +132,13 @@ func _check_skins() -> void:
 
 
 func _check_compositor() -> void:
-	var path := "res://src/ui/pixel/trainee_compositor.gd"
+	var path := "res://tests/support/legacy_trainee_compositor.gd"
 	var compositor_script: Script = load(path) if ResourceLoader.exists(path) else null
 	_check(compositor_script != null, "PX-04 페이퍼돌 합성기 존재")
 	if compositor_script == null:
 		return
 	var compositor: RefCounted = compositor_script.new()
-	_check(bool(compositor.call("load_sprite", SPRITE)), "PX-04 페이퍼돌 원본 로드")
+	_check(bool(compositor.call("load_sprite", SPRITE)), "PX-04 이전 생성기 기준 원본 로드")
 	for name: String in REFERENCES:
 		var args: Array = REFERENCES[name]
 		var image: Image = compositor.call("compose", args[0], args[1], args[2])

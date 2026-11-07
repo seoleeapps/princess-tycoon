@@ -40,12 +40,15 @@ func _run() -> void:
 
 	e2e = E2EDriver.new(self, view_size, out, args.has("--capture"))
 	var main: Control = await _mount_main()
+	# 첫 여정의 수동 입력은 렌더링·PNG 저장 속도에 따라 자동 활동이 끼어들지 않게 격리한다.
+	(main.call("_game_config") as Dictionary)["onlineSecondsPerSlot"] = 10000.0
 	await _first_session(main)
 	await _return_offline(main)
 	_clear_save()
 	quit(e2e.finish({
 		"viewportId": run_id,
 		"fixedUnixStart": START_UNIX,
+		"fixture": "manual first-session uses onlineSecondsPerSlot=10000; return-offline uses production 5 seconds",
 		"sourceSha": OS.get_environment("SOURCE_SHA"),
 	}))
 
@@ -187,6 +190,7 @@ func _return_offline(main: Control) -> void:
 	await e2e.unmount(main)
 	ProjectSettings.set_setting("princess_tycoon/testing/fixed_unix", START_UNIX + OFFLINE_SECONDS)
 	var again: Control = await _mount_main()
+	(again.call("_game_config") as Dictionary)["onlineSecondsPerSlot"] = 5.0
 	e2e.expect_equal("name restored", str(_state(again).get("traineeName", "")), TRAINEE_NAME)
 	e2e.expect_equal("direction restored", str(_read(again, ["growthPolicy", "preset"], "")), "scholar")
 	e2e.step("offline sheet opens on return", await e2e.wait_for(func() -> bool: return _find_screen(again, "offline") != null, 30))
@@ -225,12 +229,21 @@ func _return_offline(main: Control) -> void:
 		await _tap_id(again, world_id, "start world action")
 		e2e.step("world action advanced time", int(_read(again, ["time", "slot"], 0)) > slot_world)
 		await e2e.shot("16-world-result")
-		# 시트 위에 뜬 결과 창을 누르면 창만 닫히고 시트는 그대로여야 한다(아래 시트 버튼이 눌리지 않음).
-		var card := _result_layer(again).get("_active_panel") as Control
-		if e2e.step("result card shown over world sheet", card != null and bool(_result_layer(again).call("has_active_feedback")) and card.mouse_filter == Control.MOUSE_FILTER_STOP):
-			e2e.step("tap result card over sheet", await e2e.tap(card))
-			await e2e.frames(3)
-			e2e.step("card closes and world sheet stays", not bool(_result_layer(again).call("has_active_feedback")) and _find_screen(again, "world") != null)
+		if is_instance_valid(again.get("_adventure_dialog")):
+			e2e.step("adventure scene shown over world sheet", _find_id(again, "adventure_scene") != null)
+			var skip := _find_id(again, "adventure_skip") as Button
+			if skip != null and skip.disabled:
+				e2e.step("reduced motion shows resolved adventure directly", bool(_read(again, ["settings", "reducedMotion"], false)))
+			else:
+				await _tap_id(again, "adventure_skip", "skip resolved adventure playback")
+			await _tap_id(again, "adventure_close", "close adventure scene")
+			e2e.step("scene closes and world sheet stays", not is_instance_valid(again.get("_adventure_dialog")) and _find_screen(again, "world") != null)
+		else:
+			var card := _result_layer(again).get("_active_panel") as Control
+			if e2e.step("result card shown over world sheet", card != null and bool(_result_layer(again).call("has_active_feedback")) and card.mouse_filter == Control.MOUSE_FILTER_STOP):
+				e2e.step("tap result card over sheet", await e2e.tap(card))
+				await e2e.frames(3)
+				e2e.step("card closes and world sheet stays", not bool(_result_layer(again).call("has_active_feedback")) and _find_screen(again, "world") != null)
 	await _close_sheet(again)
 
 	await _tap_id(again, "tab_plan", "open plan tab")
@@ -354,6 +367,9 @@ func _tap_id(main: Control, ui_id: String, label: String) -> bool:
 
 # 결과 창이 누를 버튼을 가리면 사람처럼 창을 눌러 닫는다(결과 창은 탭을 받아 아래로 전달하지 않는다).
 func _dismiss_covering_feedback(main: Control, control: Control) -> void:
+	var dialog: Control = main.get("_adventure_dialog")
+	if is_instance_valid(dialog) and dialog.is_ancestor_of(control):
+		return
 	var layer := _result_layer(main)
 	if layer == null or not layer.call("has_active_feedback"):
 		return
@@ -378,6 +394,9 @@ func _first_enabled_id(root: Node, prefix: String) -> String:
 
 # 화면 맨 위 시트가 우선이다. 시트가 열려 있으면 그 아래 페이지 버튼은 누를 수 없다.
 func _find_visible(root: Node, predicate: Callable) -> Node:
+	var dialog: Control = root.get("_adventure_dialog")
+	if is_instance_valid(dialog) and not dialog.is_queued_for_deletion():
+		return _search(dialog, predicate)
 	var sheet := _top_sheet(root)
 	return _search(sheet if sheet != null else root, predicate)
 

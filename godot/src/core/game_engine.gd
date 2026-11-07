@@ -942,6 +942,7 @@ func _resolve_adventure(activity: Dictionary) -> Dictionary:
 		if raw_enemy is Dictionary:
 			enemy_pool.append(raw_enemy as Dictionary)
 	var node_results: Array[Dictionary] = []
+	var presentation_nodes: Array[Dictionary] = []
 	var tier: int = maxi(1, int(_state.get("worldTier", 1)))
 	var region: Dictionary = ((_state.get("generatedContent", {}) as Dictionary).get("region", {}) as Dictionary).duplicate(true)
 	if not bool(region.get("active", false)) or str(region.get("templateId", "")) != str(activity.get("id", "")):
@@ -962,6 +963,7 @@ func _resolve_adventure(activity: Dictionary) -> Dictionary:
 	var trait_enemy_scale: float = maxf(0.1, float(modifier_profile.get("enemyScale", 1.0)))
 	var region_difficulty_scale: float = 1.0 + maxf(0.0, _config_float("regionDifficultySqrtRate", 0.04)) * sqrt(float(region_tier - 1))
 	var player_hp: float = 100.0 + _effective_stat("stamina") * 2.0
+	var max_player_hp: float = player_hp
 	var player_attack: float = 12.0 + _effective_stat("strength") + _effective_stat("combat") * 0.8
 	var player_magic_attack: float = 12.0 + _effective_stat("intelligence") * 0.5 + _effective_stat("magic")
 	var player_defense: float = 8.0 + _effective_stat("stamina") * 0.4 + _equipment_modifier("defense")
@@ -977,6 +979,7 @@ func _resolve_adventure(activity: Dictionary) -> Dictionary:
 			meters["energy"] = clampf(float(meters.get("energy", 100.0)) + float(exploration_effect.get("energy", 0.0)), 0.0, 100.0)
 			meters["reputation"] = maxf(0.0, float(meters.get("reputation", 0.0)) + float(exploration_effect.get("reputation", 0.0)))
 			node_results.append({"node": 1, "type": "exploration", "event": exploration_event, "effect": exploration_effect, "won": true, "rounds": 0, "remainingHp": snappedf(player_hp, 0.01)})
+			presentation_nodes.append(node_results.back().duplicate(true))
 			cleared_nodes += 1
 			continue
 		if node_index == 1 and DeterministicRNG.next_float(_state, 0.0, 1.0, "adventure_middle_branch") < 0.35:
@@ -994,6 +997,7 @@ func _resolve_adventure(activity: Dictionary) -> Dictionary:
 			var event_meters: Dictionary = _state.get("meters", {}) as Dictionary
 			event_meters["stress"] = clampf(float(event_meters.get("stress", 0.0)) + float(event_effect.get("stress", 0.0)), 0.0, 100.0)
 			node_results.append({"node": 2, "type": "event", "event": event_name, "effect": event_effect, "won": true, "rounds": 0, "remainingHp": snappedf(player_hp, 0.01)})
+			presentation_nodes.append(node_results.back().duplicate(true))
 			cleared_nodes += 1
 			continue
 		var combat_result: Dictionary = _resolve_adventure_combat_node(
@@ -1012,6 +1016,7 @@ func _resolve_adventure(activity: Dictionary) -> Dictionary:
 		player_hp = float(combat_result.get("playerHp", player_hp))
 		var node_won: bool = bool(combat_result.get("won", false))
 		node_results.append(combat_result.get("nodeResult", {}) as Dictionary)
+		presentation_nodes.append(combat_result.get("presentation", {}) as Dictionary)
 		if not node_won:
 			won = false
 			break
@@ -1063,6 +1068,7 @@ func _resolve_adventure(activity: Dictionary) -> Dictionary:
 		"won": won,
 		"clearedNodes": cleared_nodes,
 		"nodes": node_results,
+		"presentation": {"version": 1, "activityId": str(activity.get("id", "")), "maxPlayerHp": max_player_hp, "nodes": presentation_nodes, "actor": {"profile": str((_state.get("growthPolicy", {}) as Dictionary).get("preset", "balanced")), "equipment": (_state.get("equipment", {}) as Dictionary).duplicate(true)}},
 		"loot": loot,
 		"injured": not won,
 		"regionApplied": region_applied,
@@ -1098,6 +1104,8 @@ func _resolve_adventure_combat_node(
 		enemy = {"id": "EN_FALLBACK", "name": "훈련용 수호체", "hp": 55, "attack": 18, "defense": 10, "magicAttack": 12, "magicDefense": 10, "traits": []}
 	var player_hp: float = starting_player_hp
 	var enemy_hp: float = maxf(1.0, float(enemy.get("hp", 50.0)) * enemy_scale * maxf(0.1, float(enemy_variant.get("hpMultiplier", 1.0))))
+	var enemy_max_hp: float = enemy_hp
+	var turns: Array[Dictionary] = []
 	var enemy_attack: float = float(enemy.get("attack", 15.0)) * enemy_scale * maxf(0.1, float(enemy_variant.get("attackMultiplier", 1.0)))
 	var enemy_magic_attack: float = float(enemy.get("magicAttack", 0.0)) * enemy_scale * maxf(0.1, float(enemy_variant.get("magicMultiplier", 1.0)))
 	var enemy_defense: float = float(enemy.get("defense", 8.0)) * enemy_scale * maxf(0.1, float(enemy_variant.get("defenseMultiplier", 1.0)))
@@ -1109,18 +1117,36 @@ func _resolve_adventure_combat_node(
 		var physical_damage: int = maxi(1, int(floor((player_attack - enemy_defense) * DeterministicRNG.next_float(_state, damage_jitter_min, damage_jitter_max, "player_physical"))))
 		var magic_damage: int = maxi(1, int(floor((player_magic_attack - enemy_magic_defense) * DeterministicRNG.next_float(_state, damage_jitter_min, damage_jitter_max, "player_magic"))))
 		enemy_hp -= float(maxi(physical_damage, magic_damage))
+		turns.append({
+			"actor": "trainee", "damage": maxi(physical_damage, magic_damage),
+			"kind": "magic" if magic_damage > physical_damage else "physical",
+			"playerHp": maxf(0.0, player_hp), "enemyHp": maxf(0.0, enemy_hp),
+		})
 		if enemy_hp <= 0.0:
 			break
 		var incoming_physical: int = maxi(1, int(floor((enemy_attack - player_defense) * DeterministicRNG.next_float(_state, damage_jitter_min, damage_jitter_max, "enemy_physical"))))
 		var incoming_magic: int = maxi(1, int(floor((enemy_magic_attack - player_magic_defense) * DeterministicRNG.next_float(_state, damage_jitter_min, damage_jitter_max, "enemy_magic"))))
 		var incoming: int = maxi(incoming_physical, incoming_magic)
 		player_hp -= float(incoming)
+		turns.append({
+			"actor": "enemy", "damage": incoming,
+			"kind": "magic" if incoming_magic > incoming_physical else "physical",
+			"playerHp": maxf(0.0, player_hp), "enemyHp": maxf(0.0, enemy_hp),
+		})
 		rounds += 1
 	var node_won: bool = enemy_hp <= 0.0 and player_hp > 0.0
 	var damage_taken: float = maxf(0.0, starting_player_hp - player_hp)
 	return {
 		"won": node_won,
 		"playerHp": player_hp,
+		"presentation": {
+			"node": node_index + 1, "type": "boss" if boss else "encounter",
+			"enemyId": str(enemy.get("id", "")),
+			"enemyName": str(enemy.get("name", "적")), "variantName": str(enemy_variant.get("name", "")),
+			"enemyTraitName": str(enemy_variant.get("traitName", "")),
+			"initialPlayerHp": starting_player_hp, "enemyMaxHp": enemy_max_hp,
+			"turns": turns, "won": node_won, "remainingHp": maxf(0.0, player_hp),
+		},
 		"nodeResult": {
 			"node": node_index + 1,
 			"type": "boss" if boss else "encounter",
@@ -1888,6 +1914,29 @@ func _calculate_policy_fit() -> float:
 	if actual_square <= 0.0 or weight_square <= 0.0:
 		return 0.0
 	return clampf(numerator / (sqrt(actual_square) * sqrt(weight_square)), 0.0, 1.0)
+
+
+func career_goal_preview() -> Array[Dictionary]:
+	_ensure_initialized()
+	var preview: Array[Dictionary] = []
+	var owned: Dictionary = _state.get("careerTitles", {}) as Dictionary
+	for career: Dictionary in _content_db.careers:
+		var career_id := str(career.get("id", ""))
+		var stars := maxi(0, int((owned.get(career_id, {}) as Dictionary).get("stars", 0)))
+		var scale := pow(maxf(1.0, _season_review_float("careerGateStarGrowth", 1.35)), float(stars))
+		var condition := _career_gate_result(career.get("gate", {}) as Dictionary, scale)
+		preview.append({
+			"id": career_id, "name": str(career.get("name", career_id)), "stars": stars,
+			"progress": condition.get("progress", 0.0), "missing": condition.get("missing", []),
+		})
+	preview.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if (int(a["stars"]) == 0) != (int(b["stars"]) == 0):
+			return int(a["stars"]) == 0
+		if not is_equal_approx(float(a["progress"]), float(b["progress"])):
+			return float(a["progress"]) > float(b["progress"])
+		return str(a["id"]) < str(b["id"])
+	)
+	return preview
 
 
 func _evaluate_career_titles() -> Dictionary:

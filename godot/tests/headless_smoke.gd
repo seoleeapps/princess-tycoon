@@ -346,6 +346,10 @@ func _check_manual_expedition(main: Node) -> void:
 
 # Android 뒤로 가기: 결과 창 → 시트 → 다른 탭이면 홈 순서로 닫고, 홈에서는 2초 안에 한 번 더 누를 때만 닫는다.
 func _check_android_back(main: Node) -> void:
+	if is_instance_valid(main.get("_adventure_dialog")):
+		_press_back(main)
+		await process_frame
+		_check(not is_instance_valid(main.get("_adventure_dialog")), "뒤로 가기는 모험 장면부터 닫음")
 	var layer: Control = main.get("_result_feedback_layer") as Control
 	main.call("_close_sheet")
 	await process_frame
