@@ -183,6 +183,10 @@ func _notification(what: int) -> void:
 		_application_paused = true
 	elif what == NOTIFICATION_APPLICATION_RESUMED:
 		_application_paused = false
+	# 창 알림은 ready 전이나 화면 분리·삭제 대기 중에도 도착할 수 있다.
+	# 마지막 포커스/정지 상태만 보존하고 유효한 화면에서 후속 작업을 한다.
+	if not is_inside_tree() or not is_node_ready() or is_queued_for_deletion():
+		return
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_track_event(&"app_background", {"slot": int(_read(["time", "slot"], 0))})
 		_persist_silently()
@@ -1488,7 +1492,10 @@ func _open_sheet(kind: String) -> void:
 
 # 카메라 컷아웃을 피하도록 화면 전체(배경, 탭, 시트, 결과 창)를 안전 영역 안으로 줄인다.
 func _apply_safe_area() -> void:
-	var insets := SafeArea.current_insets(get_viewport().get_visible_rect().size)
+	var viewport := get_viewport()
+	if viewport == null or is_queued_for_deletion():
+		return
+	var insets := SafeArea.current_insets(viewport.get_visible_rect().size)
 	offset_top = insets.x
 	offset_bottom = -insets.y
 
