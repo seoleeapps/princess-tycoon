@@ -95,6 +95,8 @@ func _check_main() -> void:
 	var state: Dictionary = main.get("_state")
 	state["activeTask"] = {"activityId": "EDU_MAGIC"}
 	state["pendingOfflineSlots"] = 0
+	(state["settings"] as Dictionary)["autoRun"] = true
+	(main.get("_engine") as RefCounted).call("set_auto_run", true)
 	main.set("_auto_running", true)
 	main.call("_refresh_chrome")
 	var player: RefCounted = main.get("_pixel_animation_player")

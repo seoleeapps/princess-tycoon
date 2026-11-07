@@ -103,7 +103,7 @@ var _unlock_teaser_tab: Button
 var _nav_row: HBoxContainer
 var _gift_target := "citizens"
 var _activity_elapsed := 0.0
-var _auto_running := true
+var _auto_running := false
 var _nav_buttons: Dictionary = {}
 var _activities: Array = []
 var _items: Array = []
@@ -122,6 +122,7 @@ var _activity_label: Label
 var _reason_label: Label
 var _activity_progress: Control
 var _pause_button: Button
+var _offline_button: Button
 var _toast_panel: PanelContainer
 var _toast_label: Label
 var _toast_serial := 0
@@ -371,7 +372,7 @@ func _fallback_state() -> Dictionary:
 		},
 		"eventInbox": [{"id": "EV_GUARDIAN_LETTER", "name": "후견인의 편지", "description": "최근 성장 방향을 응원하는 편지가 도착했어요.", "choices": [{"id": "reply", "text": "답장을 쓴다"}, {"id": "keep", "text": "소중히 보관한다"}]}],
 		"careerTitles": {"END_SCHOLAR": {"name": "왕립 연구자", "stars": 1}},
-		"settings": {"autoRun": true, "reducedMotion": false, "sound": true, "highContrast": false},
+		"settings": {"autoRun": false, "reducedMotion": false, "sound": true, "highContrast": false},
 	}
 
 
@@ -496,11 +497,11 @@ func _build_activity_status() -> PanelContainer:
 	text_button.add_child(text_box)
 	row.add_child(text_button)
 
-	var offline := _button("방치 8시간", _open_sheet.bind("offline"), "secondary", 44.0, "offline_open")
-	offline.text = "방치 %s" % _duration_label(_config_int("offlineCapSeconds", 28800))
+	var offline := _button("정산하기", _open_sheet.bind("offline"), "secondary", 44.0, "offline_open")
+	_offline_button = offline
 	offline.theme_type_variation = "PixelButtonCompactSecondary"
 	offline.custom_minimum_size.x = 92.0
-	offline.tooltip_text = "방치 최대 %s · 오프라인 정산" % _duration_label(_config_int("offlineCapSeconds", 28800))
+	offline.tooltip_text = "오프라인 결과 정산"
 	offline.size_flags_horizontal = Control.SIZE_SHRINK_END
 	row.add_child(offline)
 	_pause_button = _button("", _toggle_auto, "gold", 44.0, "pause")
@@ -696,8 +697,6 @@ func _build_home_page() -> Control:
 		quick_grid.add_child(world)
 	elif _unlock_teaser_place() == "home":
 		quick_grid.add_child(_unlock_teaser_button(52.0, "월드 출정"))
-	if _feature_open("plan"):
-		quick_grid.add_child(_button("성장 방향", _show_tab.bind("plan"), "secondary", 48.0, "open_plan"))
 	if _feature_open("events"):
 		var event_count := _event_inbox().size()
 		var events := _button("이벤트 %d" % event_count if event_count > 0 else "이벤트 확인", _open_sheet.bind("event"), "secondary", 48.0, "open_event")
@@ -776,7 +775,10 @@ func _mark_guidance_seen(id: String) -> void:
 
 func _open_goal_target(target: String) -> void:
 	_mark_guidance_seen("intro")
-	if target == "world" and _feature_open("world"):
+	if target == "auto":
+		if not _auto_running:
+			_toggle_auto()
+	elif target == "world" and _feature_open("world"):
 		_open_sheet("world")
 	elif target in ["plan", "record"] and _feature_open(target):
 		_show_tab(target)
@@ -1640,8 +1642,8 @@ func _build_menu_sheet(body: VBoxContainer) -> void:
 func _build_help_sheet(body: VBoxContainer) -> void:
 	body.set_meta("ui_id", "help_loop")
 	for step: Dictionary in [
-		{"icon": "activity", "title": "1. 수련생이 스스로 활동해요", "text": "수업과 일로 능력치와 골드를 얻고, 지치면 쉬어요. 자동 진행을 끄면 멈춰요."},
-		{"icon": "plan", "title": "2. 성장 방향을 정해 주세요", "text": "활동 8회를 마치면 계획이 열려요. 고른 방향에 맞춰 다음 활동부터 자동 선택이 달라져요."},
+		{"icon": "activity", "title": "1. 먼저 활동을 직접 해보세요", "text": "처음에는 자동 진행이 꺼져 있어요. 활동에서 수업과 일을 고르고, 지치면 쉬며 능력치와 골드가 어떻게 바뀌는지 확인해요."},
+		{"icon": "plan", "title": "2. 방향을 정한 뒤 자동으로 맡겨요", "text": "활동 8회 뒤 계획 탭에서 성장 방향을 골라요. 익숙해지면 홈에서 자동 진행을 직접 켜세요. 일시정지하면 앱을 꺼도 성장하지 않아요."},
 		{"icon": "record", "title": "3. 심사에서 진로 칭호에 도전해요", "text": "게임 속 28일마다 시즌 심사를 받아 명성을 얻어요. 진로 조건을 채우면 칭호를 받고, 다시 달성하면 별이 올라요."},
 	]:
 		var card := _card("window")
@@ -1869,7 +1871,9 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 	var pending_slots := int(_state.get("pendingOfflineSlots", 0))
 	var last_summary: Dictionary = _state.get("lastOfflineSummary", {}) as Dictionary
 	var settled_slots := int(last_summary.get("slotsAdvanced", 0))
-	if settled_slots > 0:
+	if pending_slots > 0:
+		summary_box.add_child(_label("정산 가능 %d회" % pending_slots, 26, PixelTokens.ACCENT))
+	elif settled_slots > 0:
 		summary_box.add_child(_label("오프라인 성장 %d회 완료" % settled_slots, 26, PixelTokens.ACCENT))
 		for change: String in last_summary.get("changes", []) as Array:
 			# 줄어든 값(골드 지출 등)은 오름 화살표 없이 붉은 글자로 보여 준다.
@@ -1892,7 +1896,7 @@ func _build_offline_sheet(body: VBoxContainer) -> void:
 			" · 8시간 상한 적용" if bool(last_summary.get("capped", false)) else "",
 		], 16, PixelTokens.INK_MUTED))
 	else:
-		summary_box.add_child(_label("정산 가능 %d회" % pending_slots, 26, PixelTokens.ACCENT))
+		summary_box.add_child(_label("정산할 결과가 없어요", 26, PixelTokens.ACCENT))
 	summary_box.add_child(_label("최대 %d회 · %s · 기기 시계를 되돌리면 0회" % [_offline_cap_slots(), _duration_label(_config_int("offlineCapSeconds", 28800))], 16, PixelTokens.INK_MUTED))
 	summary.add_child(summary_box)
 	body.add_child(summary)
@@ -2027,6 +2031,12 @@ func _show_status_detail() -> void:
 
 
 func _toggle_auto() -> void:
+	if int(_state.get("pendingOfflineSlots", 0)) > 0:
+		_open_sheet("offline")
+		_show_toast("먼저 오프라인 결과를 정산해 주세요.")
+		return
+	if not _auto_running:
+		_stamp_engine_time_boundary()
 	_auto_running = not _auto_running
 	_state["settings"]["autoRun"] = _auto_running
 	_activity_elapsed = 0.0
@@ -2037,8 +2047,10 @@ func _toggle_auto() -> void:
 			_engine.call("pause")
 		elif _engine.has_method("set_auto_run"):
 			_engine.call("set_auto_run", _auto_running)
+	_mark_guidance_seen("auto_started")
 	_refresh_chrome()
 	_persist_silently()
+	_render_current_page()
 	_show_toast("자동 진행을 %s했어요." % ("시작" if _auto_running else "일시정지"))
 
 
@@ -2379,13 +2391,15 @@ func _select_activity_filter(kind: String) -> void:
 
 
 func _toggle_setting(pressed: bool, key: String) -> void:
+	if key == "autoRun":
+		if pressed != _auto_running:
+			_toggle_auto()
+		_track_event(&"setting_changed", {"setting": key, "enabled": _auto_running})
+		return
 	if not _state.has("settings") or typeof(_state["settings"]) != TYPE_DICTIONARY:
 		_state["settings"] = {}
 	_state["settings"][key] = pressed
-	if key == "autoRun":
-		_auto_running = pressed
-		_activity_elapsed = 0.0
-	elif key == "sound" and _audio_port != null and _audio_port.has_method("set_enabled"):
+	if key == "sound" and _audio_port != null and _audio_port.has_method("set_enabled"):
 		_audio_port.call("set_enabled", pressed)
 	elif key == "reducedMotion":
 		if _result_feedback_layer != null and _result_feedback_layer.has_method("set_reduced_motion"):
@@ -2407,6 +2421,8 @@ func _toggle_setting(pressed: bool, key: String) -> void:
 
 func _collect_offline() -> void:
 	var pending := clampi(int(_state.get("pendingOfflineSlots", 0)), 0, _offline_cap_slots())
+	if pending <= 0:
+		return
 	var before := _progress_snapshot()
 	var offline_summary: Dictionary = {}
 	if _engine != null and _engine.has_method("settle_offline"):
@@ -2613,7 +2629,10 @@ func _create_trainee(preset: String) -> void:
 	else:
 		_state = _fallback_state()
 	_state["traineeName"] = trainee_name
-	_auto_running = true
+	_auto_running = false
+	_activity_elapsed = 0.0
+	if _activity_progress != null:
+		_activity_progress.value = 0.0
 	var policy: Dictionary = _read(["growthPolicy"], {}).duplicate(true)
 	policy["preset"] = preset
 	if preset != "custom":
@@ -2638,7 +2657,10 @@ func _reset_game() -> void:
 		_stamp_engine_time_boundary()
 	else:
 		_state = _fallback_state()
-	_auto_running = true
+	_auto_running = false
+	_activity_elapsed = 0.0
+	if _activity_progress != null:
+		_activity_progress.value = 0.0
 	_persist_silently()
 	_close_sheet()
 	_show_tab("home")
@@ -2659,13 +2681,22 @@ func _refresh_chrome() -> void:
 	if _header_tier_label != null:
 		_header_tier_label.text = "세계 티어 %d" % int(_state.get("worldTier", 1))
 	if _activity_label != null:
-		_activity_label.text = ("지금, %s" if _auto_running else "일시정지 · %s") % _current_activity_name()
+		var seen: Array = _read(["settings", "guidanceSeen"], []) as Array
+		var prefix := "지금, %s" if _auto_running else ("일시정지 · %s" if seen.has("auto_started") else "직접 해보기 · %s")
+		_activity_label.text = prefix % _current_activity_name()
 	if _reason_label != null:
 		_reason_label.text = _planner_reason()
 	if _pause_button != null:
+		var seen: Array = _read(["settings", "guidanceSeen"], []) as Array
+		_pause_button.visible = _auto_running or seen.has("auto_started") or (_feature_open("plan") and seen.has("first_direction"))
+		_pause_button.disabled = int(_state.get("pendingOfflineSlots", 0)) > 0
 		_pause_button.icon = _icon_texture("pause" if _auto_running else "play")
-		_pause_button.tooltip_text = "일시정지" if _auto_running else "계속하기"
+		_pause_button.tooltip_text = "자동 진행 일시정지" if _auto_running else "자동 진행 켜기"
 		_pause_button.theme_type_variation = PixelTheme.button_variation("gold" if _auto_running else "primary")
+	if _offline_button != null:
+		var pending := int(_state.get("pendingOfflineSlots", 0))
+		_offline_button.visible = pending > 0
+		_offline_button.tooltip_text = "오프라인 활동 %d회 정산" % pending
 
 
 func _active_activity_descriptor() -> Dictionary:

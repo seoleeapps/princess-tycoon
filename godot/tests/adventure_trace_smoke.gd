@@ -21,6 +21,8 @@ func _initialize() -> void:
 	for spec: Dictionary in cases:
 		var engine := GameEngine.new()
 		var initial := StateFactory.create(int(spec.seed))
+		# 기존 자동 ON 후보의 게임 상태·난수 baseline을 그대로 비교한다.
+		initial.settings.autoRun = true
 		for key: String in initial.stats:
 			initial.stats[key] = 700.0 if bool(spec.strong) else 0.0
 		initial.stats.stamina = 700.0 if bool(spec.strong) else 70.0
@@ -52,6 +54,7 @@ func _initialize() -> void:
 					_check(damage >= 1 and is_equal_approx(previous_enemy, float(hit.enemyHp)) and is_equal_approx(previous_player, float(hit.playerHp)), "AD-02 표시 HP와 실제 적용 피해 일치")
 	var simulation := GameEngine.new()
 	simulation.initialize(90210)
+	simulation.set_auto_run(true)
 	simulation.advance_slots(1000, 1_800_000_000)
 	var simulated := simulation.get_state()
 	records["slots1000"] = {"hash": JSON.stringify(_without_visual(simulated)).sha256_text(), "rngCounter": simulated.rngCounter}

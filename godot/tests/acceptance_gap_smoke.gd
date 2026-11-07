@@ -489,7 +489,7 @@ func _test_ui_accessibility_and_first_surface(content_db: ContentDB) -> void:
 	var has_debug_copy := false
 	for text_value: String in labels:
 		var lowered := text_value.to_lower()
-		has_current_activity = has_current_activity or text_value.contains("지금, 왕도 산책")
+		has_current_activity = has_current_activity or text_value.contains("직접 해보기 · 왕도 산책")
 		has_debug_copy = has_debug_copy or lowered.contains("dashboard") or lowered.contains("debug") or text_value.contains("개발용") or text_value.contains("데이터 표")
 	_check(
 		has_character and has_current_activity,
