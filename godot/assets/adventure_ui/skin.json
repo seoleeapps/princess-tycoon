@@ -1,0 +1,100 @@
+{
+  "id": "academy-adventure",
+  "text": "#40382c",
+  "focus": "#509074",
+  "textures": {
+    "button_primary": {
+      "normal": "button_gold_normal.png",
+      "margins": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "pressed": "button_gold_pressed.png",
+      "disabled": "button_gold_disabled.png"
+    },
+    "button_secondary": {
+      "normal": "button_secondary_normal.png",
+      "margins": [
+        6,
+        6,
+        6,
+        8
+      ],
+      "content": [
+        12,
+        8,
+        12,
+        10
+      ],
+      "pressed": "button_secondary_pressed.png",
+      "disabled": "button_secondary_disabled.png"
+    },
+    "panel": {
+      "normal": "window.png",
+      "margins": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        10
+      ]
+    },
+    "popup_frame": {
+      "normal": "window_gold.png",
+      "margins": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "content": [
+        12,
+        10,
+        12,
+        10
+      ]
+    },
+    "chip": {
+      "normal": "chip.png",
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "content": [
+        8,
+        2,
+        8,
+        2
+      ]
+    }
+  },
+  "fonts": {
+    "display_en": "res://assets/fonts/Galmuri11-Bold.ttf",
+    "display_ko": "res://assets/fonts/Galmuri11-Bold.ttf",
+    "body": "res://assets/fonts/NeoDunggeunmo-Regular.ttf",
+    "number": "res://assets/fonts/NeoDunggeunmo-Regular.ttf"
+  },
+  "sizes": {
+    "body": 16,
+    "label": 16,
+    "title": 24,
+    "display": 24,
+    "action": 16,
+    "number": 16
+  }
+}

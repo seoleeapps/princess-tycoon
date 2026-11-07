@@ -53,7 +53,8 @@ docs/
 extract/                        역공학 도구와 연구용 추출물(런타임 미포함)
 godot/
   assets/fonts/                 라이선스가 확인된 번들 한글 픽셀 폰트
-  assets/pixel/                 scripts/pixel_art/generate.py가 만든 도트 스킨·아이콘·배경·페이퍼돌
+  assets/pixel/                 도트 스킨·아이콘과 기존 생성기 참조
+  assets/pixellab_v2/           PixelLab 주인공·장비·지역·적 아틀라스
   data/                         밸런스와 콘텐츠 JSON
   scenes/                       모바일 화면
   src/core/                     결정적 게임 규칙과 세이브
@@ -78,8 +79,8 @@ flowchart LR
 ## 저작권·에셋 정책
 
 - `extract/`의 이미지, 폰트, 텍스트, 음원은 분석·재현 레퍼런스 전용입니다.
-- 실행 빌드에는 코드 도트, 그 도트를 참조로 제작한 PixelLab 활동·환경 애니메이션 8종, 라이선스가 확인된 폰트를 포함합니다.
-- PixelLab은 제작 때만 사용하며 실행 중 생성 API를 호출하지 않습니다. [제작·재생 계약](docs/design/2026-11-pixel-animations/design.md)에 범위와 비용 기록을 남깁니다. 원작 리소스, 음악 생성 API, 실제 광고/IAP SDK는 포함하지 않습니다.
+- 실행 빌드에는 PixelLab 주인공·장비·배경·적과 프레임 애니메이션, 기존 활동·환경 애니메이션 8종, 도트 UI 스킨과 라이선스가 확인된 폰트를 포함합니다.
+- PixelLab은 제작 때만 사용하며 실행 중 생성 API를 호출하지 않습니다. [활동 도구 계약](docs/design/2026-11-pixel-animations/design.md)과 [목표·모험·아트 개편](docs/design/2026-11-07-clarity-adventure/design.md)에 범위와 비용 기록을 남깁니다. 원작 리소스, 음악 생성 API, 실제 광고/IAP SDK는 포함하지 않습니다.
 
 ## 검증 결과
 

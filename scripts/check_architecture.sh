@@ -11,7 +11,9 @@ required_paths=(
   godot/src/ui/pixel/pixel_theme.gd
   godot/src/ui/pixel/pixel_tokens.gd
   godot/src/ui/pixel/pixel_trainee_view.gd
-  godot/src/ui/pixel/trainee_compositor.gd
+  godot/src/ui/pixel/painted_trainee_compositor.gd
+  godot/src/ui/pixel/painted_catalog.gd
+  godot/assets/pixellab_v2/catalog.json
   godot/src/ui/result_feedback_layer.gd
   godot/src/ports
   godot/tests
@@ -25,7 +27,7 @@ required_paths=(
 )
 
 for path in "${required_paths[@]}"; do
-  test -e "$path" || { echo "Missing required runtime path: $path" >&2; exit 1; }
+  test -e "$path" || { echo "Missing required project path: $path" >&2; exit 1; }
 done
 
 forbidden='res://src/ui|CanvasItem|Control|Node2D|Firebase|Firestore|AdMob|JavaScriptBridge'

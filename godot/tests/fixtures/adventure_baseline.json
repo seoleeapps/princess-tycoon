@@ -1,0 +1,108 @@
+{
+	"ADV_CAVE_915_true": {
+		"hash": "3c1a2f17b8f326b4a83417c483fd36d46b2dc50412b78701fdf71a35845b0e18",
+		"ok": true,
+		"rngCounter": 35,
+		"won": true
+	},
+	"ADV_FOREST_10_false": {
+		"hash": "d1db5551ed5b80c9a4290af8d03ad804d693677ffc9de569c81622bcebd71f15",
+		"ok": true,
+		"rngCounter": 138,
+		"won": false
+	},
+	"ADV_FOREST_11_false": {
+		"hash": "0d805e253fb10a354ddafd1b83b712708f301f2acc095566f5447ece7c975817",
+		"ok": true,
+		"rngCounter": 51,
+		"won": false
+	},
+	"ADV_FOREST_12_false": {
+		"hash": "31e6001e63b70911f7fac34e1191a290217c165d1e333c691e102e2e803bee53",
+		"ok": true,
+		"rngCounter": 126,
+		"won": false
+	},
+	"ADV_FOREST_1_false": {
+		"hash": "32a5271c6bf0db7f4704d1cc60cf2233c57ce6a39e27d2fc6833069acfc62521",
+		"ok": true,
+		"rngCounter": 138,
+		"won": false
+	},
+	"ADV_FOREST_2_false": {
+		"hash": "83337169505ca83fae2737f81df36e69d5e458261a20dfee6fe8aa6bfdd3f4ac",
+		"ok": true,
+		"rngCounter": 47,
+		"won": false
+	},
+	"ADV_FOREST_3_false": {
+		"hash": "9243907d684205a3729a54e62c68e893779e5e28a60823c7025210a2cbea1d81",
+		"ok": true,
+		"rngCounter": 126,
+		"won": false
+	},
+	"ADV_FOREST_4_false": {
+		"hash": "92dd85465a7bd0d65bc7784737bb11b7cdde1dc52a1d879c4690f5686b431648",
+		"ok": true,
+		"rngCounter": 51,
+		"won": false
+	},
+	"ADV_FOREST_5_false": {
+		"hash": "9974808e5a18f3c052b3971c1d92b8160930d075925472a636b237cb7324d881",
+		"ok": true,
+		"rngCounter": 138,
+		"won": false
+	},
+	"ADV_FOREST_6_false": {
+		"hash": "382195f224d11836841a5438bc794492123d33a893ec8f4f69bc769c9fc726d4",
+		"ok": true,
+		"rngCounter": 51,
+		"won": false
+	},
+	"ADV_FOREST_7_false": {
+		"hash": "59ce96700a9f73313c9a0109943db53469e5107c984037c93fc208d757cd6846",
+		"ok": true,
+		"rngCounter": 138,
+		"won": false
+	},
+	"ADV_FOREST_8_false": {
+		"hash": "eda76740aefe43bab6a3752650e15fc35f080f5eff4228890e165bba92432f86",
+		"ok": true,
+		"rngCounter": 126,
+		"won": false
+	},
+	"ADV_FOREST_915_true": {
+		"hash": "90da39924bce8a83710ab05bb67b7a9496d7db265ae8fc20241524f47d110e7c",
+		"ok": true,
+		"rngCounter": 32,
+		"won": true
+	},
+	"ADV_FOREST_9_false": {
+		"hash": "f2a56c698945ed972c23f1ca05db45fb155f5d65ba0e518b98f1ef79563766c8",
+		"ok": true,
+		"rngCounter": 51,
+		"won": false
+	},
+	"ADV_RIFT_915_true": {
+		"hash": "0d263c7b0b275d24181029d5b0332b65150757396645711d7406b9b33fbc942d",
+		"ok": true,
+		"rngCounter": 39,
+		"won": true
+	},
+	"ADV_RUINS_915_true": {
+		"hash": "ddf007754d647a8172d7a11c1facd029c02811f90954a01764e7a372a738e018",
+		"ok": true,
+		"rngCounter": 33,
+		"won": true
+	},
+	"ADV_VOLCANO_915_true": {
+		"hash": "f7ed89fee37adf085b17e95319710c679dfe1eee7f61a27d964dde23cab8ae6c",
+		"ok": true,
+		"rngCounter": 34,
+		"won": true
+	},
+	"slots1000": {
+		"hash": "894258a1feef2fd19dcd515c8f02582399b450675c2630682184e9b4dc7fc2c6",
+		"rngCounter": 1704
+	}
+}

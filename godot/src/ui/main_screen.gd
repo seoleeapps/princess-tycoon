@@ -5,6 +5,12 @@ const PixelTokens = preload("res://src/ui/pixel/pixel_tokens.gd")
 const PixelText = preload("res://src/ui/pixel/pixel_text.gd")
 const PixelTraineeView = preload("res://src/ui/pixel/pixel_trainee_view.gd")
 const PixelAnimationPlayer = preload("res://src/ui/pixel/pixel_animation_player.gd")
+const AdventureDialog = preload("res://src/ui/adventure_dialog.gd")
+const AdventureTheme = preload("res://src/ui/adventure_theme.gd")
+const HudLayers = preload("res://addons/seorilabs_game/ui_kit/hud_layers.tscn")
+const AdventurePlayback = preload("res://src/ui/adventure_playback.gd")
+const AdventureView = preload("res://src/ui/adventure_view.gd")
+const GoalPresenter = preload("res://src/ui/goal_presenter.gd")
 const ResultFeedbackLayer = preload("res://src/ui/result_feedback_layer.gd")
 const ActivityProgressRing = preload("res://src/ui/activity_progress_ring.gd")
 const LocalAnalyticsPort = preload("res://src/ports/local_analytics_port.gd")
@@ -123,6 +129,14 @@ var _result_feedback_layer: Control
 var _trainee_name_edit: LineEdit
 var _home_avatar: Control
 var _pixel_animation_player := PixelAnimationPlayer.new()
+var _adventure_playback := AdventurePlayback.new()
+var _adventure_result: Dictionary = {}
+var _adventure_dialog: Control
+var _adventure_dialog_playback: RefCounted
+var _adventure_layers: Node
+var _adventure_notice := ""
+var _compact_adventure_visible := false
+var _compact_adventure_view: Control
 var _application_focused := true
 var _application_paused := false
 var _detail_activity_id := ""
@@ -202,6 +216,29 @@ func _notification(what: int) -> void:
 func _process(delta: float) -> void:
 	_sync_pixel_animation_context()
 	_pixel_animation_player.advance(delta)
+	var can_play := _application_focused and not _application_paused and _auto_running and int(_state.get("pendingOfflineSlots", 0)) == 0
+	if is_instance_valid(_adventure_dialog):
+		_adventure_dialog.call("set_still", not can_play or bool(_read(["settings", "reducedMotion"], false)))
+		var dialog_scene := _adventure_dialog.get_child(0)
+		dialog_scene.set("paused", not can_play)
+		dialog_scene.set("sound_enabled", bool(_read(["settings", "sound"], true)))
+		dialog_scene.set("reduced_motion", bool(_read(["settings", "reducedMotion"], false)))
+	if is_instance_valid(_compact_adventure_view):
+		_compact_adventure_view.visible = not is_instance_valid(_adventure_dialog)
+		_compact_adventure_view.set("paused", not can_play or _current_tab != "home")
+		_compact_adventure_view.set("sound_enabled", bool(_read(["settings", "sound"], true)))
+		_compact_adventure_view.set("reduced_motion", bool(_read(["settings", "reducedMotion"], false)))
+	var reduced := bool(_read(["settings", "reducedMotion"], false))
+	if reduced:
+		_adventure_playback.skip()
+		if _adventure_dialog_playback != null:
+			_adventure_dialog_playback.call("skip")
+	_adventure_playback.advance(delta, can_play and (_current_tab == "home" or _adventure_dialog_playback == _adventure_playback), reduced)
+	if _adventure_dialog_playback != null and _adventure_dialog_playback != _adventure_playback:
+		_adventure_dialog_playback.call("advance", delta, can_play and is_instance_valid(_adventure_dialog), reduced)
+	if _compact_adventure_visible and bool(_adventure_playback.current().get("finished", false)):
+		_compact_adventure_visible = false
+		_page_dirty = true
 	_track_scroll_motion()
 	if _page_dirty and not _list_in_motion():
 		_page_dirty = false
@@ -439,8 +476,7 @@ func _build_activity_status() -> PanelContainer:
 	_activity_progress = ActivityProgressRing.new()
 	_activity_progress.tooltip_text = "현재 활동 진행률"
 	row.add_child(_activity_progress)
-	# 글이 좁은 폭에서 말줄임되므로, 누르면 현재 활동과 다음 선택 이유 전체를 알림으로 보여 준다.
-	var text_button := _button("", _show_status_detail, "secondary", 44.0, "status_detail")
+	var text_button := _button("", _show_status_detail, "secondary", 64.0, "status_detail")
 	text_button.theme_type_variation = "PixelRowButton"
 	text_button.tooltip_text = "현재 활동과 선택 이유 보기"
 	text_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -455,6 +491,8 @@ func _build_activity_status() -> PanelContainer:
 		label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		text_box.add_child(label)
+	_activity_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_activity_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	text_button.add_child(text_box)
 	row.add_child(text_button)
 
@@ -581,11 +619,14 @@ func _page_scroll() -> Dictionary:
 func _build_home_page() -> Control:
 	var page := _page_scroll()
 	var body: VBoxContainer = page["body"]
+	var goal := _home_goal_description()
+	body.add_child(_build_home_goal(goal))
 
 	# 방 장면: 수련생, 활동 말풍선, 장면 위 현재 활동 창
+	_compact_adventure_visible = not _adventure_result.is_empty() and not bool(_adventure_playback.current().get("finished", false))
 	var stage := Control.new()
 	stage.name = "HomeScene"
-	stage.custom_minimum_size.y = 440.0
+	stage.custom_minimum_size.y = 340.0
 	stage.mouse_filter = Control.MOUSE_FILTER_PASS
 	stage.clip_contents = true
 	var avatar := PixelTraineeView.new()
@@ -599,6 +640,13 @@ func _build_home_page() -> Control:
 	avatar.set_activity(_activity_icon_name(), _activity_elapsed / maxf(0.01, _config_float("onlineSecondsPerSlot", 5.0)))
 	avatar.set_activity_context(_active_activity_descriptor(), _pixel_animation_running())
 	stage.add_child(avatar)
+	if _compact_adventure_visible:
+		avatar.visible = false
+		var scene := _new_adventure_view(true)
+		_compact_adventure_view = scene
+		scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		stage.add_child(scene)
+		stage.custom_minimum_size.y = 520.0
 	var overlay := MarginContainer.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	overlay.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -611,10 +659,12 @@ func _build_home_page() -> Control:
 		_refresh_chrome()
 	else:
 		_status_panel.reparent(overlay, false)
+	_status_panel.visible = not _compact_adventure_visible
 	var profile_chip := PanelContainer.new()
+	profile_chip.visible = not _compact_adventure_visible
 	profile_chip.theme_type_variation = PixelTheme.panel_variation("chip")
 	profile_chip.mouse_filter = Control.MOUSE_FILTER_PASS
-	profile_chip.position = Vector2(8, 392)
+	profile_chip.position = Vector2(8, 302)
 	var profile_label := _label("%s 성장" % _preset_name(_policy_preset()), 16, PixelTokens.INK)
 	profile_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	profile_chip.add_child(profile_label)
@@ -630,17 +680,18 @@ func _build_home_page() -> Control:
 	meter_row.add_child(_meter_cell("reputation", "평판", float(_read(["meters", "reputation"], 0)), 100.0))
 	meters.add_child(meter_row)
 	body.add_child(meters)
+	body.add_child(_build_home_next_action(goal))
 
 	# 행동
 	var quick_grid := GridContainer.new()
 	quick_grid.columns = 2
 	quick_grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	quick_grid.add_theme_constant_override("v_separation", PixelTokens.GAP)
-	var run_once := _button("자동 1회 실행", _complete_current_activity, "primary", 52.0, "run_auto_once")
+	var run_once := _button("지금 활동 마치기", _complete_current_activity, "secondary", 48.0, "run_auto_once")
 	run_once.icon = _icon_texture("play")
 	quick_grid.add_child(run_once)
 	if _feature_open("world"):
-		var world := _button("월드 출정", _open_sheet.bind("world"), "gold", 52.0, "open_world")
+		var world := _button("월드 출정", _open_sheet.bind("world"), "secondary", 48.0, "open_world")
 		world.icon = _icon_texture("world")
 		quick_grid.add_child(world)
 	elif _unlock_teaser_place() == "home":
@@ -665,10 +716,72 @@ func _build_home_page() -> Control:
 		recent_box.add_child(_label(str(result.get("summary", "")), 16, PixelTokens.INK_MUTED))
 		for specialized_line: String in _result_specialized_summary_lines(result as Dictionary):
 			recent_box.add_child(_label(specialized_line, 16, PixelTokens.INK_MUTED))
+	var replay_result: Dictionary = result if result is Dictionary and str(result.get("kind", "")) == "adventure" else _adventure_result
+	if not replay_result.is_empty():
+		recent_box.add_child(_button("탐험 장면 다시 보기", _replay_adventure_scene.bind(replay_result), "secondary", 48.0, "adventure_replay"))
 	recent.add_child(recent_box)
 	body.add_child(recent)
 
 	return page["scroll"]
+
+
+func _home_goal_description() -> Dictionary:
+	var careers: Array = []
+	if _engine != null and _engine.has_method("career_goal_preview"):
+		careers = _engine.call("career_goal_preview") as Array
+	var lock_reason := _activity_lock_reason("ADV_FOREST") if _feature_open("world") else ""
+	return GoalPresenter.describe(_state, _unlock_status(), careers, {
+		"season_days": _config_int("slotsPerSeason", 28),
+		"forest_ready": lock_reason.is_empty(), "forest_lock_reason": lock_reason,
+	})
+
+
+func _build_home_goal(goal: Dictionary) -> Control:
+	var card := PanelContainer.new()
+	card.theme = AdventureTheme.build()
+	card.set_meta("ui_id", "home_goal")
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	box.add_child(_label(str(goal["headline"]), 24, PixelTokens.INK))
+	var detail := _label(str(goal["detail"]), 16, PixelTokens.INK)
+	PixelText.wrap_at_spaces(detail)
+	box.add_child(detail)
+	box.add_child(_gauge("reputation", float(goal["progress"])))
+	box.add_child(_label(str(goal["progress_label"]), 16, PixelTokens.INK_MUTED))
+	card.add_child(box)
+	return card
+
+
+func _build_home_next_action(goal: Dictionary) -> Control:
+	var card := _card("inset")
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	box.add_child(_label("지금 할 일 · " + str(goal["next_title"]), 16, PixelTokens.INK))
+	box.add_child(_label(str(goal["next_detail"]), 16, PixelTokens.INK_MUTED))
+	box.add_child(_button(str(goal["action_label"]), _open_goal_target.bind(str(goal["action"])), "primary", 48.0, "home_goal_action"))
+	card.add_child(box)
+	return card
+
+
+func _mark_guidance_seen(id: String) -> void:
+	var seen: Array = (_read(["settings", "guidanceSeen"], []) as Array).duplicate()
+	if seen.has(id):
+		return
+	seen.append(id)
+	(_state["settings"] as Dictionary)["guidanceSeen"] = seen
+	if _engine != null:
+		_engine.call("set_setting", "guidanceSeen", seen)
+	_persist_silently()
+
+
+func _open_goal_target(target: String) -> void:
+	_mark_guidance_seen("intro")
+	if target == "world" and _feature_open("world"):
+		_open_sheet("world")
+	elif target in ["plan", "record"] and _feature_open(target):
+		_show_tab(target)
+	else:
+		_show_tab("activity")
 
 
 func _build_plan_page() -> Control:
@@ -1277,6 +1390,8 @@ func _build_record_page() -> Control:
 
 
 func _open_sheet(kind: String) -> void:
+	if kind == "offline" and is_instance_valid(_adventure_dialog):
+		_close_adventure()
 	# 시트를 새로 열 때(같은 시트 다시 그리기가 아닐 때) 그 시트의 안내 차례를 새로 시작한다.
 	if not _find_open_sheet(kind):
 		_tips_showing.erase(kind)
@@ -1352,6 +1467,7 @@ func _open_sheet(kind: String) -> void:
 
 	match kind:
 		"menu": _build_menu_sheet(body)
+		"help": _build_help_sheet(body)
 		"world": _build_world_sheet(body)
 		"shop": _build_shop_sheet(body)
 		"settings": _build_settings_sheet(body)
@@ -1378,6 +1494,9 @@ func _apply_safe_area() -> void:
 # Android 뒤로 가기. 결과 창 → 열린 시트 → 다른 탭이면 홈 순서로 하나씩 닫는다.
 # 홈에서는 실수로 닫지 않게 2초 안에 한 번 더 누를 때만 저장하고 닫는다.
 func _handle_back() -> void:
+	if is_instance_valid(_adventure_dialog):
+		_close_adventure()
+		return
 	if _result_feedback_layer != null and bool(_result_feedback_layer.call("has_active_feedback")):
 		_result_feedback_layer.call("dismiss")
 		return
@@ -1465,6 +1584,7 @@ func _swap_in_after_layout(shown: CanvasItem, scroll: ScrollContainer, value: in
 
 func _sheet_title(kind: String) -> Array:
 	match kind:
+		"help": return ["플레이 방법", "방향을 정하고, 수련생의 성장을 지켜보세요."]
 		"world": return ["월드", "모험·시험·스포츠·대회·라이벌 리그"]
 		"shop": return ["상점과 인벤토리", "장비와 소비품을 성장 방향에 맞춰 준비하세요."]
 		"settings": return ["설정", "접근성·사운드·자동 진행·데이터"]
@@ -1494,6 +1614,7 @@ func _build_menu_sheet(body: VBoxContainer) -> void:
 	grid.add_theme_constant_override("h_separation", PixelTokens.GRID_GAP)
 	grid.add_theme_constant_override("v_separation", 8)
 	for entry in [
+		["플레이 방법", _replace_sheet.bind("help"), "secondary", "menu_help", "activity"],
 		["이어하기", _replace_sheet.bind("continue"), "primary", "menu_continue", "play"],
 		["새 수련생", _replace_sheet.bind("profile"), "secondary", "menu_profile", "preset_balanced"],
 		["월드", _replace_sheet.bind("world"), "gold", "menu_world", "world"],
@@ -1514,6 +1635,29 @@ func _build_menu_sheet(body: VBoxContainer) -> void:
 	var guide := _card("transparent")
 	guide.add_child(_label("일상 성장은 아래 탭에서, 월드와 상점은 여기서 열어요." if _feature_open("world") else "새 기능은 수련생이 성장하면서 하나씩 열려요.", 16, PixelTokens.INK_MUTED))
 	body.add_child(guide)
+
+
+func _build_help_sheet(body: VBoxContainer) -> void:
+	body.set_meta("ui_id", "help_loop")
+	for step: Dictionary in [
+		{"icon": "activity", "title": "1. 수련생이 스스로 활동해요", "text": "수업과 일로 능력치와 골드를 얻고, 지치면 쉬어요. 자동 진행을 끄면 멈춰요."},
+		{"icon": "plan", "title": "2. 성장 방향을 정해 주세요", "text": "활동 8회를 마치면 계획이 열려요. 고른 방향에 맞춰 다음 활동부터 자동 선택이 달라져요."},
+		{"icon": "record", "title": "3. 심사에서 진로 칭호에 도전해요", "text": "게임 속 28일마다 시즌 심사를 받아 명성을 얻어요. 진로 조건을 채우면 칭호를 받고, 다시 달성하면 별이 올라요."},
+	]:
+		var card := _card("window")
+		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 8)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		row.add_child(_icon(str(step["icon"])))
+		var title := _label(str(step["title"]), 16, PixelTokens.INK)
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(title)
+		box.add_child(row)
+		box.add_child(_label(str(step["text"]), 16, PixelTokens.INK))
+		card.add_child(box)
+		body.add_child(card)
+	body.add_child(_label("홈의 목표 카드가 지금 할 일과 준비할 것을 알려 줘요. 게임은 끝나거나 자동으로 초기화되지 않아요.", 16, PixelTokens.INK))
 
 
 func _build_world_sheet(body: VBoxContainer) -> void:
@@ -1909,10 +2053,11 @@ func _complete_current_activity() -> void:
 func _advance_slots(count: int, show_feedback: bool = true) -> void:
 	var feedback_checkpoint := _result_feedback_checkpoint()
 	var result = null
+	var saved := true
 	if _engine != null and _engine.has_method("advance_slots"):
 		result = _engine.call("advance_slots", count, _now_unix())
 		_adopt_engine_result(result)
-		_persist_silently()
+		saved = _persist_silently()
 	else:
 		for index in range(max(0, count)):
 			_simulate_fallback_slot()
@@ -1925,6 +2070,9 @@ func _advance_slots(count: int, show_feedback: bool = true) -> void:
 		_page_dirty = true
 	else:
 		_render_current_page()
+	if not saved:
+		_show_toast("활동 결과를 저장하지 못했어요. 메뉴에서 다시 저장해 주세요.")
+		return
 	_present_result_feedback(result, feedback_checkpoint, not show_feedback, unlock_notice)
 	_track_event(&"slots_advanced", {"count": maxi(0, count), "manual": show_feedback})
 	if show_feedback:
@@ -1982,6 +2130,9 @@ func _fallback_activity_for_preset(preset: String) -> Dictionary:
 # shown_conflicts: 원정 버튼이 화면에 알린 빠지는 시험 id. 누르는 순간 다시 계산해 다르면(열어 둔 사이 자동 진행이 지남)
 # 출발하지 않고 화면을 새로 그려 다시 보여 준다. 안내 없이 시험에 빠지지 않게 한다. null이면 확인하지 않는다.
 func _run_activity(activity_id: String, shown_conflicts: Variant = null) -> void:
+	if int(_state.get("pendingOfflineSlots", 0)) > 0:
+		_open_sheet("offline")
+		return
 	if _expedition_conflicts_changed(activity_id, shown_conflicts):
 		_render_current_page()
 		if _find_open_sheet("world"):
@@ -2006,13 +2157,17 @@ func _run_activity(activity_id: String, shown_conflicts: Variant = null) -> void
 		return
 	var succeeded := _result_ok(result)
 	_adopt_engine_result(result)
-	_persist_silently()
+	var saved := _persist_silently()
 	# 실행으로 열린 단계는 결과 창에서 알린다(실패하면 결과 창이 없으므로 아래 알림 띠로).
 	var unlock_notice := _take_unlock_notice() if succeeded else ""
 	_refresh_chrome()
 	_render_current_page()
 	_track_event(&"activity_run", {"activityId": activity_id, "ok": succeeded})
-	_play_sfx(SynthAudioPort.CUE_REWARD if succeeded else SynthAudioPort.CUE_FAILURE)
+	if succeeded and not saved:
+		_show_toast("활동 결과를 저장하지 못했어요. 다시 실행하지 말고 메뉴에서 저장해 주세요.")
+		return
+	if str(_activity_by_id(activity_id).get("kind", "")) != "adventure" or not succeeded:
+		_play_sfx(SynthAudioPort.CUE_REWARD if succeeded else SynthAudioPort.CUE_FAILURE)
 	if succeeded:
 		_present_result_feedback(result, feedback_checkpoint, false, unlock_notice)
 		var skipped_names: Array[String] = []
@@ -2119,6 +2274,7 @@ func _run_world_activity(activity_id: String, shown_conflicts: Variant = null) -
 
 
 func _apply_preset(preset: String) -> void:
+	_mark_guidance_seen("first_direction")
 	var policy: Dictionary = _read(["growthPolicy"], {}).duplicate(true)
 	policy["preset"] = preset
 	if preset != "custom":
@@ -2261,6 +2417,7 @@ func _collect_offline() -> void:
 	elif pending > 0:
 		_advance_slots(pending, false)
 	_state["pendingOfflineSlots"] = 0
+	_remember_recent_adventure(offline_summary.get("completedActivities", []) as Array)
 	offline_summary["changes"] = _progress_changes(before, _progress_snapshot())
 	offline_summary["unlockLabels"] = _absorb_offline_unlocks(offline_summary)
 	# 정산 알림에는 직전 온라인 새로 열림 문구를 붙이지 않는다(새로 열린 단계가 없을 때도).
@@ -2418,10 +2575,11 @@ func _inventory_action(action: String, item_id: String) -> void:
 
 func _save_game() -> void:
 	var called := _persist_silently()
-	_show_toast("현재 수련 기록을 저장했어요." if called else "현재 세션 상태를 유지했어요.")
+	_show_toast("현재 수련 기록을 저장했어요." if called else "저장하지 못했어요. 앱을 닫지 말고 메뉴에서 다시 저장해 주세요.")
 
 
 func _continue_game() -> void:
+	_clear_adventure_presentation()
 	if _engine != null:
 		for method in ["load_game", "load_save", "load"]:
 			if _engine.has_method(method):
@@ -2439,6 +2597,7 @@ func _continue_game() -> void:
 
 
 func _create_trainee(preset: String) -> void:
+	_clear_adventure_presentation()
 	var trainee_name := "새 수련생"
 	if _trainee_name_edit != null and not _trainee_name_edit.text.strip_edges().is_empty():
 		trainee_name = _trainee_name_edit.text.strip_edges()
@@ -2467,6 +2626,7 @@ func _create_trainee(preset: String) -> void:
 
 
 func _reset_game() -> void:
+	_clear_adventure_presentation()
 	if _engine != null:
 		if _engine.has_method("reset_save"):
 			_engine.call("reset_save")
@@ -2608,7 +2768,13 @@ func _present_result_feedback(engine_result: Variant, checkpoint: Dictionary, au
 			completed.append(current_last.duplicate(true))
 
 	var activity_result: Dictionary = completed.back() if not completed.is_empty() else {}
+	if str(activity_result.get("kind", "")) != "adventure":
+		_remember_recent_adventure(completed)
 	var season_review: Dictionary = reviews.back() if not reviews.is_empty() else {}
+	if str(activity_result.get("kind", "")) == "adventure":
+		_start_adventure_scene(activity_result, automatic, unlock_notice)
+		if season_review.is_empty():
+			return
 	var payload := _build_result_feedback_payload(activity_result, season_review)
 	if payload.is_empty():
 		_show_unlock_notice(unlock_notice)
@@ -3201,7 +3367,7 @@ func _button(label_text: String, callback: Callable = Callable(), variant: Strin
 	button.pressed.connect(_on_button_pressed.bind(label_text))
 	if callback.is_valid():
 		button.pressed.connect(callback)
-	for marker in ["자동 1회", "즉시 실행", "이 활동 1회", "원정 시작", "참가하기", "오프라인 결과", "이어하기", "구매", "장착", "사용", "판매", "계약 고정"]:
+	for marker in ["자동 1회", "지금 활동 마치기", "즉시 실행", "이 활동 1회", "원정 시작", "참가하기", "오프라인 결과", "이어하기", "구매", "장착", "사용", "판매", "계약 고정"]:
 		if label_text.contains(marker):
 			button.add_to_group("critical_cta")
 			break
@@ -3872,7 +4038,7 @@ func _profile_environment() -> String:
 	if kind == "job":
 		return "city"
 	if kind == "adventure":
-		return "forest"
+		return str({"ADV_CAVE": "cave", "ADV_RUINS": "ruins", "ADV_VOLCANO": "volcano", "ADV_RIFT": "rift"}.get(current_id, "forest"))
 	if kind == "challenge":
 		var tags: Array = activity.get("tags", []) as Array
 		return "arena" if tags.has("sport") or tags.has("contest") or tags.has("league") else "library"
@@ -4182,3 +4348,126 @@ func _result_ok(result: Variant) -> bool:
 	if result is Dictionary:
 		return bool((result as Dictionary).get("ok", true))
 	return result != null and result != false
+
+
+func _start_adventure_scene(result: Dictionary, automatic: bool, notice: String = "") -> void:
+	if not automatic and is_instance_valid(_adventure_dialog):
+		_close_adventure()
+	_adventure_result = result.duplicate(true)
+	if not automatic:
+		_adventure_notice = notice
+	elif is_instance_valid(_adventure_dialog) and _adventure_dialog_playback == _adventure_playback:
+		_adventure_playback = AdventurePlayback.new()
+	var outcome: Dictionary = result.get("outcome", {})
+	var raw_trace: Variant = outcome.get("presentation", {})
+	var trace: Dictionary = raw_trace if raw_trace is Dictionary else {}
+	if not trace.has("activityId"):
+		outcome = outcome.duplicate(true)
+		outcome["activityId"] = result.get("activityId", "ADV_FOREST")
+	var id := "%s:%s:%s" % [_state.get("seed", 0), result.get("slot", 0), result.get("activityId", "")]
+	_adventure_playback.set_outcome(id, outcome)
+	if automatic:
+		if _current_tab == "home":
+			_render_current_page()
+		_show_unlock_notice(notice)
+		return
+	if is_instance_valid(_adventure_dialog):
+		_adventure_dialog.queue_free()
+	_adventure_dialog_playback = _adventure_playback
+	var frame := AdventureDialog.new()
+	frame.still = not _auto_running or bool(_read(["settings", "reducedMotion"], false))
+	_adventure_dialog = frame
+	frame.name = "AdventureDialog"
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for side in ["left", "right", "top", "bottom"]:
+		frame.add_theme_constant_override("margin_" + side, 8)
+	frame.mouse_filter = Control.MOUSE_FILTER_STOP
+	frame.z_index = 110
+	var layers := HudLayers.instantiate()
+	_adventure_layers = layers
+	layers.name = "AdventureLayers"
+	add_child(layers)
+	layers.apply_theme(AdventureTheme.build())
+	var popup: Control = layers.layer("Popup")
+	frame.attach_to(popup)
+	var insets := SafeArea.current_insets(get_viewport_rect().size)
+	frame.offset_top = insets.x
+	frame.offset_bottom = -insets.y
+	var scene := _new_adventure_view(false)
+	scene.closed.connect(_close_adventure)
+	frame.add_child(scene)
+
+func _new_adventure_view(compact: bool) -> Control:
+	var scene := AdventureView.new()
+	scene.playback = _adventure_playback if compact else _adventure_dialog_playback
+	scene.result = _adventure_result.duplicate(true)
+	var reward: Dictionary = _adventure_result.get("reward", {})
+	scene.result["rewardChip"] = "활동 골드 +%s" % _format_big(reward) if _feedback_big_is_positive(reward) else "활동 골드 보상 없음"
+	var reward_lines: Array[String] = []
+	var growth := _feedback_stat_tokens(_adventure_result.get("gains", {}) as Dictionary, 0)
+	if not growth.is_empty():
+		reward_lines.append("성장 · " + ", ".join(growth))
+	var outcome: Dictionary = _adventure_result.get("outcome", {})
+	var region_reward: Dictionary = outcome.get("regionReward", {})
+	if _feedback_big_is_positive(region_reward):
+		reward_lines.append("지역 보상 · 골드 +%s" % _format_big(region_reward))
+	if not str(outcome.get("rewardFragment", "")).is_empty() and bool(outcome.get("won", false)):
+		reward_lines.append("보상 조각 · " + str(outcome.get("rewardFragment", "")))
+	scene.result["rewardSummary"] = "\n".join(reward_lines)
+	var loot_names: Array[String] = []
+	var quantities: Dictionary = {}
+	for item: Variant in (_adventure_result.get("outcome", {}) as Dictionary).get("loot", []):
+		var item_id := str((item as Dictionary).get("itemId", "")) if item is Dictionary else (str(item) if item is String else "")
+		var count := int((item as Dictionary).get("count", 0)) if item is Dictionary else 1
+		if not item_id.is_empty() and count > 0:
+			quantities[item_id] = int(quantities.get(item_id, 0)) + count
+	for item_id: String in quantities:
+		loot_names.append("%s ×%d" % [_item_display_name(item_id), int(quantities[item_id])])
+	scene.result["lootNames"] = loot_names
+	var raw_trace: Variant = (_adventure_result.get("outcome", {}) as Dictionary).get("presentation", {})
+	var trace: Dictionary = raw_trace if raw_trace is Dictionary else {}
+	var raw_actor: Variant = trace.get("actor")
+	scene.actor = raw_actor if raw_actor is Dictionary else {"profile": _policy_preset(), "equipment": _equipment_visual_state()}
+	scene.pause_toggled.connect(_toggle_auto)
+	scene.expanded.connect(func() -> void: _start_adventure_scene(_adventure_result, false))
+	scene.paused = not _auto_running
+	scene.sound_enabled = bool(_read(["settings", "sound"], true))
+	scene.compact = compact
+	scene.reduced_motion = bool(_read(["settings", "reducedMotion"], false))
+	return scene
+
+func _close_adventure() -> void:
+	if is_instance_valid(_adventure_dialog):
+		_adventure_dialog.queue_free()
+	if is_instance_valid(_adventure_layers):
+		_adventure_layers.queue_free()
+	_adventure_layers = null
+	_adventure_dialog = null
+	_adventure_dialog_playback = null
+	_show_unlock_notice(_adventure_notice)
+	_adventure_notice = ""
+
+
+func _replay_adventure_scene(result: Dictionary) -> void:
+	_start_adventure_scene(result, false)
+	_adventure_dialog_playback.set("elapsed", 0.0)
+	if bool(_read(["settings", "reducedMotion"], false)):
+		_adventure_dialog_playback.call("skip")
+
+
+# 오프라인 정산은 요약을 우선한다. 세션 안의 최근 원정 하나만 선택해서 다시 볼 수 있다.
+func _remember_recent_adventure(results: Array) -> void:
+	for index in range(results.size() - 1, -1, -1):
+		if results[index] is Dictionary and str((results[index] as Dictionary).get("kind", "")) == "adventure":
+			_adventure_result = (results[index] as Dictionary).duplicate(true)
+			if _adventure_dialog_playback == _adventure_playback:
+				_adventure_playback = AdventurePlayback.new()
+			_adventure_playback.set_outcome("recent:%s:%s" % [_adventure_result.get("slot", 0), _adventure_result.get("activityId", "")], _adventure_result.get("outcome", {}) as Dictionary)
+			_adventure_playback.skip()
+			return
+
+func _clear_adventure_presentation() -> void:
+	_close_adventure()
+	_adventure_result.clear()
+	_adventure_playback = AdventurePlayback.new()
+	_compact_adventure_visible = false

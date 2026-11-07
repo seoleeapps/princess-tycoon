@@ -1,0 +1,2222 @@
+{
+  "version": 2,
+  "frameSize": 128,
+  "frameCount": 8,
+  "referenceFrame": 8,
+  "fps": 6,
+  "profiles": [
+    "balanced",
+    "martial",
+    "scholar",
+    "artist",
+    "leader",
+    "care",
+    "explorer",
+    "prosperity"
+  ],
+  "canvas": [
+    208,
+    160
+  ],
+  "foot": [
+    88,
+    137
+  ],
+  "bodyOffset": [
+    24,
+    16
+  ],
+  "bodies": {
+    "OUTFIT_PLAIN": {
+      "idle": {
+        "path": "bodies/OUTFIT_PLAIN_idle.png",
+        "anchors": [
+          {
+            "weapon": [
+              79,
+              65
+            ],
+            "armor": [
+              61,
+              53
+            ],
+            "accessory": [
+              51,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              65
+            ],
+            "armor": [
+              61,
+              53
+            ],
+            "accessory": [
+              51,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              63
+            ],
+            "armor": [
+              61,
+              53
+            ],
+            "accessory": [
+              51,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              62
+            ],
+            "armor": [
+              60,
+              53
+            ],
+            "accessory": [
+              50,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              62
+            ],
+            "armor": [
+              60,
+              53
+            ],
+            "accessory": [
+              50,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              62
+            ],
+            "armor": [
+              61,
+              53
+            ],
+            "accessory": [
+              51,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              62
+            ],
+            "armor": [
+              62,
+              53
+            ],
+            "accessory": [
+              52,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              64
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              65
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          }
+        ]
+      },
+      "walk": {
+        "path": "bodies/OUTFIT_PLAIN_walk.png",
+        "anchors": [
+          {
+            "weapon": [
+              77,
+              62
+            ],
+            "armor": [
+              63,
+              52
+            ],
+            "accessory": [
+              53,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              68,
+              53
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              68,
+              54
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              75,
+              49
+            ],
+            "armor": [
+              62,
+              53
+            ],
+            "accessory": [
+              52,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              68,
+              52
+            ],
+            "armor": [
+              63,
+              51
+            ],
+            "accessory": [
+              53,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              68,
+              52
+            ],
+            "armor": [
+              63,
+              50
+            ],
+            "accessory": [
+              53,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              62
+            ],
+            "armor": [
+              62,
+              50
+            ],
+            "accessory": [
+              52,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              65
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              65
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          }
+        ]
+      },
+      "attack": {
+        "path": "bodies/OUTFIT_PLAIN_attack.png",
+        "anchors": [
+          {
+            "weapon": [
+              84,
+              66
+            ],
+            "armor": [
+              63,
+              53
+            ],
+            "accessory": [
+              53,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              92,
+              65
+            ],
+            "armor": [
+              65,
+              55
+            ],
+            "accessory": [
+              55,
+              31
+            ]
+          },
+          {
+            "weapon": [
+              103,
+              59
+            ],
+            "armor": [
+              68,
+              57
+            ],
+            "accessory": [
+              58,
+              33
+            ]
+          },
+          {
+            "weapon": [
+              111,
+              51
+            ],
+            "armor": [
+              70,
+              60
+            ],
+            "accessory": [
+              60,
+              36
+            ]
+          },
+          {
+            "weapon": [
+              108,
+              53
+            ],
+            "armor": [
+              69,
+              58
+            ],
+            "accessory": [
+              59,
+              34
+            ]
+          },
+          {
+            "weapon": [
+              99,
+              59
+            ],
+            "armor": [
+              65,
+              56
+            ],
+            "accessory": [
+              55,
+              32
+            ]
+          },
+          {
+            "weapon": [
+              89,
+              65
+            ],
+            "armor": [
+              63,
+              54
+            ],
+            "accessory": [
+              53,
+              30
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              65
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              65
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          }
+        ]
+      }
+    },
+    "OUTFIT_ACTIVE": {
+      "idle": {
+        "path": "bodies/OUTFIT_ACTIVE_idle.png",
+        "anchors": [
+          {
+            "weapon": [
+              79,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              71
+            ],
+            "armor": [
+              60,
+              52
+            ],
+            "accessory": [
+              50,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              75,
+              72
+            ],
+            "armor": [
+              60,
+              52
+            ],
+            "accessory": [
+              50,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              76,
+              72
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              71
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          }
+        ]
+      },
+      "walk": {
+        "path": "bodies/OUTFIT_ACTIVE_walk.png",
+        "anchors": [
+          {
+            "weapon": [
+              80,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              68
+            ],
+            "armor": [
+              61,
+              50
+            ],
+            "accessory": [
+              51,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              67
+            ],
+            "armor": [
+              61,
+              50
+            ],
+            "accessory": [
+              51,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              76,
+              69
+            ],
+            "armor": [
+              61,
+              50
+            ],
+            "accessory": [
+              51,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              76,
+              68
+            ],
+            "armor": [
+              62,
+              49
+            ],
+            "accessory": [
+              52,
+              25
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              69
+            ],
+            "armor": [
+              61,
+              50
+            ],
+            "accessory": [
+              51,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              68
+            ],
+            "armor": [
+              61,
+              50
+            ],
+            "accessory": [
+              51,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          }
+        ]
+      },
+      "attack": {
+        "path": "bodies/OUTFIT_ACTIVE_attack.png",
+        "anchors": [
+          {
+            "weapon": [
+              86,
+              67
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              94,
+              59
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              96,
+              47
+            ],
+            "armor": [
+              65,
+              52
+            ],
+            "accessory": [
+              55,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              96,
+              44
+            ],
+            "armor": [
+              68,
+              54
+            ],
+            "accessory": [
+              58,
+              30
+            ]
+          },
+          {
+            "weapon": [
+              96,
+              45
+            ],
+            "armor": [
+              68,
+              54
+            ],
+            "accessory": [
+              58,
+              30
+            ]
+          },
+          {
+            "weapon": [
+              96,
+              53
+            ],
+            "armor": [
+              64,
+              52
+            ],
+            "accessory": [
+              54,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              91,
+              64
+            ],
+            "armor": [
+              63,
+              50
+            ],
+            "accessory": [
+              53,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              69
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          }
+        ]
+      }
+    },
+    "OUTFIT_FORMAL": {
+      "idle": {
+        "path": "bodies/OUTFIT_FORMAL_idle.png",
+        "anchors": [
+          {
+            "weapon": [
+              80,
+              66
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              81,
+              65
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              82,
+              64
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              83,
+              65
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              83,
+              66
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              81,
+              66
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              80,
+              66
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              66
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              66
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          }
+        ]
+      },
+      "walk": {
+        "path": "bodies/OUTFIT_FORMAL_walk.png",
+        "anchors": [
+          {
+            "weapon": [
+              78,
+              66
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              75,
+              56
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              70,
+              46
+            ],
+            "armor": [
+              63,
+              51
+            ],
+            "accessory": [
+              53,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              70,
+              46
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              70,
+              46
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              73,
+              48
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              67
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              66
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              66
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          }
+        ]
+      },
+      "attack": {
+        "path": "bodies/OUTFIT_FORMAL_attack.png",
+        "anchors": [
+          {
+            "weapon": [
+              77,
+              68
+            ],
+            "armor": [
+              63,
+              51
+            ],
+            "accessory": [
+              53,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              72,
+              62
+            ],
+            "armor": [
+              64,
+              52
+            ],
+            "accessory": [
+              54,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              85,
+              55
+            ],
+            "armor": [
+              66,
+              53
+            ],
+            "accessory": [
+              56,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              89,
+              45
+            ],
+            "armor": [
+              68,
+              55
+            ],
+            "accessory": [
+              58,
+              31
+            ]
+          },
+          {
+            "weapon": [
+              87,
+              50
+            ],
+            "armor": [
+              66,
+              53
+            ],
+            "accessory": [
+              56,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              81,
+              62
+            ],
+            "armor": [
+              64,
+              52
+            ],
+            "accessory": [
+              54,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              74,
+              60
+            ],
+            "armor": [
+              63,
+              51
+            ],
+            "accessory": [
+              53,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              66
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              66
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          }
+        ]
+      }
+    },
+    "OUTFIT_NOBLE": {
+      "idle": {
+        "path": "bodies/OUTFIT_NOBLE_idle.png",
+        "anchors": [
+          {
+            "weapon": [
+              80,
+              67
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              82,
+              65
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              86,
+              65
+            ],
+            "armor": [
+              62,
+              53
+            ],
+            "accessory": [
+              52,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              86,
+              65
+            ],
+            "armor": [
+              63,
+              53
+            ],
+            "accessory": [
+              53,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              85,
+              66
+            ],
+            "armor": [
+              62,
+              53
+            ],
+            "accessory": [
+              52,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              82,
+              65
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              80,
+              67
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              72
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              72
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          }
+        ]
+      },
+      "walk": {
+        "path": "bodies/OUTFIT_NOBLE_walk.png",
+        "anchors": [
+          {
+            "weapon": [
+              78,
+              72
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              71
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              76,
+              72
+            ],
+            "armor": [
+              62,
+              50
+            ],
+            "accessory": [
+              52,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              73
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              73
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              73
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              71
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              72
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              72
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          }
+        ]
+      },
+      "attack": {
+        "path": "bodies/OUTFIT_NOBLE_attack.png",
+        "anchors": [
+          {
+            "weapon": [
+              85,
+              67
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              91,
+              61
+            ],
+            "armor": [
+              62,
+              53
+            ],
+            "accessory": [
+              52,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              92,
+              54
+            ],
+            "armor": [
+              63,
+              53
+            ],
+            "accessory": [
+              53,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              91,
+              49
+            ],
+            "armor": [
+              64,
+              54
+            ],
+            "accessory": [
+              54,
+              30
+            ]
+          },
+          {
+            "weapon": [
+              92,
+              50
+            ],
+            "armor": [
+              64,
+              54
+            ],
+            "accessory": [
+              54,
+              30
+            ]
+          },
+          {
+            "weapon": [
+              92,
+              59
+            ],
+            "armor": [
+              63,
+              53
+            ],
+            "accessory": [
+              53,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              86,
+              65
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              72
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              72
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          }
+        ]
+      }
+    },
+    "OUTFIT_STAGE": {
+      "idle": {
+        "path": "bodies/OUTFIT_STAGE_idle.png",
+        "anchors": [
+          {
+            "weapon": [
+              77,
+              68
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              76,
+              68
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              70,
+              57
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              70,
+              57
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              70,
+              57
+            ],
+            "armor": [
+              62,
+              51
+            ],
+            "accessory": [
+              52,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              68
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              69
+            ],
+            "armor": [
+              62,
+              52
+            ],
+            "accessory": [
+              52,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              68
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              68
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          }
+        ]
+      },
+      "walk": {
+        "path": "bodies/OUTFIT_STAGE_walk.png",
+        "anchors": [
+          {
+            "weapon": [
+              79,
+              68
+            ],
+            "armor": [
+              63,
+              53
+            ],
+            "accessory": [
+              53,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              68
+            ],
+            "armor": [
+              62,
+              53
+            ],
+            "accessory": [
+              52,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              71,
+              55
+            ],
+            "armor": [
+              64,
+              51
+            ],
+            "accessory": [
+              54,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              78,
+              89
+            ],
+            "armor": [
+              64,
+              50
+            ],
+            "accessory": [
+              54,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              70,
+              56
+            ],
+            "armor": [
+              63,
+              50
+            ],
+            "accessory": [
+              53,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              69,
+              56
+            ],
+            "armor": [
+              61,
+              50
+            ],
+            "accessory": [
+              51,
+              26
+            ]
+          },
+          {
+            "weapon": [
+              77,
+              67
+            ],
+            "armor": [
+              61,
+              51
+            ],
+            "accessory": [
+              51,
+              27
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              68
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              68
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          }
+        ]
+      },
+      "attack": {
+        "path": "bodies/OUTFIT_STAGE_attack.png",
+        "anchors": [
+          {
+            "weapon": [
+              86,
+              67
+            ],
+            "armor": [
+              63,
+              52
+            ],
+            "accessory": [
+              53,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              94,
+              61
+            ],
+            "armor": [
+              64,
+              53
+            ],
+            "accessory": [
+              54,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              97,
+              49
+            ],
+            "armor": [
+              67,
+              54
+            ],
+            "accessory": [
+              57,
+              30
+            ]
+          },
+          {
+            "weapon": [
+              95,
+              47
+            ],
+            "armor": [
+              66,
+              54
+            ],
+            "accessory": [
+              56,
+              30
+            ]
+          },
+          {
+            "weapon": [
+              96,
+              47
+            ],
+            "armor": [
+              67,
+              53
+            ],
+            "accessory": [
+              57,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              96,
+              58
+            ],
+            "armor": [
+              64,
+              53
+            ],
+            "accessory": [
+              54,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              86,
+              67
+            ],
+            "armor": [
+              62,
+              53
+            ],
+            "accessory": [
+              52,
+              29
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              68
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          },
+          {
+            "weapon": [
+              79,
+              68
+            ],
+            "armor": [
+              61,
+              52
+            ],
+            "accessory": [
+              51,
+              28
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "enemies": {
+    "EN_FOREST_WARDEN": {
+      "idle": {
+        "path": "enemies/EN_FOREST_WARDEN_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_FOREST_WARDEN_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_FOREST_WARDEN_defeat.png"
+      }
+    },
+    "EN_CAVE_CHIME": {
+      "idle": {
+        "path": "enemies/EN_CAVE_CHIME_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_CAVE_CHIME_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_CAVE_CHIME_defeat.png"
+      }
+    },
+    "EN_CAVE_CRAB": {
+      "idle": {
+        "path": "enemies/EN_CAVE_CRAB_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_CAVE_CRAB_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_CAVE_CRAB_defeat.png"
+      }
+    },
+    "EN_CAVE_SWARM": {
+      "idle": {
+        "path": "enemies/EN_CAVE_SWARM_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_CAVE_SWARM_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_CAVE_SWARM_defeat.png"
+      }
+    },
+    "EN_FOREST_SENTINEL": {
+      "idle": {
+        "path": "enemies/EN_FOREST_SENTINEL_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_FOREST_SENTINEL_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_FOREST_SENTINEL_defeat.png"
+      }
+    },
+    "EN_FOREST_VINE": {
+      "idle": {
+        "path": "enemies/EN_FOREST_VINE_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_FOREST_VINE_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_FOREST_VINE_defeat.png"
+      }
+    },
+    "EN_RIFT_CROWN": {
+      "idle": {
+        "path": "enemies/EN_RIFT_CROWN_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_RIFT_CROWN_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_RIFT_CROWN_defeat.png"
+      }
+    },
+    "EN_RIFT_ECHO": {
+      "idle": {
+        "path": "enemies/EN_RIFT_ECHO_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_RIFT_ECHO_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_RIFT_ECHO_defeat.png"
+      }
+    },
+    "EN_RIFT_WEAVER": {
+      "idle": {
+        "path": "enemies/EN_RIFT_WEAVER_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_RIFT_WEAVER_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_RIFT_WEAVER_defeat.png"
+      }
+    },
+    "EN_RUIN_ARCHIVIST": {
+      "idle": {
+        "path": "enemies/EN_RUIN_ARCHIVIST_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_RUIN_ARCHIVIST_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_RUIN_ARCHIVIST_defeat.png"
+      }
+    },
+    "EN_RUIN_LENS": {
+      "idle": {
+        "path": "enemies/EN_RUIN_LENS_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_RUIN_LENS_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_RUIN_LENS_defeat.png"
+      }
+    },
+    "EN_RUIN_ORRERY": {
+      "idle": {
+        "path": "enemies/EN_RUIN_ORRERY_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_RUIN_ORRERY_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_RUIN_ORRERY_defeat.png"
+      }
+    },
+    "EN_VOLCANO_CINDER": {
+      "idle": {
+        "path": "enemies/EN_VOLCANO_CINDER_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_VOLCANO_CINDER_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_VOLCANO_CINDER_defeat.png"
+      }
+    },
+    "EN_VOLCANO_HEART": {
+      "idle": {
+        "path": "enemies/EN_VOLCANO_HEART_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_VOLCANO_HEART_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_VOLCANO_HEART_defeat.png"
+      }
+    },
+    "EN_VOLCANO_TORTOISE": {
+      "idle": {
+        "path": "enemies/EN_VOLCANO_TORTOISE_idle.png"
+      },
+      "attack": {
+        "path": "enemies/EN_VOLCANO_TORTOISE_attack.png"
+      },
+      "defeat": {
+        "path": "enemies/EN_VOLCANO_TORTOISE_defeat.png"
+      }
+    }
+  },
+  "backgrounds": {
+    "academy": "backgrounds/academy.png",
+    "library": "backgrounds/library.png",
+    "city": "backgrounds/city.png",
+    "arena": "backgrounds/arena.png",
+    "forest": "backgrounds/forest.png",
+    "cave": "backgrounds/cave.png",
+    "ruins": "backgrounds/ruins.png",
+    "volcano": "backgrounds/volcano.png",
+    "rift": "backgrounds/rift.png"
+  },
+  "gear": {
+    "WPN_DAGGER": {
+      "path": "gear/WPN_DAGGER.png",
+      "slot": "weapon"
+    },
+    "WPN_SWORD": {
+      "path": "gear/WPN_SWORD.png",
+      "slot": "weapon"
+    },
+    "WPN_RAPIER": {
+      "path": "gear/WPN_RAPIER.png",
+      "slot": "weapon"
+    },
+    "WPN_WAND": {
+      "path": "gear/WPN_WAND.png",
+      "slot": "weapon"
+    },
+    "ARM_LEATHER": {
+      "path": "gear/ARM_LEATHER.png",
+      "slot": "armor"
+    },
+    "ARM_PLATE": {
+      "path": "gear/ARM_PLATE.png",
+      "slot": "armor"
+    },
+    "ARM_ROBE": {
+      "path": "gear/ARM_ROBE.png",
+      "slot": "armor"
+    },
+    "ACC_RIBBON": {
+      "path": "gear/ACC_RIBBON.png",
+      "slot": "accessory"
+    },
+    "ACC_JEWEL": {
+      "path": "gear/ACC_JEWEL.png",
+      "slot": "accessory"
+    }
+  }
+}

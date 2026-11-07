@@ -203,6 +203,13 @@ func _check_label_contrast(main: Control, context: String) -> void:
 func _label_background(label: Control, main: Control) -> Color:
 	var node := label.get_parent()
 	while node != null and node != main:
+		if node is PanelContainer or node is Panel:
+			var box := (node as Control).get_theme_stylebox("panel")
+			if box is StyleBoxTexture and (box as StyleBoxTexture).texture != null:
+				var image := (box as StyleBoxTexture).texture.get_image()
+				var center := image.get_pixel(image.get_width() / 2, image.get_height() / 2)
+				if center.a > 0.99:
+					return center
 		if node is Control:
 			var variation := str((node as Control).theme_type_variation)
 			if PANEL_BACKGROUNDS.has(variation):
@@ -223,7 +230,7 @@ func _check_pixel_grid(main: Control, context: String) -> void:
 func _collect_off_grid(node: Node, offenders: Array[String]) -> void:
 	if node is Control and (node as Control).is_visible_in_tree():
 		var control := node as Control
-		if str(control.theme_type_variation).begins_with("Pixel") or control is ProgressBar:
+		if str(control.theme_type_variation).begins_with("Pixel") or control is ProgressBar or (control is PanelContainer and control.get_theme_stylebox("panel") is StyleBoxTexture):
 			var rect := control.get_global_rect()
 			for value in [rect.position.x, rect.position.y, rect.size.x, rect.size.y]:
 				if value != floorf(value) or int(value) % 2 != 0:

@@ -1,0 +1,129 @@
+{
+  "sources": {
+    "OUTFIT_PLAIN": "hero/variant-00.png",
+    "EN_FOREST_WARDEN": "forest_boss/variant-03.png",
+    "EN_CAVE_CHIME": "EN_CAVE_CHIME/variant-00.png",
+    "EN_CAVE_CRAB": "EN_CAVE_CRAB/variant-00.png",
+    "EN_CAVE_SWARM": "EN_CAVE_SWARM/variant-00.png",
+    "EN_FOREST_SENTINEL": "EN_FOREST_SENTINEL/variant-00.png",
+    "EN_FOREST_VINE": "EN_FOREST_VINE/variant-00.png",
+    "EN_RIFT_CROWN": "EN_RIFT_CROWN/variant-00.png",
+    "EN_RIFT_ECHO": "EN_RIFT_ECHO/variant-00.png",
+    "EN_RIFT_WEAVER": "EN_RIFT_WEAVER/variant-00.png",
+    "EN_RUIN_ARCHIVIST": "EN_RUIN_ARCHIVIST/variant-00.png",
+    "EN_RUIN_LENS": "EN_RUIN_LENS/variant-00.png",
+    "EN_RUIN_ORRERY": "EN_RUIN_ORRERY/variant-00.png",
+    "EN_VOLCANO_CINDER": "EN_VOLCANO_CINDER/variant-00.png",
+    "EN_VOLCANO_HEART": "EN_VOLCANO_HEART/variant-00.png",
+    "EN_VOLCANO_TORTOISE": "EN_VOLCANO_TORTOISE/variant-00.png",
+    "OUTFIT_ACTIVE": "OUTFIT_ACTIVE/variant-00.png",
+    "OUTFIT_FORMAL": "OUTFIT_FORMAL/variant-00.png",
+    "OUTFIT_NOBLE": "OUTFIT_NOBLE/variant-00.png",
+    "OUTFIT_STAGE": "OUTFIT_STAGE/variant-00.png"
+  },
+  "mirrored": [
+    "EN_FOREST_VINE"
+  ],
+  "clips": {
+    "OUTFIT_PLAIN": {
+      "idle": "anim_hero_idle",
+      "walk": "anim_hero_walk",
+      "attack": "anim_hero_attack"
+    },
+    "EN_FOREST_WARDEN": {
+      "idle": "anim_boss_idle",
+      "attack": "EN_FOREST_WARDEN__attack",
+      "defeat": "anim_boss_defeat"
+    },
+    "EN_CAVE_CHIME": {
+      "idle": "EN_CAVE_CHIME__idle",
+      "attack": "EN_CAVE_CHIME__attack",
+      "defeat": "EN_CAVE_CHIME__defeat"
+    },
+    "EN_CAVE_CRAB": {
+      "idle": "EN_CAVE_CRAB__idle",
+      "attack": "EN_CAVE_CRAB__attack",
+      "defeat": "EN_CAVE_CRAB__defeat"
+    },
+    "EN_CAVE_SWARM": {
+      "idle": "EN_CAVE_SWARM__idle",
+      "attack": "EN_CAVE_SWARM__attack",
+      "defeat": "EN_CAVE_SWARM__defeat__retry"
+    },
+    "EN_FOREST_SENTINEL": {
+      "idle": "EN_FOREST_SENTINEL__idle",
+      "attack": "EN_FOREST_SENTINEL__attack",
+      "defeat": "EN_FOREST_SENTINEL__defeat"
+    },
+    "EN_FOREST_VINE": {
+      "idle": "EN_FOREST_VINE__idle",
+      "attack": "EN_FOREST_VINE__attack",
+      "defeat": "EN_FOREST_VINE__defeat"
+    },
+    "EN_RIFT_CROWN": {
+      "idle": "EN_RIFT_CROWN__idle",
+      "attack": "EN_RIFT_CROWN__attack",
+      "defeat": "EN_RIFT_CROWN__defeat"
+    },
+    "EN_RIFT_ECHO": {
+      "idle": "EN_RIFT_ECHO__idle",
+      "attack": "EN_RIFT_ECHO__attack__retry",
+      "defeat": "EN_RIFT_ECHO__defeat"
+    },
+    "EN_RIFT_WEAVER": {
+      "idle": "EN_RIFT_WEAVER__idle",
+      "attack": "EN_RIFT_WEAVER__attack",
+      "defeat": "EN_RIFT_WEAVER__defeat"
+    },
+    "EN_RUIN_ARCHIVIST": {
+      "idle": "EN_RUIN_ARCHIVIST__idle",
+      "attack": "EN_RUIN_ARCHIVIST__attack",
+      "defeat": "EN_RUIN_ARCHIVIST__defeat"
+    },
+    "EN_RUIN_LENS": {
+      "idle": "EN_RUIN_LENS__idle",
+      "attack": "EN_RUIN_LENS__attack",
+      "defeat": "EN_RUIN_LENS__defeat"
+    },
+    "EN_RUIN_ORRERY": {
+      "idle": "EN_RUIN_ORRERY__idle",
+      "attack": "EN_RUIN_ORRERY__attack",
+      "defeat": "EN_RUIN_ORRERY__defeat__retry"
+    },
+    "EN_VOLCANO_CINDER": {
+      "idle": "EN_VOLCANO_CINDER__idle",
+      "attack": "EN_VOLCANO_CINDER__attack",
+      "defeat": "EN_VOLCANO_CINDER__defeat"
+    },
+    "EN_VOLCANO_HEART": {
+      "idle": "EN_VOLCANO_HEART__idle",
+      "attack": "EN_VOLCANO_HEART__attack",
+      "defeat": "EN_VOLCANO_HEART__defeat"
+    },
+    "EN_VOLCANO_TORTOISE": {
+      "idle": "EN_VOLCANO_TORTOISE__idle",
+      "attack": "EN_VOLCANO_TORTOISE__attack",
+      "defeat": "EN_VOLCANO_TORTOISE__defeat"
+    },
+    "OUTFIT_ACTIVE": {
+      "idle": "OUTFIT_ACTIVE__idle",
+      "walk": "OUTFIT_ACTIVE__walk",
+      "attack": "OUTFIT_ACTIVE__attack"
+    },
+    "OUTFIT_FORMAL": {
+      "idle": "OUTFIT_FORMAL__idle",
+      "walk": "OUTFIT_FORMAL__walk",
+      "attack": "OUTFIT_FORMAL__attack"
+    },
+    "OUTFIT_NOBLE": {
+      "idle": "OUTFIT_NOBLE__idle",
+      "walk": "OUTFIT_NOBLE__walk",
+      "attack": "OUTFIT_NOBLE__attack"
+    },
+    "OUTFIT_STAGE": {
+      "idle": "OUTFIT_STAGE__idle",
+      "walk": "OUTFIT_STAGE__walk",
+      "attack": "OUTFIT_STAGE__attack"
+    }
+  }
+}

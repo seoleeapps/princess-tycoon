@@ -1,0 +1,1257 @@
+{
+  "provider": "PixelLab",
+  "maximumGenerations": 576,
+  "actualGenerations": 508.0,
+  "jobs": [
+    {
+      "asset": "ACC_JEWEL",
+      "jobId": "f72f1e1e-604d-47ea-b57d-ffe2ff8ba874",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "ACC_RIBBON",
+      "jobId": "ad3e085d-278c-4195-bc73-948db441d4e5",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "ARM_LEATHER",
+      "jobId": "596cc4ed-c01f-4bd1-8f1d-aef36dd4d3de",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "ARM_PLATE",
+      "jobId": "87c8faa2-9614-4ca6-8d35-82831e699e69",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "ARM_ROBE",
+      "jobId": "787f37eb-4a94-4370-b9c1-64f2300f36b5",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_CAVE_CHIME",
+      "jobId": "1a0de06d-041c-475d-b4d9-bf3fa04bdf27",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_CAVE_CHIME__attack",
+      "jobId": "e1b78e03-8f38-48cb-b0ee-1ab6bf74d221",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_CAVE_CHIME__defeat",
+      "jobId": "a675253d-a98e-4eae-9f30-3029634097ab",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_CAVE_CHIME__idle",
+      "jobId": "d1f1a08c-59c8-47bc-99ca-7c176a6db1eb",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_CAVE_CRAB",
+      "jobId": "1f80e226-6400-43a2-95d3-75810e5da3b9",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_CAVE_CRAB__attack",
+      "jobId": "335c5f41-a46e-48b6-981e-a071a65b86c9",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_CAVE_CRAB__defeat",
+      "jobId": "1fffd733-640f-4ddc-b287-a14882322d9d",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_CAVE_CRAB__idle",
+      "jobId": "14d22683-d100-4e22-99ad-7afe83e80756",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_CAVE_SWARM",
+      "jobId": "5d754a40-a0c4-4cad-b989-d83339867d3b",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_CAVE_SWARM__attack",
+      "jobId": "e06f35eb-c46e-4da0-a7c1-13d03f5e97ca",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_CAVE_SWARM__defeat",
+      "jobId": "5fdf2062-cdf0-481f-b23f-bfb0a816609d",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_CAVE_SWARM__defeat__retry",
+      "jobId": "776fa41c-9ccd-4022-8a2e-1b5cfaaa1e30",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_CAVE_SWARM__idle",
+      "jobId": "3862d0c0-1b17-4733-8720-7cf307f053b1",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_FOREST_SENTINEL",
+      "jobId": "9416a40e-3139-4f49-ae07-96446919047f",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_FOREST_SENTINEL__attack",
+      "jobId": "a99e017b-4ae9-4d6f-a7f0-07630a871565",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_FOREST_SENTINEL__defeat",
+      "jobId": "dfd1771b-f85a-4b6b-86bf-cd4503df5921",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_FOREST_SENTINEL__idle",
+      "jobId": "d353c2a3-b37d-4d63-98f3-a64c72eb923a",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_FOREST_VINE",
+      "jobId": "47186d13-4796-4824-8fc8-821af8a38a07",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_FOREST_VINE__attack",
+      "jobId": "de937703-a76f-4edc-8932-a4c7aa6264b3",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_FOREST_VINE__defeat",
+      "jobId": "e8378f63-b684-446d-90ce-688d07f2745a",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_FOREST_VINE__idle",
+      "jobId": "2c1f8559-1ef3-49f1-aa21-7b821329b562",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_FOREST_WARDEN__attack",
+      "jobId": "11d02157-338b-4fd0-b304-5cd82cbd6e8e",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_CROWN",
+      "jobId": "6dc236a0-21b0-4e18-aa95-506b2319dbc3",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_RIFT_CROWN__attack",
+      "jobId": "8369b15c-d147-4504-bc97-31d7247ae801",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_CROWN__defeat",
+      "jobId": "8c25ebb3-4d57-421c-b4ef-6dcd6d3aef86",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_CROWN__idle",
+      "jobId": "397180c9-a16b-4269-9cea-c77d5c5dcebc",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_ECHO",
+      "jobId": "0d361467-39b4-48f0-8379-8bf319444197",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_RIFT_ECHO__attack",
+      "jobId": "62d2c1bf-846b-4175-828a-947dc8c1756a",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_ECHO__attack__retry",
+      "jobId": "81f29390-7343-42f3-9c0c-ceacfe92d145",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_ECHO__defeat",
+      "jobId": "ab2e637f-27d8-4cac-b394-e88afa12a2ca",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_ECHO__idle",
+      "jobId": "bc3d8e7a-4559-4f3d-9936-5c26bcbce203",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_WEAVER",
+      "jobId": "0c6f122d-e2fb-4e78-bc48-9447de50b28f",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_RIFT_WEAVER__attack",
+      "jobId": "0f860fee-b7d5-4c63-b29e-c0147d3651f7",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_WEAVER__defeat",
+      "jobId": "00d94632-0879-4d09-83ab-bda8341e0b11",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RIFT_WEAVER__idle",
+      "jobId": "3acec701-0dc3-4b3c-b6eb-e06d0b31a768",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_ARCHIVIST",
+      "jobId": "9be2631d-eaee-4e98-8c65-c869020e2f23",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_RUIN_ARCHIVIST__attack",
+      "jobId": "ade751fa-777f-4531-b2f9-6f8607b194fa",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_ARCHIVIST__defeat",
+      "jobId": "fbc7f0ef-4dd6-4ba4-b55e-a7b8d75cdf28",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_ARCHIVIST__idle",
+      "jobId": "992c11df-adc7-42ee-8a28-152ac79ea814",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_LENS",
+      "jobId": "6d78e29c-a2fb-424f-ae34-a1662a131f5f",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_RUIN_LENS__attack",
+      "jobId": "0acac407-36c1-4643-8573-f2968462b2af",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_LENS__defeat",
+      "jobId": "e26d0e8b-d09a-4e72-9e38-280ab77d239d",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_LENS__idle",
+      "jobId": "acfe0121-b29c-4e61-aff1-f1963f9ad54e",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_ORRERY",
+      "jobId": "e0f856d0-9204-4b85-bb27-9851823abb1d",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_RUIN_ORRERY__attack",
+      "jobId": "3f2aaa4d-6318-4a01-b19e-51d06f0421a7",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_ORRERY__defeat",
+      "jobId": "766e8fdf-fb55-46c9-a641-c9b68bb37077",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_ORRERY__defeat__retry",
+      "jobId": "419573ef-88db-4a46-8509-7c7377b0b117",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_RUIN_ORRERY__idle",
+      "jobId": "c560a7cd-aa88-4476-b8e7-f8375359dcc1",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_VOLCANO_CINDER",
+      "jobId": "f5b5565a-a375-459f-94f5-3738800725c6",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_VOLCANO_CINDER__attack",
+      "jobId": "bda4d951-b8e6-481b-af10-bff5d16898b2",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_VOLCANO_CINDER__defeat",
+      "jobId": "b517d609-14ba-4e76-8e30-144555587d27",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_VOLCANO_CINDER__idle",
+      "jobId": "9a22b7d8-a8b6-48b7-af04-4bfa517bcf2e",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_VOLCANO_HEART",
+      "jobId": "3c99e3bd-2abf-4060-8cd2-102561f0a103",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_VOLCANO_HEART__attack",
+      "jobId": "545c9c71-6c70-490c-8baa-9b8681439f45",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_VOLCANO_HEART__defeat",
+      "jobId": "f4d250df-00c0-4e78-b0e7-e6047ac5b83e",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_VOLCANO_HEART__idle",
+      "jobId": "47eaedd4-015e-4e25-bf87-e642e9dfc2d5",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_VOLCANO_TORTOISE",
+      "jobId": "c19c3855-a112-4dd1-8fdb-634401efdd50",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "EN_VOLCANO_TORTOISE__attack",
+      "jobId": "421d90d9-d864-42ef-a3e9-7a654c30d624",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_VOLCANO_TORTOISE__defeat",
+      "jobId": "46a646a6-beb5-4967-8089-b8d52154cdbd",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "EN_VOLCANO_TORTOISE__idle",
+      "jobId": "23dec10d-35df-4e41-bdee-540f199c8b98",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_ACTIVE",
+      "jobId": "0ee75a7f-3cfc-4741-beda-4e7cf36c6d2e",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "OUTFIT_ACTIVE__attack",
+      "jobId": "1b743b61-6f20-44b7-acef-dbe74aae3233",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_ACTIVE__idle",
+      "jobId": "607dba04-0f9d-412e-9b01-afdf4f62186d",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_ACTIVE__walk",
+      "jobId": "09192825-1434-4755-af2f-04ddffadf8e8",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_FORMAL",
+      "jobId": "65fe4ecb-90a6-49c4-96f5-b78be037026d",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "OUTFIT_FORMAL__attack",
+      "jobId": "7ed7c958-c78b-490e-9e9a-ee21e7a9a2b2",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_FORMAL__idle",
+      "jobId": "d10d41ec-8475-4e93-be9a-1e4e7de0688f",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_FORMAL__walk",
+      "jobId": "96a92fe9-81bd-4dfe-84cb-e2a8146e6563",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_NOBLE",
+      "jobId": "7237cf1f-1428-4e16-be27-3d0b4b36d89e",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "OUTFIT_NOBLE__attack",
+      "jobId": "8cc7c88e-4326-4728-905e-5308022051d8",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_NOBLE__idle",
+      "jobId": "42d37dde-8b75-4c7e-b48b-1a6998624227",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_NOBLE__walk",
+      "jobId": "9153ed8a-6d86-4e5d-99d3-7e6679084e6c",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_STAGE",
+      "jobId": "4c5dd4ef-9a2a-466a-893d-bc86b3a01fce",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "OUTFIT_STAGE__attack",
+      "jobId": "c5548df5-20c0-4f69-8d99-3522e4536214",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_STAGE__idle",
+      "jobId": "492b96a7-a807-4e8e-a226-a496d4de4a5a",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "OUTFIT_STAGE__walk",
+      "jobId": "74cc7e05-0ae4-4aff-80cc-e6893907f9bc",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "WPN_DAGGER",
+      "jobId": "46c85f86-118f-4bf6-852b-c56685277afc",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "WPN_RAPIER",
+      "jobId": "8cd8d411-a3b8-44e1-96ad-3604b35c3481",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "WPN_SWORD",
+      "jobId": "1080576f-e4fd-43af-ab8f-179b1d72fd32",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "WPN_WAND",
+      "jobId": "468aa372-3b49-4f07-af9d-497796fd7a0c",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "anim_boss_defeat",
+      "jobId": "58f78178-3546-4a24-b49b-285557ee684c",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "anim_boss_hit",
+      "jobId": "92327dad-650a-4cc4-9f68-b07c1b6e3532",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "anim_boss_idle",
+      "jobId": "a1b09807-167e-44ea-b517-c98eb1ed114f",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "anim_hero_attack",
+      "jobId": "24149202-4ea1-4a99-933c-cb9cffef9a92",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "anim_hero_idle",
+      "jobId": "98910b9a-19f3-4060-8708-4270f2e0bc4a",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "anim_hero_walk",
+      "jobId": "251ab1b9-2a40-4bd0-b7f2-c0206b61f96e",
+      "status": "completed",
+      "generations": 2.0
+    },
+    {
+      "asset": "forest",
+      "jobId": "04bc853e-f8b1-4ff1-98db-3d70b76e77b1",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "forest_boss",
+      "jobId": "56e20d0b-ac39-405b-b2db-4728272917e4",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "hero",
+      "jobId": "38b317f9-eb75-401f-8227-75f2f2275eaf",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "region_academy",
+      "jobId": "d0149f95-1412-4a0c-aac2-5c87664a8714",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "region_arena",
+      "jobId": "52a8b835-82c0-410c-95f5-659ed64aabb7",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "region_cave",
+      "jobId": "d0810ed1-8ccd-440c-aad6-2372b873db70",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "region_city",
+      "jobId": "cf1c15ea-12ef-46af-9405-b9b9ecc9d644",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "region_library",
+      "jobId": "3aaa65c3-0fee-48e2-8b1c-1f4622a888f0",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "region_rift",
+      "jobId": "cbf13811-3489-4f0d-800c-419975a754a0",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "region_ruins",
+      "jobId": "2842feca-5909-4d0e-ac58-f0766b9da7d1",
+      "status": "completed",
+      "generations": 10.0
+    },
+    {
+      "asset": "region_volcano",
+      "jobId": "8a9c5d98-e601-4e85-b9ec-e6bbe1cc58a9",
+      "status": "completed",
+      "generations": 10.0
+    }
+  ],
+  "selection": "scripts/pixellab_redesign/selections.json",
+  "complete": true,
+  "selectedClips": 60,
+  "qualityRetries": 3,
+  "files": [
+    {
+      "path": "backgrounds/academy.png",
+      "sha256": "7e134e10526091ff99fa8bfa0d1039b17edd28784ec087369ff4dcf03dfd82cd",
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "path": "backgrounds/arena.png",
+      "sha256": "605aef821ed5fc197fe7633d191c8501c4ebb54e6c51b1aef00df5687cc96781",
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "path": "backgrounds/cave.png",
+      "sha256": "be1e0639857de5bc97f5265c990da3fcfae54376fe8d76f136cbbaedcf6ca408",
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "path": "backgrounds/city.png",
+      "sha256": "d6d59655d692e9a2b4c9f39b8f04b87c740c03d2eac4265533f5ee095ab63d37",
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "path": "backgrounds/forest.png",
+      "sha256": "f12aa6e9b97db63aee4d68f434e081ca53f5d95a9faacdd1ad53e299f5e77199",
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "path": "backgrounds/library.png",
+      "sha256": "a21e0425d42ade13f8032781b109707e98a9ca80a787d3762099df9eae79f79d",
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "path": "backgrounds/rift.png",
+      "sha256": "81a573e196a6db8c1deba5cfc3fc0052c2ed20b226b3c7ffdc16194361ddcd71",
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "path": "backgrounds/ruins.png",
+      "sha256": "39d4a7877f84c43bce7821cdaa5daeb706ca45641dbab1a1e72917318a828604",
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "path": "backgrounds/volcano.png",
+      "sha256": "835cd82eeecf17f257577919f39cf87ef792d459aebb21312e75b19c46ff62f8",
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_ACTIVE_attack.png",
+      "sha256": "44eaf036ad5da7598cea298566278760e9553bbe90b4120ceb0b6b664ee99773",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_ACTIVE_idle.png",
+      "sha256": "7254132d505843e3cfddbfafc8fbd8a8abcc5daa16fbef787e597d99f586fd53",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_ACTIVE_walk.png",
+      "sha256": "1166bcce2f1dab9023d18b6d63649d0002ae7df110df129c70a2f1ad3718dd76",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_FORMAL_attack.png",
+      "sha256": "07f3dd485504fe5d89101a75865b9f929aac4cc735010ebe544a5ad693ee2b5b",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_FORMAL_idle.png",
+      "sha256": "1a8f711d9342ca88e9aa88172d9262f97c7a935dfdb26510a11f79838c4631a0",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_FORMAL_walk.png",
+      "sha256": "abc49d6b4666d312e2c545b141797c15fd4bc0cf90d4d12fd80480072b6cdf41",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_NOBLE_attack.png",
+      "sha256": "3c212db05eb79571724261d58925c3b21d3bb3c1ccbf3080164d8076ee2c839a",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_NOBLE_idle.png",
+      "sha256": "54b6a7019272fe765ccb6a90eb17998141d94b9a0040668c7d4c4539002e04d6",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_NOBLE_walk.png",
+      "sha256": "428e25246e8c01bbc597cf5af3f4f5c1b937ddcab981ebc95e48a1615e91ae1d",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_PLAIN_attack.png",
+      "sha256": "152ff3001b0807883c981783e0f14b9d414cb6457ae87b6ff51027bbc47181dc",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_PLAIN_idle.png",
+      "sha256": "d200c485effbaff81f642753119adbfb2ae886091cbae1b5129c58fe2eb3f78e",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_PLAIN_walk.png",
+      "sha256": "ea010e33e56dbc78e6402b46154653c9ddef9271e49c1e6a8874937ea214d013",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_STAGE_attack.png",
+      "sha256": "f50b1d657aae92c44395997e69c998b241bcb7163f6e864509bd25552df701ce",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_STAGE_idle.png",
+      "sha256": "abe48489b79755a4f1f121e84ea651355c643af610e27925f21e1d9f7df9b739",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "bodies/OUTFIT_STAGE_walk.png",
+      "sha256": "5d9276262957f22f49ca64ae01f7a16b265afb0233f2e80b62f802517c713265",
+      "size": [
+        1152,
+        1024
+      ]
+    },
+    {
+      "path": "enemies/EN_CAVE_CHIME_attack.png",
+      "sha256": "7f1217caef8ab0c8c46167d1d06c2325158bbe8a1e9fe9e1c0c6b4185224b632",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_CAVE_CHIME_defeat.png",
+      "sha256": "cf0d537aa9eeaf0e230ed7ddc826de80c52257ce2f66257a38afcc0db45a9219",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_CAVE_CHIME_idle.png",
+      "sha256": "9d14856b69eab8c7dca21fd9cf8c183e6ee266df2e163275e920a5dea7228a95",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_CAVE_CRAB_attack.png",
+      "sha256": "b7ecd1ff101b05fd2ba65ca9e73a284d6fa05e0257c2e3b3e9067fd77c5dbc03",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_CAVE_CRAB_defeat.png",
+      "sha256": "4a45b5a745e9b0c854f1803ebe87272c11bee644bd999d2c368926a0f82de148",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_CAVE_CRAB_idle.png",
+      "sha256": "5536cd5c9f9ae52e139b4cb05141fe0e164f362cb1ffb4a39d86abdc190ba604",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_CAVE_SWARM_attack.png",
+      "sha256": "5443ed011977baee68ce8f9250f5ad0e1dd22d39055c9f2fe1b989f8538a1368",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_CAVE_SWARM_defeat.png",
+      "sha256": "b3617b8f68187206d8a9fe65fa36a9c95addc1c5840bed8389600662d5f5490b",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_CAVE_SWARM_idle.png",
+      "sha256": "c0f167342e44584037d64785a5a122abec285d99e874aff0f250a13f18728b67",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_FOREST_SENTINEL_attack.png",
+      "sha256": "c613971285cbfe4520d31974a60a4b043472279be3316fc46c258c69f6d1ab93",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_FOREST_SENTINEL_defeat.png",
+      "sha256": "2ba4d09d95ff6701c35cd9dec33bb5ef52d671da6093d03915ab1b3b90688de5",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_FOREST_SENTINEL_idle.png",
+      "sha256": "3a702311dee44c977337af70e7dff89eb81c6ac7f4593d6bef57c0729edca629",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_FOREST_VINE_attack.png",
+      "sha256": "69747ff8b8bb3144ec482daddcf06c7443c76a6e8b469d23ca8537db30630612",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_FOREST_VINE_defeat.png",
+      "sha256": "531278c30634235288b38245943e7e95a6d7e5bcd802f0737c9631c7bcd4c4e7",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_FOREST_VINE_idle.png",
+      "sha256": "12e85ef4944a21a02fc3f0bb7eb94f4aededa25f8c0fe25bda1d49530d34a407",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_FOREST_WARDEN_attack.png",
+      "sha256": "5b4840d0fe1628e4d8399406746845c058dc25e4fb141f36434cb083a03aebaf",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_FOREST_WARDEN_defeat.png",
+      "sha256": "78c58b3eddab4c7723a4cbc11fb510404930fee16c9ef82a3ac6910b9f649c84",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_FOREST_WARDEN_idle.png",
+      "sha256": "f1d8594c98762dd4825eac665e5e69f707582bbe0fdd60043470a5646329a4de",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RIFT_CROWN_attack.png",
+      "sha256": "c7059fb3b9f294aa89a7f030ab3ebcac3ac9de503b164193da539afbca46ce64",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RIFT_CROWN_defeat.png",
+      "sha256": "6f327a0a611077e754ff7c15c8c6c8bd1ca5badf454e47c564573caa735dbbab",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RIFT_CROWN_idle.png",
+      "sha256": "36d82d3db71928662e1aa089c53ebb1ff01eded5e3e4e1d88f9177e734eb11e2",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RIFT_ECHO_attack.png",
+      "sha256": "e22b6fc19343095ac7523ce88a2a1631c27ac7fcaede47307c203c07ec15cbc2",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RIFT_ECHO_defeat.png",
+      "sha256": "201fc6793a029421b5c6f154dc7bca396fc23c99030c6fbef9e74111e326284e",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RIFT_ECHO_idle.png",
+      "sha256": "82c91594cb57c76ff125f31c9e2f795c04b1aaadab528f4b79c0e6e7e4a5ac4b",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RIFT_WEAVER_attack.png",
+      "sha256": "3cf125ea5db989900779a837bf468125cea958f75920d4c1cd80d4c5bc82512f",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RIFT_WEAVER_defeat.png",
+      "sha256": "0f57aa5ebcb1da71d6e0e7858a2fde6df49e35711129f751bb65efbdc93fcb5d",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RIFT_WEAVER_idle.png",
+      "sha256": "3a07665829b5e36a0d1e806c064bf64c4150a94e4a9315cdc1ebce6492128fe8",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RUIN_ARCHIVIST_attack.png",
+      "sha256": "7df00de3afdf4369d434d9165004664e9004b325f5ae03e9f7ea5c0d50823268",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RUIN_ARCHIVIST_defeat.png",
+      "sha256": "0a52e7e0df9a69b1a11eb9e4deaf41b18794a1c7c32045c79f81a4e320a30327",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RUIN_ARCHIVIST_idle.png",
+      "sha256": "73bf3f41fe06c61c2c72763ca5c19ee5d1f7742db35df999ae63dfa39b1aa472",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RUIN_LENS_attack.png",
+      "sha256": "9ce14ad8df8a43b9d01c39beca568c25d95a76ecdb425d8399faddfbb3a544b4",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RUIN_LENS_defeat.png",
+      "sha256": "a7ce3952dfd27bcf3fa0344de4faa9e3c3830744281e949aa4fab08e5c9e899e",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RUIN_LENS_idle.png",
+      "sha256": "e6675f7c3a85ca6f6f5cc69d0cc63909be368efde99d09f3b82432331281a655",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RUIN_ORRERY_attack.png",
+      "sha256": "1cf001ea8a2356c559a9452dbfd545eac86f7203c3bce3157e576c1d39459342",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RUIN_ORRERY_defeat.png",
+      "sha256": "b385155e356494530bfda3591e759b06613e65478aef48b59062b4f12603d8a4",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_RUIN_ORRERY_idle.png",
+      "sha256": "0e1f4d971eec9c29cabcd7f27798df40b0aeef6eb881e89028856f2c98ef7172",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_VOLCANO_CINDER_attack.png",
+      "sha256": "bebfcfdfcc71a0f484db3475153f1242269d4af013816097ed1f5ad217dc6a2d",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_VOLCANO_CINDER_defeat.png",
+      "sha256": "af63b1c619a9ab8d8c2ff27442661b54920a902774bcb3f0a21678888b4dd090",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_VOLCANO_CINDER_idle.png",
+      "sha256": "e968c91e5b86246a7db7d17a05c87bad3db81ab4d2d9ee222e50f9fdf67f2171",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_VOLCANO_HEART_attack.png",
+      "sha256": "d4eca6fdc6db2f138004c0c047fbf5179d792d7058e07c104532a9e257056b6a",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_VOLCANO_HEART_defeat.png",
+      "sha256": "951dba8fbc0066735651513519d0c7925250a64756af91190f466e14a6fd6f31",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_VOLCANO_HEART_idle.png",
+      "sha256": "69302d6870ce6bfbd02759f65eb190217c7a77d5e8cedaa8bedd8b98f4ca88bf",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_VOLCANO_TORTOISE_attack.png",
+      "sha256": "dac2980aae95c00bfc85c5a0fec9b121e849cff8a03a40ee8f7e75360b2f54ae",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_VOLCANO_TORTOISE_defeat.png",
+      "sha256": "945c2c6560c6c8f7e4776624b4eca98ea71f77195992a9635eee06f49f88e5a2",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "enemies/EN_VOLCANO_TORTOISE_idle.png",
+      "sha256": "a7c0c26e2daeab939ca1f087ea9224fc1a5dd28714cca83af53dae65531fc3d8",
+      "size": [
+        1152,
+        128
+      ]
+    },
+    {
+      "path": "gear/ACC_JEWEL.png",
+      "sha256": "77bdc0f23ff9be24fb729040a6ca37989cea0f08fb1dfc568a17e32f25d9988e",
+      "size": [
+        1152,
+        384
+      ]
+    },
+    {
+      "path": "gear/ACC_RIBBON.png",
+      "sha256": "1d59f32e3528469c5e9dfa106c9ee1d06c373f22425113be1c5dba3fa9b56e0a",
+      "size": [
+        1152,
+        384
+      ]
+    },
+    {
+      "path": "gear/ARM_LEATHER.png",
+      "sha256": "0663b1db7c27b109f6e48366efc9e9cba7baa00c18788963d45af0846b0762b0",
+      "size": [
+        1152,
+        384
+      ]
+    },
+    {
+      "path": "gear/ARM_PLATE.png",
+      "sha256": "02360747de49c393ed8751302190182d0f859f88dfb754e9d1fb3f52ba2c1113",
+      "size": [
+        1152,
+        384
+      ]
+    },
+    {
+      "path": "gear/ARM_ROBE.png",
+      "sha256": "77e185b11f955365f219a4af205d87e90e6db9699a8e0331ee3fef84adb2d6a7",
+      "size": [
+        1152,
+        384
+      ]
+    },
+    {
+      "path": "gear/WPN_DAGGER.png",
+      "sha256": "acea8a9d32e7ef323a8098b966df63007cafa8de9073ae56027c5cc6612f4019",
+      "size": [
+        1152,
+        384
+      ]
+    },
+    {
+      "path": "gear/WPN_RAPIER.png",
+      "sha256": "71d599de3bb3cac2591b34b567b380cfa049350aa4c803619ffac6f83dd40f30",
+      "size": [
+        1152,
+        384
+      ]
+    },
+    {
+      "path": "gear/WPN_SWORD.png",
+      "sha256": "376c868566aaa607b4c098ce4efc7270c0f40f8874c72a44e766d42489fca14d",
+      "size": [
+        1152,
+        384
+      ]
+    },
+    {
+      "path": "gear/WPN_WAND.png",
+      "sha256": "437a31efba1c777d1223d6810ad9af83a3a45da8da2d39de2e54ccfa3ab718dc",
+      "size": [
+        1152,
+        384
+      ]
+    },
+    {
+      "path": "style-anchor.png",
+      "sha256": "8860eddb53cda159bb1d7d154268239a6d33d2eb14e8fd86fbaad6aca80dd235",
+      "size": [
+        128,
+        128
+      ]
+    }
+  ]
+}
