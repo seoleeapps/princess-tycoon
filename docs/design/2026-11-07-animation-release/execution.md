@@ -48,6 +48,6 @@ NAS1dual/Data 실제 SMB 연결을 확인한 뒤 다음 새 폴더로 이관했�
 
 `/Volumes/Data/Backup/agent-artifacts/princess-tycoon/2026-11-07/1953abaad55df233a987ae05f4b5cfb83cdd9a1b/google-play-1.0.1/`
 
-`artifacts.zip`에는 AAB, 전체 로그, API 응답, 실제 화면, Console 텍스트와 공개 인증서 등 422개 파일(압축 전 62,674,311 bytes)이 있다. ZIP은 60,860,029 bytes, SHA-256 `453f21ff483647184dc18ccc7752da5ab0f0826d05343bf5f7abc6318480ecc4`다. NAS 사본 전체와 내부 모든 파일의 이름·크기·SHA-256을 읽어 대조한 뒤 `MANIFEST.json`을 쓰고 다시 읽었다. MANIFEST SHA-256은 `fb6fc7f21cc4356f633a8b762302229b791e3d26795e7b22a5a504fc192678ad`다. NAS 보존 만료는 지정하지 않았다.
+`artifacts.zip`에는 AAB, 전체 로그, API 응답, 실제 화면, Console 텍스트와 공개 인증서 등 422개 파일(압축 전 62,674,311 bytes)이 있다. ZIP은 60,860,029 bytes, SHA-256 `453f21ff483647184dc18ccc7752da5ab0f0826d05343bf5f7abc6318480ecc4`다. NAS 사본 전체와 내부 모든 파일의 이름·크기·SHA-256을 읽어 대조한 뒤 `MANIFEST.json`을 쓰고 다시 읽었다. MANIFEST SHA-256은 `fb6fc7f21cc4356f633a8b762302229b791e3d26795e7b22a5a504fc192678ad`다. NAS 보존 만료는 지정하지 않았다. 마지막 09:17:59 KST 게시 상태와 갱신 원장 등 6개 파일은 같은 부모의 `google-play-1.0.1-final-readback/`에 추가 이관하고 전체·내부 해시를 확인했다. 추가 ZIP SHA-256은 `24aabd3cae968d806b2c7fabe2975c00b9e6e730b7c099e22b6679c9d4c6b16d`, MANIFEST는 `6757d7d94678874c8f2310f7b88ecf247da4c45b2ce9027a367c758a01a4b938`다.
 
 검수가 끝난 로컬 AAB·캡처·로그·작업용 Android Gradle 템플릿과 Web export는 정리한다. 브라우저는 자기 세션만 반납하고 인증 프로필·공용 도구·캐시·다른 작업은 보존한다. 원격 병합이 확인된 자신의 브랜치와 worktree만 제거한다.
