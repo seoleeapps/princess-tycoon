@@ -3,7 +3,7 @@
   "app": {
     "name": "왕립 아카데미: 수련생 육성",
     "repo": "seoleeapps/princess-tycoon",
-    "sourceRevision": "85dd49c1715862d139557de782bbd09cb1f752e6"
+    "sourceRevision": "8f173840f912b7d99bca731a27af95e98cf89a34"
   },
   "release": {
     "version": "1.1.0",
@@ -28,34 +28,46 @@
   },
   "commonGates": {
     "candidate": {
-      "status": "pending",
-      "evidence": [],
-      "checkedAt": null,
+      "status": "pass",
+      "evidence": [
+        "actual v1.1.0 annotated tag/source 8f173840f912b7d99bca731a27af95e98cf89a34, com.seoleeapps.princesstycoon1.1.0(4), KR/free100%"
+      ],
+      "checkedAt": "2026-11-07T12:37:08.793677+00:00",
       "blocker": null
     },
     "quality": {
-      "status": "pending",
-      "evidence": [],
-      "checkedAt": null,
+      "status": "pass",
+      "evidence": [
+        "same SHA: npm test19smokes, headless/rendered E2E3sizes each169steps (total1014), balance20checks, Web export, Play config and signed Android build all exit0",
+        "strict engine errors0; actual81runtimePNG/9contact sheets and14store screenshots reviewed",
+        "export shutdown warnings Scan thread aborted/ObjectDB1 retained; jar signature verified with expected self-signed upload certificate warnings",
+        "initial artifact checker assumed85images; corrected to exact source79PNG set, verified all79imported textures and16activity/environment resources",
+        "NAS smb://nas1dual/Data/Backup/agent-artifacts/princess-tycoon/2026-11-07/8f173840f912b7d99bca731a27af95e98cf89a34/google-play-1.1.0/artifacts.zip, 62558676bytes SHA256 94caa12ffd19c021761cd11de793fe97a66ba747aedd747ed23c51caf942db1c; MANIFEST.json verified, all230ZIP members compared"
+      ],
+      "checkedAt": "2026-11-07T12:37:08.793677+00:00",
       "blocker": null
     },
     "production_dependencies": {
-      "status": "pending",
-      "evidence": [],
-      "checkedAt": null,
+      "status": "na",
+      "evidence": [
+        "offline local game: no backend/Auth/cloud/ads/IAP SDK"
+      ],
+      "checkedAt": "2026-11-07T12:37:08.793677+00:00",
       "blocker": null
     },
     "observability": {
-      "status": "pending",
-      "evidence": [],
-      "checkedAt": null,
+      "status": "na",
+      "evidence": [
+        "no analytics/crash SDK in approved scope; Android vitals only"
+      ],
+      "checkedAt": "2026-11-07T12:37:08.793677+00:00",
       "blocker": null
     }
   },
   "markets": {
     "google_play": {
       "objective": "public_live",
-      "state": "pending",
+      "state": "submission",
       "identity": {
         "applicationId": "com.seoleeapps.princesstycoon",
         "version": "1.1.0",
@@ -63,69 +75,103 @@
       },
       "gates": {
         "candidate": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "v1.1.0=8f173840f912b7d99bca731a27af95e98cf89a34,1.1.0/code4, KR100%"
+          ],
+          "checkedAt": "2026-11-07T12:37:08.793677+00:00",
           "blocker": null
         },
         "artifact": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "signed AAB 59462800bytes SHA256 6bf691ed17463443e8b5262b6b183687bb869c97af525a75e8df992c2ca1e755",
+            "manifest minSdk24/target36, debuggable false, no permissions, arm64-v8a/armeabi-v7a; ZIP CRC and source asset imports match",
+            "current Console upload public certificate matches AAB and catalog accepted SHA256 BB:CF:E8:D7:B9:D2:65:61:7A:B8:41:4A:DC:26:58:79:50:84:A2:06:ED:11:E9:07:37:C8:3B:6A:39:E3:13:65"
+          ],
+          "checkedAt": "2026-11-07T12:37:08.793677+00:00",
           "blocker": null
         },
         "upload": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "internal edit13783335075504534555 commit at2026-11-07T12:31:21.091366+00:00; server bundle4 SHA256 matches local",
+            "fresh edit tracks/bundles readback confirms internal1.1.0(4) completed"
+          ],
+          "checkedAt": "2026-11-07T12:37:08.793677+00:00",
           "blocker": null
         },
         "processing": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "Console internal1.1.0(4): 내부 테스터에게 제공됨,2026-11-07 21:31KST; no blocking artifact errors",
+            "new pre-launch report not used as device proof; current candidate validated in development runtime"
+          ],
+          "checkedAt": "2026-11-07T12:37:08.793677+00:00",
           "blocker": null
         },
         "qa": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "same-candidate L1/dev execution; manual first, auto opt-in, settlement and lifecycle15 regression cases all pass",
+            "no device use; no new native SDK/plugin/permissions/engine/input/save adapter changes, historical AND-01~07 not reused as current candidate device pass",
+            "previous UI redesign three independent rounds remain historical implementation evidence; release metadata is not a new UI redesign"
+          ],
+          "checkedAt": "2026-11-07T12:37:08.793677+00:00",
           "blocker": null
         },
         "metadata": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "fresh post-commit API readback matches ko-KR listing/4line notes, all14uploaded screenshot hashes(6phone/4seven/4ten), countryKR",
+            "privacy and support200; current runtime screenshots reviewed; no other locales"
+          ],
+          "checkedAt": "2026-11-07T12:37:08.793677+00:00",
           "blocker": null
         },
         "policy": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "live wellknowngeek@gmail.com, Seolee Apps personal5547060480954653351, owned package verified; current policy 발견된 문제 없음 / app content 모두 확인했습니다",
+            "KR/free/noads/noIAP remains; managed publishing disabled; source manifest has no permissions"
+          ],
+          "checkedAt": "2026-11-07T12:37:08.793677+00:00",
           "blocker": null
         },
         "submission": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "production edit04058047743836210292 committed2026-11-07T12:34:59Z, same bundle4/AAB hash and ERROR_IF_IN_REVIEW",
+            "Console submission3,API,2026-11-07 21:35KST,production1.1.0(4)full rollout+store listing6changes,검토 중",
+            "https://play.google.com/console/u/0/developers/5547060480954653351/app/4975448277702761694/publishing/submission-activity/3/details",
+            "Publishing overview still shows fast checks with automatic send to review on success; this is not approval/public proof",
+            "2026-11-07T12:41:42UTC Console fresh readback: fast checks completed, changes are formally in review for1.1.0(4)."
+          ],
+          "checkedAt": "2026-11-07T12:41:42.898611+00:00",
           "blocker": null
         },
         "approval": {
           "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "evidence": [
+            "Google review pending; fast checks completed as of2026-11-07T12:41:42UTC. Submission3,1.1.0(4)."
+          ],
+          "checkedAt": "2026-11-07T12:41:42.898611+00:00",
           "blocker": null
         },
         "release": {
           "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "evidence": [
+            "managed publishing disabled; automatic publication after Google approval"
+          ],
+          "checkedAt": "2026-11-07T12:41:42.898611+00:00",
           "blocker": null
         },
         "live_smoke": {
           "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "evidence": [
+            "public availability of1.1.0 not yet verified; prior public listing200 is not version1.1.0 proof"
+          ],
+          "checkedAt": "2026-11-07T12:41:42.898611+00:00",
           "blocker": null
         }
       }
