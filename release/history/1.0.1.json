@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "app": {
+    "name": "왕립 아카데미: 수련생 육성",
+    "repo": "seoleeapps/princess-tycoon",
+    "sourceRevision": "1953abaad55df233a987ae05f4b5cfb83cdd9a1b"
+  },
+  "release": {
+    "version": "1.0.1",
+    "tag": "v1.0.1",
+    "objective": "public_live",
+    "countries": [
+      "KR"
+    ],
+    "rolloutMode": "full (100%)"
+  },
+  "deploymentApproval": {
+    "status": "approved",
+    "markets": [
+      "google_play"
+    ],
+    "objective": "public_live",
+    "approvedAt": "2026-11-06T23:57:40.129396+00:00",
+    "evidence": [
+      "2026-11-07 사용자 지시: 빌드 배포해",
+      "기존 Google Play 한국 무료 배포 범위 유지",
+      "docs/design/2026-11-07-animation-release/design.md"
+    ]
+  },
+  "commonGates": {
+    "candidate": {
+      "status": "pass",
+      "evidence": [
+        "main 1953abaad55df233a987ae05f4b5cfb83cdd9a1b, 실제 v1.0.1 태그. versionName 1.0.1, versionCode 3. 빌드 전후 추적 파일 변경 없음"
+      ],
+      "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+      "blocker": null
+    },
+    "quality": {
+      "status": "pass",
+      "evidence": [
+        "동일 SHA: npm test(애니메이션 68 검사 포함), test:e2e, test:balance, build:web, check:play, build:android, capture:e2e, capture:animations 모두 종료 0",
+        "headless·rendered E2E 390×844·430×932·720×1280 각 153단계 PASS. 전체 루프 8종×3화면, 216 PNG, 좌표 입력·정지·재개 포함 각 120단계 PASS",
+        "전체 로그 SCRIPT ERROR·ERROR:·Parse Error·missing resource 검사 0건. 전체 루프 contact sheet와 실제 화면 시각 확인: 잘림·가림·도트 흐림·반복 경계 이상 없음",
+        "기존 custom Theme의 별도 ui_gate 정적 스캐너 7 FAIL 사실은 이전 실행 문서에 보존. 이번 실행의 통과로 바꾸지 않음. 출시에 바뀐 동작 없는 메타데이터 PR은 로컬 모델 리뷰 면제"
+      ],
+      "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+      "blocker": null
+    },
+    "production_dependencies": {
+      "status": "na",
+      "evidence": [
+        "서버, 인증, 클라우드 저장, 광고와 결제 SDK가 없는 로컬 게임이다."
+      ],
+      "checkedAt": "2026-11-06T23:57:40.129396+00:00",
+      "blocker": null
+    },
+    "observability": {
+      "status": "na",
+      "evidence": [
+        "추가 분석/충돌 SDK는 기존 승인 범위에 없다. Play Android vitals만 사용한다."
+      ],
+      "checkedAt": "2026-11-06T23:57:40.129396+00:00",
+      "blocker": null
+    }
+  },
+  "markets": {
+    "google_play": {
+      "objective": "public_live",
+      "state": "submission",
+      "identity": {
+        "applicationId": "com.seoleeapps.princesstycoon",
+        "version": "1.0.1",
+        "build": "versionCode 3"
+      },
+      "gates": {
+        "candidate": {
+          "status": "pass",
+          "evidence": [
+            "v1.0.1=1953abaad55df233a987ae05f4b5cfb83cdd9a1b, com.seoleeapps.princesstycoon, 1.0.1(3)"
+          ],
+          "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+          "blocker": null
+        },
+        "artifact": {
+          "status": "pass",
+          "evidence": [
+            "서명 AAB 56,380,417 bytes, SHA-256 84527bdd81aae44f5d73e872809275caf12a5078f37a7c05d0acd6155efba1d6",
+            "manifest: minSdk 24, targetSdk 36, debuggable false(기본값), 권한 없음, arm64-v8a·armeabi-v7a",
+            "업로드 인증서 SHA-256 BB:CF:E8:D7:B9:D2:65:61:7A:B8:41:4A:DC:26:58:79:50:84:A2:06:ED:11:E9:07:37:C8:3B:6A:39:E3:13:65, 실제 Console 공개 인증서 다운로드와 일치",
+            "8종 시트·8종 참조 import와 연결된 texture 16개 존재. extract·tests·env·jks·pem 없음, ZIP CRC 검사 통과"
+          ],
+          "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+          "blocker": null
+        },
+        "upload": {
+          "status": "pass",
+          "evidence": [
+            "internal edit 10456158908285424638 commit, versionCode 3. API 수신 sha256이 로컬 AAB와 같음",
+            "새 edit 재조회: internal 1.0.1 (3), versionCodes [3], completed"
+          ],
+          "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+          "blocker": null
+        },
+        "processing": {
+          "status": "pass",
+          "evidence": [
+            "Console 내부 테스트: 활성 최신 출시 1.0.1 (3), 내부 테스터에게 제공됨, 2026-11-07 09:11 KST",
+            "버전 세부정보: API 24 이상, target36, ABI2, 신규 설치30.4MB, 18,579개 지원 기기, 출시 노트 일치"
+          ],
+          "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+          "blocker": null
+        },
+        "qa": {
+          "status": "pass",
+          "evidence": [
+            "L1/dev: quality 관문의 동일 후보 개발 환경 실행 근거. 새 SDK·네이티브 플러그인·권한·입력·저장 어댑터·엔진 변경 없음",
+            "이번 후보는 기기를 사용하지 않음. 이전 AND-01~07은 최초 출시의 역사적 기록이며 새 후보 기기 통과 근거가 아님"
+          ],
+          "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+          "blocker": null
+        },
+        "metadata": {
+          "status": "pass",
+          "evidence": [
+            "활성 locale ko-KR 1개. API listing 제목·짧은 설명·긴 설명·연락처와 config 일치, 변경 없음",
+            "internal·production의 ko-KR 출시 노트 3줄은 실제 애니메이션 기능과 일치"
+          ],
+          "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+          "blocker": null
+        },
+        "policy": {
+          "status": "pass",
+          "evidence": [
+            "실제 로그인 wellknowngeek@gmail.com, Seolee Apps 개인 계정 5547060480954653351, 대상 패키지 소유 확인",
+            "Console 정책 상태: 발견된 문제 없음. 앱 콘텐츠 주의 필요: 모두 확인했습니다(완료된 선언 유지)",
+            "production countryavailability: KR 1개, 기존 무료·광고·인앱 결제 없음 유지. 관리형 게시 사용 중지(승인 후 자동 공개)"
+          ],
+          "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+          "blocker": null
+        },
+        "submission": {
+          "status": "pass",
+          "evidence": [
+            "production edit 16731596098760486557, 2026-11-07T00:12:55.813339Z commit. 동일 code3, 100% 전체 출시",
+            "API commit은 ERROR_IF_IN_REVIEW를 지정해 기존 심사 취소를 방지. 이후 새 edit에서 production 1.0.1(3) completed 재조회",
+            "Console 제출 활동·제출2 세부정보: 제출 ID2, API, 2026-11-07 09:12 KST, 프로덕션 1.0.1 (3), 전체 출시 시작, 검토 중"
+          ],
+          "checkedAt": "2026-11-07T00:15:20.417004+00:00",
+          "blocker": null
+        },
+        "approval": {
+          "status": "pending",
+          "evidence": [
+            "2026-11-07 09:17:59 KST Console 게시 개요: 빠른 검사 안내가 사라지고 프로덕션 1.0.1(3)이 검토 중인 변경사항으로 표시됨. 제출 ID2의 승인 미확인"
+          ],
+          "checkedAt": "2026-11-07T00:17:59.474832+00:00",
+          "blocker": null
+        },
+        "release": {
+          "status": "pending",
+          "evidence": [
+            "관리형 게시가 꺼져 있어 승인 후 자동 공개 예정. 1.0.1 공개는 아직 확인하지 않음"
+          ],
+          "checkedAt": "2026-11-07T00:17:59.474832+00:00",
+          "blocker": null
+        },
+        "live_smoke": {
+          "status": "pending",
+          "evidence": [
+            "1.0.1 공개 스토어·공개판 실행 미확인. 기기 사용은 하지 않음"
+          ],
+          "checkedAt": "2026-11-07T00:17:59.474832+00:00",
+          "blocker": null
+        }
+      }
+    }
+  }
+}
