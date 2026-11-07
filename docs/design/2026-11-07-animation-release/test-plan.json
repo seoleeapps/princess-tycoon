@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "level": "L1",
+  "baseline": "7307bba16c8b95f8c706f2b3d0ee103cbc523bb6",
+  "changedFeatures": [
+    "home-activity-animation",
+    "home-environment-animation",
+    "reduced-motion",
+    "release-version"
+  ],
+  "environments": [
+    "dev"
+  ],
+  "redesign": false,
+  "foundationRerun": false,
+  "floorOverrides": [
+    {
+      "rule": "regression",
+      "reason": "export_presets.cfg는 version/code와 version/name만 변경한다. 엔진, SDK, 권한, 네이티브 설정은 그대로이며 전체 개발 환경 테스트와 AAB manifest·서명·포함 파일을 검사한다. seoleeapps 저장소는 중앙 릴리스 검증 대상이 아니다."
+    }
+  ],
+  "release": {
+    "markets": [
+      "google-play"
+    ],
+    "until": "public",
+    "rollout": 1
+  }
+}

@@ -3,11 +3,11 @@
   "app": {
     "name": "왕립 아카데미: 수련생 육성",
     "repo": "seoleeapps/princess-tycoon",
-    "sourceRevision": "ee4017eabfa36ea9c458980b554fb0c95e0d89dc"
+    "sourceRevision": "7307bba16c8b95f8c706f2b3d0ee103cbc523bb6"
   },
   "release": {
-    "version": "1.0.0",
-    "tag": "v1.0.0",
+    "version": "1.0.1",
+    "tag": "v1.0.1",
     "objective": "public_live",
     "countries": [
       "KR"
@@ -20,143 +20,105 @@
       "google_play"
     ],
     "objective": "public_live",
-    "approvedAt": "2026-11-06",
+    "approvedAt": "2026-11-06T23:57:40.129396+00:00",
     "evidence": [
-      "사용자 지시 2026-11-06: 'wellknowngeek@gmail.com 으로 구글 플레이에 론칭하자.'",
-      "질문 응답 2026-11-06: 패키지 com.seoleeapps.princesstycoon, 스토어 이름 '왕립 아카데미: 수련생 육성', 국가 한국, 실기기 확인 승인(AND-01~07)",
-      "설계 docs/design/2026-11-google-play-launch/design.md"
+      "2026-11-07 사용자 지시: 빌드 배포해",
+      "기존 Google Play 한국 무료 배포 범위 유지",
+      "docs/design/2026-11-07-animation-release/design.md"
     ]
   },
   "commonGates": {
     "candidate": {
-      "status": "pass",
-      "evidence": [
-        "main ee4017e(PR #15, #16 병합). versionName 1.0.0, versionCode 2. versionCode 1은 실기기 결함으로 공개하지 않음"
-      ],
-      "checkedAt": "2026-11-06T12:10:00+09:00",
+      "status": "pending",
+      "evidence": [],
+      "checkedAt": null,
       "blocker": null
     },
     "quality": {
-      "status": "pass",
-      "evidence": [
-        "npm test 종료 0: 코어 288, 런타임 85, 레이아웃 505 외 smoke 전부",
-        "npm run test:e2e: 390×844·430×932·720×1280 PASS",
-        "check:play: ready",
-        "로컬 리뷰(mcode) PR #15 2회, PR #16 1회 판단 기록",
-        "ee4017e에서 다시 실행(2026-11-06 13:25): npm run test:balance PASS 20, npm run build:web 종료 0"
-      ],
-      "checkedAt": "2026-11-06T12:10:00+09:00",
+      "status": "pending",
+      "evidence": [],
+      "checkedAt": null,
       "blocker": null
     },
     "production_dependencies": {
       "status": "na",
       "evidence": [
-        "게임은 네트워크를 쓰지 않는다(HTTPRequest·HTTPClient 사용 없음). 서버·Firebase·광고·결제 없음"
+        "서버, 인증, 클라우드 저장, 광고와 결제 SDK가 없는 로컬 게임이다."
       ],
-      "checkedAt": "2026-11-06T09:20:00+09:00",
+      "checkedAt": "2026-11-06T23:57:40.129396+00:00",
       "blocker": null
     },
     "observability": {
       "status": "na",
       "evidence": [
-        "분석·충돌 보고 SDK를 넣지 않는 출시 범위(설계 §범위). Play Console의 Android vitals(비정상 종료·ANR)만 사용"
+        "추가 분석/충돌 SDK는 기존 승인 범위에 없다. Play Android vitals만 사용한다."
       ],
-      "checkedAt": "2026-11-06T09:20:00+09:00",
+      "checkedAt": "2026-11-06T23:57:40.129396+00:00",
       "blocker": null
     }
   },
   "markets": {
     "google_play": {
       "objective": "public_live",
-      "state": "submission",
+      "state": "pending",
       "identity": {
         "applicationId": "com.seoleeapps.princesstycoon",
-        "version": "1.0.0",
-        "build": "versionCode 2"
+        "version": "1.0.1",
+        "build": "versionCode 3"
       },
       "gates": {
         "candidate": {
-          "status": "pass",
-          "evidence": [
-            "ee4017e에서 깨끗한 worktree로 빌드, 패키지 com.seoleeapps.princesstycoon, 1.0.0(2)"
-          ],
-          "checkedAt": "2026-11-06T12:10:00+09:00",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
           "blocker": null
         },
         "artifact": {
-          "status": "pass",
-          "evidence": [
-            "build/android/princess-tycoon.aab SHA-256 a1a2efa117ffa5431fc17833414205b810d51a99a2acacb6eee43f93566c505a",
-            "업로드 인증서 SHA-256 BB:CF:E8:…:13:65(카탈로그와 일치)",
-            "번들 manifest: versionCode 2, versionName 1.0.0, minSdk 24, targetSdk 36, 권한 없음"
-          ],
-          "checkedAt": "2026-11-06T12:10:00+09:00",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
           "blocker": null
         },
         "upload": {
-          "status": "pass",
-          "evidence": [
-            "Android Publisher API: internal 트랙 '1.0.0 (2)' versionCodes [2] status completed(edit 04747836707828789980) 읽기 확인",
-            "번들 sha256 응답이 로컬 AAB와 일치"
-          ],
-          "checkedAt": "2026-11-06T12:10:00+09:00",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
           "blocker": null
         },
         "processing": {
-          "status": "pass",
-          "evidence": [
-            "Play 내부 테스트에서 versionCode 2가 기기에 업데이트로 제공되어 설치됨(2026-11-06 12:59:46). dumpsys: versionCode 2, versionName 1.0.0, installer com.android.vending",
-            "프로덕션 버전 미리보기: 2 (1.0.0), API 24 이상, 타겟 SDK 36, ABI 2, 신규 설치 30.4MB. 오류 없음, 선택 경고 2개(가독화 파일 없음: R8 미사용, 네이티브 디버그 기호 없음: Godot 템플릿 기호 미포함 — 비정상 종료 시 네이티브 스택이 주소로만 보임)"
-          ],
-          "checkedAt": "2026-11-06T13:20:00+09:00",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
           "blocker": null
         },
         "qa": {
-          "status": "pass",
-          "evidence": [
-            "개발 환경 전체 회귀(L3): npm test, test:e2e 3개 화면, test:balance, build:web (common quality 관문)",
-            "실기기 재확인 versionCode 2(Solana Mobile Seeker, Android 16, 다른 에이전트, 2026-11-06 12:58~13:09): AND-01 cold start 235ms, AND-05 뒤로 가기 단독 누르기 12회·두 번 눌러 저장 종료·결과 카드 모두 한 단계, AND-06 내용 시작 y=80(컷아웃 78 아래)·위 띠 검정·탭 바 전부 보임, AND-07 볼륨 5/15에서 앱 트랙 스피커 출력(PortMuted false, -30dB) 확인 후 0/15 음소거로 복원. 앱 오류 로그 0건",
-            "AND-02~04는 versionCode 1에서 통과(입력·저장·수명 주기 경로는 versionCode 2에서 바뀌지 않음)",
-            "증적 NAS1dual princess-tycoon/2026-11-06/e018ca8/android-device-qa-1(84개, 9.4MB), .../ee4017e/android-device-qa-2(84개, 5.2MB), MANIFEST.txt에 SHA-256"
-          ],
-          "checkedAt": "2026-11-06T13:20:00+09:00",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
           "blocker": null
         },
         "metadata": {
-          "status": "pass",
-          "evidence": [
-            "apply_play_store_listing.py --apply 후 --verify ok(10개 검사): ko-KR 제목·짧은·긴 설명, 아이콘, 대표 이미지, 휴대전화 6장·7인치 4장·10인치 4장",
-            "스토어 설정 읽기: 게임 > 시뮬레이션, cs@seorilabs.com, +821050675746, https://www.seorilabs.com"
-          ],
-          "checkedAt": "2026-11-06T12:10:00+09:00",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
           "blocker": null
         },
         "policy": {
-          "status": "pass",
-          "evidence": [
-            "앱 콘텐츠 신고 11개 완료(주의 필요 0) 2026-11-06: 개인정보처리방침 https://www.seorilabs.com/privacy/, 광고 없음, 로그인 제한 없음, IARC 제출(한국 GRAC 전체이용가, PEGI 3, ESRB 전체이용가), 대상 13세 이상, 데이터 수집·공유 없음, 광고 ID 미사용, 정부·금융·건강 아님, 판매자 상태 계정 상속(사용자 승인)",
-            "프로덕션 국가/지역: 대한민국만 타겟팅됨(Console 읽기)",
-            "대시보드에 비공개 테스트·프로덕션 액세스 요건 항목 없음, 프로덕션 '버전 생성 및 게시' 잠금 해제"
-          ],
-          "checkedAt": "2026-11-06T12:10:00+09:00",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
           "blocker": null
         },
         "submission": {
-          "status": "pass",
-          "evidence": [
-            "Play Console 게시 개요 빠른 검사 통과 뒤 '검토를 위해 변경사항 12개 전송'(사용자 출시 승인 범위)",
-            "제출 활동 읽기: 제출 ID 1, 2026-11-06 오후 1:18, 변경사항 프로덕션·스토어 등록정보·앱 콘텐츠·고급 배포·스토어 설정, 상태 '검토 중'",
-            "제출 대상: 프로덕션 1.0.0 (2) 전체 출시, 국가 대한민국 1개, 관리형 게시 사용 중지(승인 즉시 공개)"
-          ],
-          "checkedAt": "2026-11-06T13:21:43+09:00",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": null,
           "blocker": null
         },
         "approval": {
           "status": "pending",
-          "evidence": [
-            "Google 검토 진행 중(제출 ID 1). Console 안내: 일반적으로 7일 이내, 더 오래 걸릴 수 있음. 다음 전환: 승인되면 관리형 게시가 꺼져 있어 자동 공개"
-          ],
-          "checkedAt": "2026-11-06T13:21:43+09:00",
+          "evidence": [],
+          "checkedAt": null,
           "blocker": null
         },
         "release": {
