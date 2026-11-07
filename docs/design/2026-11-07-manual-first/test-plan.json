@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "level": "L1",
+  "baseline": "b7370422b451fd3e81a1a7fbee96d27d40c475f3",
+  "changedFeatures": [
+    "first-session-guidance",
+    "online-auto-run",
+    "offline-clock-rollback",
+    "home-goals"
+  ],
+  "environments": [
+    "dev"
+  ],
+  "redesign": false,
+  "foundationRerun": false,
+  "floorOverrides": [],
+  "release": null
+}
