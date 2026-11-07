@@ -28,7 +28,10 @@ func _run() -> void:
 	if unlock_engine != null:
 		var opened_state: Dictionary = unlock_engine.call("get_state") as Dictionary
 		opened_state["unlocks"] = {"stage": 7, "announced": 7, "tipsSeen": []}
+		# 이 검사의 대상은 자동 진행 중 연출이다. 새 게임 기본 OFF와 구분한다.
+		(opened_state["settings"] as Dictionary)["autoRun"] = true
 		main.call("_adopt_engine_result", unlock_engine.call("initialize_from_state", opened_state))
+		main.set("_auto_running", true)
 		main.call("_refresh_chrome")
 		await process_frame
 

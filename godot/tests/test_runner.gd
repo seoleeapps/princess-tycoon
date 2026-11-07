@@ -557,6 +557,7 @@ func _test_manual_activity_execution() -> void:
 
 func _test_offline_cap_and_rollback() -> void:
 	var cap_state: Dictionary = _open_unlocks(StateFactory.create(9001, "오프라인"))
+	cap_state.settings.autoRun = true
 	cap_state["lastSimulatedAt"] = 100000
 	var cap_engine: GameEngine = GameEngine.new()
 	cap_engine.initialize_from_state(cap_state)
@@ -577,6 +578,7 @@ func _test_offline_cap_and_rollback() -> void:
 	_check((after.get("warnings", []) as Array).size() == (before.get("warnings", []) as Array).size() + 1, "AC-IDLE-02 역행 경고 기록")
 
 	var parity_state: Dictionary = _open_unlocks(StateFactory.create(9003, "동일 리듀서"))
+	parity_state.settings.autoRun = true
 	parity_state["lastSimulatedAt"] = 300000
 	var online: GameEngine = GameEngine.new()
 	var offline: GameEngine = GameEngine.new()
@@ -607,6 +609,7 @@ func _test_offline_cap_and_rollback() -> void:
 		"choices": [{"id": "safe", "effects": {"stats": {"intelligence": 100.0}}}],
 	}
 	var boundary_state: Dictionary = _open_unlocks(StateFactory.create(9005, "경계 만료"))
+	boundary_state.settings.autoRun = true
 	boundary_state["lastSimulatedAt"] = 400000
 	boundary_state["eventInbox"] = [boundary_event]
 	boundary_state["activeTask"] = _manual_task("EDU_LITERATURE", 1, 1)
@@ -1456,6 +1459,7 @@ func _test_progressive_unlock(content_db: ContentDB) -> void:
 	var online := GameEngine.new()
 	var offline := GameEngine.new()
 	var parity_state: Dictionary = StateFactory.create(880002, "해금 동일", content_db.config)
+	parity_state.settings.autoRun = true
 	parity_state["lastSimulatedAt"] = 600000
 	online.initialize_from_state(parity_state)
 	offline.initialize_from_state(parity_state)

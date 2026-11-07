@@ -25,8 +25,9 @@ func _initialize() -> void:
 	state.time.slot = 8
 	state.unlocks.stage = 3
 	result = presenter.describe(state, {"stage": 3})
-	_check(result.action == "plan" and result.next_title.contains("성장 방향"), "CL-03 열린 뒤 성장 방향 선택")
+	_check(result.action != "plan" and result.action != "auto", "MF-04 성장 방향 선택은 계획 탭에만 두고 학습 전 자동 권유 안 함")
 	state.settings.guidanceSeen.append("first_direction")
+	state.settings.guidanceSeen.append("auto_started")
 	result = presenter.describe(state, {"stage": 3, "next": {"label": "시험", "remaining": {"slot": 6}}})
 	_check(result.next_detail.contains("6일"), "CL-02 이미 고른 방향 안내 반복 안 함")
 	state.settings.erase("guidanceSeen")

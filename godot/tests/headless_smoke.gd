@@ -84,6 +84,11 @@ func _run() -> void:
 	# 직전 온라인 새로 열림 알림이 남아 있어도 오프라인 정산 알림에는 붙지 않는다.
 	main.set("_unlock_notice_text", "새로 열림 · 아르바이트 3종")
 	main.set("_unlock_notice_until", Time.get_ticks_msec() + 5000)
+	var settlement_state: Dictionary = engine.call("get_state") as Dictionary
+	(settlement_state["settings"] as Dictionary)["autoRun"] = true
+	settlement_state["lastSimulatedAt"] = int(Time.get_unix_time_from_system()) - 60
+	main.call("_adopt_engine_result", engine.call("initialize_from_state", settlement_state))
+	(main.get("_state") as Dictionary)["pendingOfflineSlots"] = 1
 	main.call("_collect_offline")
 	await process_frame
 	var settle_toast: Label = main.get("_toast_label") as Label

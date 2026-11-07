@@ -5,13 +5,15 @@ static func describe(state: Dictionary, unlock_status: Dictionary, careers: Arra
 	var slot := maxi(0, int((state.get("time", {}) as Dictionary).get("slot", 0)))
 	var season_days := maxi(1, int(context.get("season_days", 28)))
 	var stage := int((state.get("unlocks", {}) as Dictionary).get("stage", 1))
+	var settings: Dictionary = state.get("settings", {}) as Dictionary
+	var automatic := bool(settings.get("autoRun", false))
 	var result := {
 		"headline": "첫 목표 · 시즌 심사 받기",
-		"detail": "수련생은 자동으로 활동해요. 성장 방향을 정해 진로 칭호를 모아요.",
+		"detail": "수련생은 자동으로 활동해요. 성장 방향을 정해 진로 칭호를 모아요." if automatic else "먼저 활동을 직접 골라 성장을 익혀요. 계획에서 방향을 정해 진로 칭호를 모아요.",
 		"progress": clampf(float(slot) / season_days, 0.0, 1.0),
 		"progress_label": "심사까지 %d일 · 게임 속 수련 %d/%d일" % [season_days - slot % season_days, mini(slot, season_days), season_days],
 		"next_title": "수련생의 활동 살펴보기",
-		"next_detail": "활동은 자동으로 진행돼요.",
+		"next_detail": "활동은 자동으로 진행돼요." if automatic else "활동에서 수업과 휴식을 직접 골라 보세요.",
 		"action": "activity",
 		"action_label": "활동 살펴보기",
 	}
@@ -32,13 +34,12 @@ static func describe(state: Dictionary, unlock_status: Dictionary, careers: Arra
 		result["next_detail"] = "부상을 회복할 때까지 자동으로 휴식해요. 회복 뒤 다시 원정할 수 있어요."
 		result["action_label"] = "회복 활동 확인"
 		return result
-	var settings: Dictionary = state.get("settings", {}) as Dictionary
 	var seen: Array = settings.get("guidanceSeen", []) as Array
-	if stage >= 3 and settings.has("guidanceSeen") and not seen.has("first_direction"):
-		result["next_title"] = "성장 방향 고르기"
-		result["next_detail"] = "고른 방향은 다음 활동부터 반영돼요."
-		result["action"] = "plan"
-		result["action_label"] = "성장 방향 선택"
+	if not automatic and stage >= 3 and seen.has("first_direction") and not seen.has("auto_started"):
+		result["next_title"] = "익숙해졌다면 자동 진행 켜기"
+		result["next_detail"] = "고른 방향에 맞춰 활동하고, 앱을 꺼도 최대 8시간 성장해요. 직접 켜기 전에는 진행되지 않아요."
+		result["action"] = "auto"
+		result["action_label"] = "자동 진행 켜기"
 		return result
 	var lifetime: Dictionary = state.get("lifetimeStats", {}) as Dictionary
 	if stage >= 6 and int(lifetime.get("adventures", 0)) == 0:
