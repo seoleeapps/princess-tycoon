@@ -60,7 +60,7 @@ func _first_session(main: Control) -> void:
 	# 기기 화면 크기와 관계없이 장면은 기준 좌표계(390×844)로 그려진다(canvas_items + keep).
 	e2e.expect_equal("scene uses the logical 390x844 canvas", [int(main.size.x), int(main.size.y)], [390, 844])
 	e2e.expect_equal("new save starts with auto run off", bool(_read(main, ["settings", "autoRun"], true)), false)
-	e2e.step("no empty settlement or early auto prompt", not (_find_id(main, "offline_open") as Control).is_visible_in_tree() and not (_find_id(main, "pause") as Control).is_visible_in_tree())
+	e2e.step("no empty settlement or early auto prompt", _find_id(main, "offline_open") == null and _find_id(main, "pause") == null)
 	await e2e.shot("01-home")
 
 	await _tap_id(main, "menu", "open menu")
@@ -171,6 +171,7 @@ func _first_session(main: Control) -> void:
 	await _tap_id(main, "tab_home", "return home after learning the direction")
 	e2e.step("home has no duplicate growth direction selector", _find_id(main, "open_plan") == null and not (_find_id(main, "home_goal_action") as Button).text.contains("성장 방향"))
 	e2e.step("home now offers explicit automatic play", (_find_id(main, "home_goal_action") as Button).text == "자동 진행 켜기")
+	await e2e.wait_for(func() -> bool: return not (main.get("_toast_panel") as Control).visible, 300)
 	await e2e.shot("10b-auto-opt-in")
 	await _tap_id(main, "home_goal_action", "explicitly start auto after manual learning")
 	e2e.expect_equal("auto runs only after opting in", bool(_read(main, ["settings", "autoRun"], false)), true)
@@ -205,7 +206,8 @@ func _return_offline(main: Control) -> void:
 	e2e.expect_equal("direction restored", str(_read(again, ["growthPolicy", "preset"], "")), "scholar")
 	e2e.step("offline sheet opens on return", await e2e.wait_for(func() -> bool: return _find_screen(again, "offline") != null, 30))
 	e2e.step("offline slots pending", int(_state(again).get("pendingOfflineSlots", 0)) > 0)
-	e2e.step("actual offline pending exposes settlement CTA", (_find_id(again, "offline_open") as Control).visible and (_find_id(again, "offline_open") as Button).text == "정산하기")
+	var settlement_button := again.get("_offline_button") as Button
+	e2e.step("actual offline pending exposes settlement CTA", settlement_button != null and settlement_button.visible and settlement_button.text == "정산하기")
 	await e2e.shot("13-offline")
 	await _close_sheet(again)
 	await e2e.shot("13b-settlement-home")
@@ -214,7 +216,7 @@ func _return_offline(main: Control) -> void:
 	var home_before := _content_page(again)
 	await _tap_id(again, "offline_collect", "collect offline result")
 	e2e.expect_equal("offline slots settled", int(_state(again).get("pendingOfflineSlots", -1)), 0)
-	e2e.step("settlement CTA hides after collection", not (_find_id(again, "offline_open") as Control).visible)
+	e2e.step("settlement CTA hides after collection", not (again.get("_offline_button") as Control).visible)
 	e2e.step("offline sheet lists what changed", _find_label_prefix(again, "능력치 합 +") != null)
 	e2e.step("offline sheet lists new unlocks", _find_label_prefix(again, "새로 열림 · 세부 규칙") != null and _find_label_prefix(again, "새로 열림 · 월드") != null)
 	var offline_toast := again.get("_toast_label") as Label

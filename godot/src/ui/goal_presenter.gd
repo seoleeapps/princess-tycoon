@@ -37,7 +37,7 @@ static func describe(state: Dictionary, unlock_status: Dictionary, careers: Arra
 	var seen: Array = settings.get("guidanceSeen", []) as Array
 	if not automatic and stage >= 3 and seen.has("first_direction") and not seen.has("auto_started"):
 		result["next_title"] = "익숙해졌다면 자동 진행 켜기"
-		result["next_detail"] = "고른 방향에 맞춰 활동하고, 앱을 꺼도 최대 8시간 성장해요. 직접 켜기 전에는 진행되지 않아요."
+		result["next_detail"] = "고른 방향으로 활동을 맡겨보세요. 원할 때 멈출 수 있어요."
 		result["action"] = "auto"
 		result["action_label"] = "자동 진행 켜기"
 		return result
